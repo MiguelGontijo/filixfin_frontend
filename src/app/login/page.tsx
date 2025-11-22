@@ -2,6 +2,9 @@
 
 "use client"; // Necessário para usar hooks como useState
 
+import { useAuth } from '@/contexts/AuthContext';
+import { LoginDto } from '@/types/auth';
+import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 
 /**
@@ -10,6 +13,9 @@ import React, { useState } from 'react';
  * Porquê: A página deve ser simples, segura e focada na coleta de credenciais.
  */
 export default function LoginPage() {
+    
+    const router = useRouter();
+    const auth = useAuth(); // Usar o contexto de autenticação
     
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -29,19 +35,17 @@ export default function LoginPage() {
         }
 
         try {
-            // FUTURO: Chamada à API de Login do Backend
-            // const response = await fetch('/api/v1/auth/login', { ... });
             
-            // Simulação de delay da API
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const credentials: LoginDto = { email, password };
             
-            console.log("Tentativa de Login:", { email, password });
-
-            // Se o login for Admin Global: Redirecionar para o Dashboard Admin
-            // Se o login for Tenant User: Redirecionar para o Dashboard do Tenant
-
-            // Simulação de Sucesso
-            alert("Login (Simulado) Bem-sucedido! Redirecionando...");
+            // 1. CHAMADA AO CONTEXTO DE LOGIN
+            // O Contexto (AuthProvider) fará a chamada à API do Backend
+            // e atualizará o estado global (token, user).
+            await auth.login(credentials); 
+            
+            // 2. REDIRECIONAMENTO DE SUCESSO
+            // Porquê: Após o sucesso, o usuário deve ser levado para a área restrita.
+            router.push('/dashboard');
 
         } catch (err) {
             setError("Falha na autenticação. Verifique suas credenciais.");
@@ -50,6 +54,12 @@ export default function LoginPage() {
             setIsLoading(false);
         }
     };
+
+    // Se o usuário já estiver logado, redireciona imediatamente
+    if (auth.isLoggedIn) {
+        router.push('/dashboard');
+        return null;
+    }
 
     return (
         // Centraliza o conteúdo na tela

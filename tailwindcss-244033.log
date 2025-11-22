@@ -1,0 +1,47 @@
+2025-11-21T23:07:02.095116Z  INFO tailwindcss_oxide::scanner: Provided sources:
+2025-11-21T23:07:02.095145Z  INFO tailwindcss_oxide::scanner: Source: PublicSourceEntry { base: "/home/miguel/projetos/FilixFinApp/filixfin_frontend", pattern: "**/*", negated: false }
+2025-11-21T23:07:02.095174Z  INFO tailwindcss_oxide::scanner: Optimized sources:
+2025-11-21T23:07:02.095177Z  INFO tailwindcss_oxide::scanner: Source: Auto { base: "/home/miguel/projetos/FilixFinApp/filixfin_frontend" }
+2025-11-21T23:07:02.095945Z  INFO get_files: tailwindcss_oxide::scanner: enter
+2025-11-21T23:07:02.095958Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: enter
+2025-11-21T23:07:02.096199Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/public"
+2025-11-21T23:07:02.096241Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/public/file.svg"
+2025-11-21T23:07:02.096253Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/public/vercel.svg"
+2025-11-21T23:07:02.096261Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/public/window.svg"
+2025-11-21T23:07:02.096268Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/public/globe.svg"
+2025-11-21T23:07:02.096276Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/public/next.svg"
+2025-11-21T23:07:02.096290Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/eslint.config.mjs"
+2025-11-21T23:07:02.096298Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/README.md"
+2025-11-21T23:07:02.096309Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/next.config.ts"
+2025-11-21T23:07:02.096316Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/postcss.config.mjs"
+2025-11-21T23:07:02.096328Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/tsconfig.json"
+2025-11-21T23:07:02.096337Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src"
+2025-11-21T23:07:02.096357Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/app"
+2025-11-21T23:07:02.096373Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/app/globals.css"
+2025-11-21T23:07:02.096380Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/app/page.tsx"
+2025-11-21T23:07:02.096388Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/app/layout.tsx"
+2025-11-21T23:07:02.096401Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/app/login"
+2025-11-21T23:07:02.096417Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/app/login/page.tsx"
+2025-11-21T23:07:02.096433Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/components"
+2025-11-21T23:07:02.096514Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/components/layout"
+2025-11-21T23:07:02.096529Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/components/layout/AppContainer.tsx"
+2025-11-21T23:07:02.096548Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/components/ui"
+2025-11-21T23:07:02.096568Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/hooks"
+2025-11-21T23:07:02.096582Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/utils"
+2025-11-21T23:07:02.096602Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/package.json"
+2025-11-21T23:07:02.096649Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/tailwind.config.ts"
+2025-11-21T23:07:02.096684Z  INFO get_files:scan_sources: tailwindcss_oxide::scanner: exit
+2025-11-21T23:07:02.097419Z  INFO get_files: tailwindcss_oxide::scanner: exit
+2025-11-21T23:07:02.097466Z  INFO get_globs: tailwindcss_oxide::scanner: enter
+2025-11-21T23:07:02.097470Z  INFO get_globs:scan_sources: tailwindcss_oxide::scanner: enter
+2025-11-21T23:07:02.097706Z  INFO get_globs:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/public"
+2025-11-21T23:07:02.097787Z  INFO get_globs:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src"
+2025-11-21T23:07:02.097804Z  INFO get_globs:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/app"
+2025-11-21T23:07:02.097828Z  INFO get_globs:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/app/login"
+2025-11-21T23:07:02.097850Z  INFO get_globs:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/components"
+2025-11-21T23:07:02.097862Z  INFO get_globs:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/components/layout"
+2025-11-21T23:07:02.097881Z  INFO get_globs:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/components/ui"
+2025-11-21T23:07:02.097897Z  INFO get_globs:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/hooks"
+2025-11-21T23:07:02.097909Z  INFO get_globs:scan_sources: tailwindcss_oxide::scanner: Discovering "/home/miguel/projetos/FilixFinApp/filixfin_frontend/src/utils"
+2025-11-21T23:07:02.097979Z  INFO get_globs:scan_sources: tailwindcss_oxide::scanner: exit
+2025-11-21T23:07:02.098653Z  INFO get_globs: tailwindcss_oxide::scanner: exit

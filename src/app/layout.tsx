@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google"; 
 import "./globals.css";
 import { AppContainer } from "@/components/layout/AppContainer"; // Importação via alias
+import { AuthProvider } from "@/contexts/AuthContext";
 
 // Usaremos Inter como fonte padrão para simplificar a correção
 const geistSans = Inter({
@@ -34,9 +35,11 @@ export default function RootLayout({
         // Aplicamos as classes e as fontes (agora tipadas corretamente)
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AppContainer>
-          {children}
-        </AppContainer>
+        <AuthProvider> {/* <-- O AuthProvider envolve o AppContainer */}
+          <AppContainer>
+            {children}
+          </AppContainer>
+        </AuthProvider>
       </body>
     </html>
   );
