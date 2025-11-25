@@ -10,7 +10,7 @@ console.log('Iniciando coleta de arquivos...');
 let output = '';
 let fileCount = 0;
 // Centralizei as extensões permitidas
-const allowedExtensions = ['.ts', '.yml', '.json', '.tsx','md', 'mjs'];
+const allowedExtensions = ['.ts', '.yml', '.json', '.tsx', '.md', '.mjs', '.css', '.ico'];
 
 // --- Helper para adicionar o conteúdo ao output ---
 function addFileToOutput(fullPath: string) {

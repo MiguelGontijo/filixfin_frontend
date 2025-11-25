@@ -5,7 +5,9 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-// FUTURO: Importar useTenantRegistration hook
+// --- NOVA IMPORTAÇÃO ---
+import { useRegister } from '@/hooks/useRegister'; // Importamos o hook real
+// ------------------------
 
 /**
  * @component RegisterPage
@@ -15,6 +17,9 @@ import Link from 'next/link';
 export default function RegisterPage() {
     
     const router = useRouter();
+    // --- NOVO: Uso do hook de registro ---
+    const { registerTenant, isLoading, error: apiError } = useRegister();
+    
     const [formData, setFormData] = useState({
         cnpjCpf: '',
         razaoSocial: '',
@@ -23,8 +28,10 @@ export default function RegisterPage() {
         password: '', // Senha do Admin Global (User Nível Zero)
         planoId: '00000000-0000-0000-0000-000000000001', // Plano Básico Padrão (Hardcoded para simplificar)
     });
-    const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    // Usamos o erro do hook para exibir mensagens
+    const [localError, setLocalError] = useState<string | null>(null); 
+    
+    // Removido o estado de isLoading e error locais, usaremos os do hook.
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
@@ -35,34 +42,35 @@ export default function RegisterPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError(null);
-        setIsLoading(true);
-
-        // Validação Front-end Básica (poderíamos usar uma biblioteca como Zod aqui)
+        setLocalError(null);
+        // Não precisamos de setIsLoading(true) aqui, o hook já faz.
+        
+        // Validação Front-end Básica 
         if (!formData.emailContato || !formData.password || !formData.cnpjCpf) {
-            setError("Por favor, preencha os campos obrigatórios (CNPJ/CPF, E-mail, Senha).");
-            setIsLoading(false);
+            setLocalError("Por favor, preencha os campos obrigatórios (CNPJ/CPF, E-mail, Senha).");
             return;
         }
 
         try {
-            // FUTURO: Lógica de chamada à API de Registro (POST /api/v1/tenant/register)
-            console.log("Tentativa de Registro:", formData);
-
-            // Simulação de delay da API e sucesso
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // --- MODIFICAÇÃO: Chamada REAL à API via Hook ---
+            await registerTenant(formData);
             
-            // Simulação de Sucesso: Redirecionar para a página de Login
-            alert("Registro (Simulado) Bem-sucedido! Faça seu login.");
+            // Sucesso: Redirecionar para a página de Login
+            alert("Registro Bem-sucedido! O administrador da sua conta foi criado. Faça seu login.");
             router.push('/login'); 
 
         } catch (err) {
-            setError("Falha no registro do Tenant. Tente novamente.");
+            // O erro já foi capturado e setado em apiError pelo hook (useRegister),
+            // mas podemos adicionar uma mensagem genérica de fallback se o apiError estiver vazio.
+            if (!apiError) {
+                setLocalError("Falha no registro do Tenant. Tente novamente.");
+            }
             console.error("Registro API Error:", err);
-        } finally {
-            setIsLoading(false);
         }
     };
+
+    // Combina erros locais com erros vindos da API
+    const displayError = localError || apiError;
 
     return (
         // Centraliza o conteúdo na tela, usando o fundo do AppContainer
@@ -77,9 +85,10 @@ export default function RegisterPage() {
                     Será criado o seu Tenant (Empresa) e seu acesso de Admin Global.
                 </p>
                 
-                {error && (
+                {/* --- EXIBIÇÃO DO ERRO (MODIFICADO PARA USAR displayError) --- */}
+                {displayError && (
                     <div className="p-3 text-sm font-medium text-danger bg-red-900/50 rounded-md">
-                        {error}
+                        {displayError}
                     </div>
                 )}
 
@@ -108,7 +117,7 @@ export default function RegisterPage() {
                                 placeholder="Seu App" />
                         </div>
                     </div>
-                    
+                  
                     {/* --- Dados do Admin Global --- */}
                     <h2 className="pt-4 text-xl font-bold text-base-text">Acesso Admin</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -127,12 +136,14 @@ export default function RegisterPage() {
                                 placeholder="••••••••" />
                         </div>
                     </div>
-                    
+               
                     <button
                         type="submit"
+                        // --- MODIFICAÇÃO: Usar o isLoading do hook ---
                         disabled={isLoading}
                         className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-base-dark bg-accent-primary hover:bg-orange-500 transition duration-150 disabled:bg-gray-500 mt-6"
                     >
+                        {/* --- MODIFICAÇÃO: Texto dinâmico de carregamento --- */}
                         {isLoading ? 'Criando Conta e Tenant...' : 'Criar Conta Agora'}
                     </button>
                 </form>

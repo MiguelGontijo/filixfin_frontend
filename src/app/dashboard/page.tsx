@@ -28,7 +28,7 @@ export default function DashboardPage() {
                 
                 {/* Futuras Ações Rápidas */}
                 <div className="flex space-x-4">
-                    <Link href="/admin/config-acl" legacyBehavior>
+                    <Link href="/admin/plans" legacyBehavior>
                         <a className="px-4 py-2 bg-accent-primary rounded-lg text-base-dark font-medium hover:bg-orange-500 transition">
                             Gerenciar Planos (ACL)
                         </a>

@@ -15,7 +15,7 @@ export default function LandingPage() {
       {/* Seção Principal (Hero) */}
       <section className="text-center space-y-8 max-w-4xl">
         
-        <h1 className="text-6xl font-extrabold tracking-tight sm:text-7xl lg:text-8xl text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-accent-secondary">
+        <h1 className="text-6xl font-extrabold tracking-tight sm:text-7xl lg:text-8xl text-transparent bg-clip-text bg-linear-to-r from-accent-primary to-accent-secondary">
           Gestão de Excelência & Inteligência
         </h1>
 
