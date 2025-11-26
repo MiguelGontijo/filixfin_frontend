@@ -5,8 +5,8 @@
 import React from 'react';
 import { useFeatures } from '@/hooks/useFeatures';
 import { FaEdit, FaTrash, FaPlus, FaTag, FaCalculator } from 'react-icons/fa';
-import { Feature } from '@/types/user'; // Tipagem correta
-// import { UserRole } from '../../modules/user/entities/User'; // Futuro, se necessário
+import { Feature } from '@/types/acl';
+
 
 /**
  * @component FeatureTable

@@ -1,25 +1,21 @@
 // src/types/user.ts
 
+// --- CORREÇÃO: Usar um objeto const para garantir valores em runtime ---
+export const UserRole = {
+    GLOBAL_ADMIN: 'GLOBAL_ADMIN',
+    TENANT_ADMIN: 'TENANT_ADMIN',
+    MEMBER: 'MEMBER',
+} as const;
+
 // Reúsa o ENUM de Role do Backend (simplificado aqui)
 export type UserRole = 'GLOBAL_ADMIN' | 'TENANT_ADMIN' | 'MEMBER';
 
-export interface Feature {
-    id: string;
-    key: string;
-    name: string;
-    description: string | null;
-    type: 'boolean' | 'quantity';
-    createdAt: string;
-    updatedAt: string;
-}
+// Tipagem da Feature e Plan foram movidas para src/types/acl.ts
 
-// --- Tipagem do Plano ---
-export interface Plan {
+export interface User {
     id: string;
-    name: string;
-    description: string | null;
-    price: number;
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
+    email: string;
+    role: UserRole;
+    tenantId: string | null;
+    // Removido o Plan, Feature, etc.
 }

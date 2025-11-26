@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { api } from '@/utils/api';
-import { Feature } from '@/types/user'; // Tipagem correta (assumindo que o src/types/user.ts está corrigido)
+import { Feature } from '@/types/acl'; // Tipagem correta (assumindo que o src/types/user.ts está corrigido)
 
 /**
  * @function useFeatures

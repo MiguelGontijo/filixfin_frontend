@@ -2,14 +2,15 @@
 
 import React from 'react';
 import Link from 'next/link';
-
 // Definição dos links da área de administração de ACL
 const navItems = [
+  // --- NOVO: Adicionar Gerenciamento de Tenants ---
+  { name: 'Gerenciar Tenants', href: '/admin/tenants', icon: '🏢' }, // Novo link para a nova página
+  // ------------------------------------------------
   { name: 'Gerenciar Planos', href: '/admin/plans', icon: '💎' },
   { name: 'Gerenciar Features', href: '/admin/features', icon: '🔑' },
   { name: 'Dashboard Mestre', href: '/dashboard', icon: '🏠' },
 ];
-
 /**
  * @component AdminSidebar
  * @description Barra de navegação lateral para as rotinas administrativas.
@@ -27,7 +28,8 @@ export const AdminSidebar: React.FC = () => {
       {/* Navegação */}
       <nav className="flex-1 space-y-2">
         {navItems.map((item) => (
-          <Link key={item.name} href={item.href} legacyBehavior>
+          <Link 
+            key={item.name} href={item.href} legacyBehavior>
             <a 
               className="flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150"
             >
