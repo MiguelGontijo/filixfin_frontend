@@ -2,10 +2,13 @@
 
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react'; // Importar useState
 import { useFeatures } from '@/hooks/useFeatures';
 import { FaEdit, FaTrash, FaPlus, FaTag, FaCalculator } from 'react-icons/fa';
-import { Feature } from '@/types/acl';
+import { Feature } from '@/types/acl'; // Tipagem correta (de acl)
+import { FeatureModal } from './FeatureModal'; // Importar o Modal
+import { useFeatureMutation } from '@/hooks/useFeatureMutation'; // Hook de C/U/D
+import { FeatureType } from '@/types/acl'; // Tipagem do Tipo (BOOLEAN/QUANTITY)
 
 
 /**
@@ -15,24 +18,60 @@ import { Feature } from '@/types/acl';
  */
 export const FeatureTable: React.FC = () => {
     
-    const { features, isLoading, error } = useFeatures();
+    // Hooks de Dados e Mutação
+    const { features, isLoading, error } = useFeatures(); // FUTURO: Assumindo refreshData
+    // const { features, isLoading, error, refreshData } = useFeatures(); // FUTURO: Assumindo refreshData
+    const { deleteFeature, isLoading: isDeleting } = useFeatureMutation();
+
+    // --- ESTADO PARA MODAL ---
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [featureToEdit, setFeatureToEdit] = useState<Feature | undefined>(undefined);
+    // -------------------------
+
+    // --- Funções de Callback ---
+
+    // FUTURO: Se houvesse um método refreshData no useFeatures, ele seria invocado aqui.
+    // Simulação do sucesso para fechar o modal.
+    const handleSuccess = () => {
+        // [Implementação Futura: Recarregar dados após sucesso]
+        console.log("Feature alterada. Recarregando dados.");
+        // refreshData(); 
+        setIsModalOpen(false); 
+        setFeatureToEdit(undefined);
+    };
+
+    // --- Funções de Ação ---
     
-    // --- Funções de Ação Futuras ---
+    const handleNewFeature = () => {
+        setFeatureToEdit(undefined); // Criação de um novo
+        setIsModalOpen(true);
+    };
+
     const handleEdit = (feature: Feature) => {
-        console.log("Abrir modal de edição para a feature:", feature.name);
-        // FUTURO: Implementar modal de edição.
+        setFeatureToEdit(feature); // Define a feature a ser editada
+        setIsModalOpen(true);
     };
     
-    const handleDelete = (feature: Feature) => {
-        if (confirm(`Tem certeza que deseja deletar a Feature "${feature.name}"?`)) {
-            console.log("Deletar a Feature:", feature.name);
-            // FUTURO: Chamar o Service de Delete no Backend.
+    const handleDelete = async (feature: Feature) => {
+        // 1. Confirmação
+        if (confirm(`Tem certeza que deseja DELETAR a Feature "${feature.name}"? Isso pode quebrar Planos vinculados.`)) {
+            
+            try {
+                // 2. Chamada de Mutação DELETE
+                await deleteFeature(feature.id);
+                console.log(`Feature ${feature.name} deletada com sucesso.`);
+                // [Implementação Futura: Recarregar dados]
+                // refreshData();
+            } catch (error) {
+                // O erro já é tratado no useFeatureMutation, mas podemos logar.
+                console.error("Falha ao deletar:", error);
+            }
         }
     };
 
     // --- Helpers de Visualização ---
-    const renderTypeBadge = (type: 'boolean' | 'quantity') => {
-        const isQuantity = type === 'quantity';
+    const renderTypeBadge = (type: FeatureType) => {
+        const isQuantity = type === FeatureType.QUANTITY;
         const colorClass = isQuantity ? 'text-accent-secondary bg-violet-900/40' : 'text-success bg-green-900/40';
         const icon = isQuantity ? <FaCalculator className="w-3 h-3" /> : <FaTag className="w-3 h-3" />;
 
@@ -44,12 +83,12 @@ export const FeatureTable: React.FC = () => {
         );
     };
 
-    // --- Tratamento de Estado (Igual ao PlanTable) ---
+    // --- Tratamento de Estado (Loading / Error) ---
 
-    if (isLoading) {
+    if (isLoading || isDeleting) {
         return (
             <div className="text-center py-12 text-accent-secondary">
-                <span className="animate-spin text-xl">⏳</span> Carregando Catálogo de Features...
+                <span className="animate-spin text-xl">⏳</span> {isDeleting ? 'Deletando Feature...' : 'Carregando Catálogo de Features...'}
             </div>
         );
     }
@@ -68,6 +107,7 @@ export const FeatureTable: React.FC = () => {
             {/* Botão de Criação */}
             <div className="flex justify-end">
                 <button 
+                    onClick={handleNewFeature} 
                     className="flex items-center space-x-2 px-4 py-2 bg-accent-primary text-base-dark font-bold rounded-lg hover:bg-orange-500 transition duration-150 shadow-lg"
                 >
                     <FaPlus />
@@ -141,6 +181,15 @@ export const FeatureTable: React.FC = () => {
                     Nenhuma Feature cadastrada. Você deve inserir as Features essenciais via Migration.
                 </div>
             )}
+
+            {/* --- MODAL DE CRIAÇÃO/EDIÇÃO --- */}
+            <FeatureModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                currentFeature={featureToEdit}
+                onSuccess={handleSuccess}
+            />
+            {/* ------------------------------- */}
         </div>
     );
 };

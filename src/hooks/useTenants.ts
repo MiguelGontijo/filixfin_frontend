@@ -1,6 +1,6 @@
 // src/hooks/useTenants.ts
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/utils/api';
 import { Plan } from '@/types/acl';
 import { Tenant } from '@/types/tenant';
@@ -22,8 +22,7 @@ export function useTenants() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchTenants = async () => {
+        const fetchTenants = useCallback(async () => {
             try {
                 setIsLoading(true);
                 setError(null);
@@ -44,10 +43,11 @@ export function useTenants() {
             } finally {
                 setIsLoading(false);
             }
-        };
+        },[]);
 
+    useEffect(() => {
         fetchTenants();
-    }, []); // Roda apenas uma vez na montagem
+    }, [fetchTenants]); // Roda apenas uma vez na montagem
 
-    return { tenants, isLoading, error };
+    return { tenants, isLoading, error, refreshData: fetchTenants };
 }

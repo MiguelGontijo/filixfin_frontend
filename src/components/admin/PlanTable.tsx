@@ -2,19 +2,14 @@
 
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react'; // <--- CORREÇÃO 1: Importar useState
 import { usePlans } from '@/hooks/usePlans';
 import { FaEdit, FaTrash, FaCheckCircle, FaTimesCircle, FaDollarSign, FaPlus } from 'react-icons/fa';
-
-// Usamos o tipo do hook
-interface Plan {
-    id: string;
-    name: string;
-    description: string | null;
-    price: number;
-    isActive: boolean;
-    createdAt: string;
-}
+// --- CORREÇÃO 2: Remover a interface Plan local e usar a importada ---
+import { Plan } from '@/types/acl'; 
+import { PlanModal } from './PlanModal'; // Assumindo que o PlanModal foi importado
+import { usePlanMutation } from '@/hooks/usePlanMutation'; // Assumindo que o usePlanMutation foi importado
+// ----------------------------------------------------------------------
 
 /**
  * @component PlanTable
@@ -23,12 +18,34 @@ interface Plan {
  */
 export const PlanTable: React.FC = () => {
     
-    const { plans, isLoading, error } = usePlans();
+    // --- Definição do Estado do Modal ---
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [planToEdit, setPlanToEdit] = useState<Plan | undefined>(undefined);
+    // -------------------------------------------------
+
+    const { plans, isLoading, error, refreshData } = usePlans();
+    // FUTURO: Integração do hook de mutação
+    // const { deletePlan, isLoading: isDeleting } = usePlanMutation();
+    const isDeleting = false; // Placeholder
     
+    // Recarrega os dados após sucesso na mutação (FUTURO: Deve chamar refreshData do usePlans)
+    const handleSuccess = () => {
+        console.log("Plano alterado. Recarregando dados.");
+        refreshData();
+        setIsModalOpen(false);
+        setPlanToEdit(undefined);
+    };
+
     // --- Funções de Ação Futuras ---
-    const handleEdit = (plan: Plan) => {
-        console.log("Abrir modal de edição para o plano:", plan.name);
-        // FUTURO: Implementar modal de edição.
+    
+    const handleNewPlan = () => {
+        setPlanToEdit(undefined); // Criação de um novo plano (passa undefined)
+        setIsModalOpen(true);
+    };
+
+    const handleEdit = (plan: Plan) => { // O tipo Plan é o importado de @/types/acl
+        setPlanToEdit(plan);
+        setIsModalOpen(true);
     };
     
     const handleDelete = (plan: Plan) => {
@@ -40,7 +57,7 @@ export const PlanTable: React.FC = () => {
 
     // --- Tratamento de Estado ---
 
-    if (isLoading) {
+    if (isLoading || isDeleting) {
         return (
             <div className="text-center py-12 text-accent-secondary">
                 <span className="animate-spin text-xl">⏳</span> Carregando Planos...
@@ -62,6 +79,7 @@ export const PlanTable: React.FC = () => {
             {/* Botão de Criação */}
             <div className="flex justify-end">
                 <button 
+                    onClick={handleNewPlan}
                     className="flex items-center space-x-2 px-4 py-2 bg-accent-primary text-base-dark font-bold rounded-lg hover:bg-orange-500 transition duration-150 shadow-lg"
                 >
                     <FaPlus />
@@ -148,6 +166,16 @@ export const PlanTable: React.FC = () => {
                     Nenhum plano cadastrado. Comece criando o seu primeiro plano!
                 </div>
             )}
+            
+            {/* --- MODAL DE CRIAÇÃO/EDIÇÃO (FUTURO) --- */}
+            {/* O Modal precisa ser renderizado aqui para o estado funcionar */}
+            {/* Exemplo de integração (assumindo que PlanModal foi importado e props definidos): */}
+            <PlanModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                currentPlan={planToEdit}
+                onSuccess={handleSuccess}
+            />
         </div>
     );
 };

@@ -66,7 +66,7 @@ export default eslintConfig;
 
 /// <reference types="next" />
 /// <reference types="next/image-types/global" />
-import "./.next/dev/types/routes.d.ts";
+import "./.next/types/routes.d.ts";
 
 // NOTE: This file should not be edited
 // see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
@@ -7199,6 +7199,7 @@ import { TenantTable } from '@/components/admin/TenantTable'; // Importar o comp
  */
 export default function AdminTenantsPage() {
     
+    const role = UserRole.GLOBAL_ADMIN
     // Apenas o GLOBAL_ADMIN pode acessar esta rotina
     const allowedRoles: UserRole[] = [UserRole.GLOBAL_ADMIN];
 
@@ -7846,17 +7847,219 @@ try {
 }
 
 
+// ===== FILE: src/components/admin/FeatureModal.tsx =====
+
+// src/components/admin/FeatureModal.tsx
+
+import React, { useState, useEffect } from 'react';
+import { FaTimes } from 'react-icons/fa';
+import { useFeatureMutation } from '@/hooks/useFeatureMutation';
+import { Feature, FeatureKey, FeatureType } from '@/types/acl'; // Entidades e Tipos ACL
+
+// Propriedades do Modal
+interface FeatureModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    // Se estiver em modo de edição, 'feature' terá dados
+    currentFeature?: Feature; 
+    onSuccess: () => void; // Callback para recarregar a tabela após sucesso
+}
+
+/**
+ * @component FeatureModal
+ * @description Modal de Criação e Edição de Features para o Admin Global.
+ * Porquê: Centraliza o formulário e a lógica de mutação (POST/PATCH/DELETE).
+ */
+export const FeatureModal: React.FC<FeatureModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    currentFeature, 
+    onSuccess 
+}) => {
+    
+    // 1. ESTADO DO FORMULÁRIO
+    const isEditing = !!currentFeature;
+    const { createFeature, updateFeature, isLoading, error } = useFeatureMutation();
+    
+    const [formData, setFormData] = useState({
+        key: currentFeature?.key || '' as FeatureKey,
+        name: currentFeature?.name || '',
+        description: currentFeature?.description || '',
+        type: currentFeature?.type || FeatureType.BOOLEAN, // Default: Booleana
+    });
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
+    // Sincroniza o formulário ao trocar a feature de edição
+    useEffect(() => {
+        setFormData({
+            key: currentFeature?.key || '' as FeatureKey,
+            name: currentFeature?.name || '',
+            description: currentFeature?.description || '',
+            type: currentFeature?.type || FeatureType.BOOLEAN,
+        });
+        setSubmitError(null);
+    }, [currentFeature, isOpen]);
+
+    // Lida com a mudança nos campos do formulário
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    // 2. LÓGICA DE SUBMISSÃO
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmitError(null);
+
+        try {
+            if (isEditing && currentFeature) {
+                // Rota PATCH: Edição
+                await updateFeature(currentFeature.id, formData);
+                
+            } else {
+                // Rota POST: Criação
+                // Validação sênior: Garantir que 'key' não está vazia na criação
+                if (!formData.key) {
+                    setSubmitError('A chave da Feature é obrigatória para a criação.');
+                    return;
+                }
+                await createFeature(formData as any); // Usamos 'as any' para forçar o tipo, o Backend valida
+            }
+            
+            onSuccess(); // Chama a recarga da tabela
+            onClose();   // Fecha o modal
+            
+        } catch (err: any) {
+            // Usa o erro retornado pelo hook (que já mapeia o erro do Backend)
+            setSubmitError(error || err.response?.data?.message || 'Ocorreu um erro desconhecido.');
+        }
+    };
+    
+    if (!isOpen) return null;
+
+    // 3. RENDERIZAÇÃO
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div className="bg-base-metallic p-6 rounded-lg shadow-2xl w-full max-w-lg">
+                
+                {/* Cabeçalho do Modal */}
+                <div className="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
+                    <h2 className="text-xl font-bold text-white">
+                        {isEditing ? `Editar Feature: ${currentFeature?.name}` : 'Criar Nova Feature'}
+                    </h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white">
+                        <FaTimes className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Mensagens de Erro */}
+                {(submitError || error) && (
+                    <div className="p-3 mb-4 text-sm font-medium text-danger bg-red-900/50 rounded-md">
+                        {submitError || error}
+                    </div>
+                )}
+
+                {/* Formulário */}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    
+                    {/* Campo KEY (Somente leitura na Edição) */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300">
+                            Chave Única (Key)
+                        </label>
+                        <input
+                            type="text"
+                            name="key"
+                            value={formData.key}
+                            onChange={handleChange}
+                            readOnly={isEditing} 
+                            required
+                            className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-gray-700 text-white 
+                                ${isEditing ? 'cursor-not-allowed bg-gray-600' : ''}`}
+                            placeholder="EX: CLIENTE_ADD"
+                        />
+                    </div>
+
+                    {/* Campo Nome */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300">
+                            Nome Amigável
+                        </label>
+                        <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            required
+                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
+                            placeholder="Ex: Adicionar Novo Cliente"
+                        />
+                    </div>
+                    
+                    {/* Campo Tipo (Booleana/Quantitativa) */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300">
+                            Tipo de Controle
+                        </label>
+                        <select
+                            name="type"
+                            value={formData.type}
+                            onChange={handleChange}
+                            required
+                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
+                        >
+                            <option value={FeatureType.BOOLEAN}>Booleana (Sim/Não)</option>
+                            <option value={FeatureType.QUANTITY}>Quantitativa (Limite Numérico)</option>
+                        </select>
+                    </div>
+
+                    {/* Campo Descrição */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300">
+                            Descrição (Opcional)
+                        </label>
+                        <input
+                            type="text"
+                            name="description"
+                            value={formData.description}
+                            onChange={handleChange}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
+                            placeholder="Detalhe o uso da feature"
+                        />
+                    </div>
+                    
+                    {/* Botão de Ação */}
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-base-dark bg-accent-secondary hover:bg-violet-600 transition disabled:bg-gray-500"
+                    >
+                        {isLoading ? 'Salvando...' : (isEditing ? 'Salvar Alterações' : 'Criar Feature')}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+
 // ===== FILE: src/components/admin/FeatureTable.tsx =====
 
 // src/components/admin/FeatureTable.tsx
 
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react'; // Importar useState
 import { useFeatures } from '@/hooks/useFeatures';
 import { FaEdit, FaTrash, FaPlus, FaTag, FaCalculator } from 'react-icons/fa';
-import { Feature } from '@/types/user'; // Tipagem correta
-// import { UserRole } from '../../modules/user/entities/User'; // Futuro, se necessário
+import { Feature } from '@/types/acl'; // Tipagem correta (de acl)
+import { FeatureModal } from './FeatureModal'; // Importar o Modal
+import { useFeatureMutation } from '@/hooks/useFeatureMutation'; // Hook de C/U/D
+import { FeatureType } from '@/types/acl'; // Tipagem do Tipo (BOOLEAN/QUANTITY)
+
 
 /**
  * @component FeatureTable
@@ -7865,24 +8068,60 @@ import { Feature } from '@/types/user'; // Tipagem correta
  */
 export const FeatureTable: React.FC = () => {
     
-    const { features, isLoading, error } = useFeatures();
+    // Hooks de Dados e Mutação
+    const { features, isLoading, error } = useFeatures(); // FUTURO: Assumindo refreshData
+    // const { features, isLoading, error, refreshData } = useFeatures(); // FUTURO: Assumindo refreshData
+    const { deleteFeature, isLoading: isDeleting } = useFeatureMutation();
+
+    // --- ESTADO PARA MODAL ---
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [featureToEdit, setFeatureToEdit] = useState<Feature | undefined>(undefined);
+    // -------------------------
+
+    // --- Funções de Callback ---
+
+    // FUTURO: Se houvesse um método refreshData no useFeatures, ele seria invocado aqui.
+    // Simulação do sucesso para fechar o modal.
+    const handleSuccess = () => {
+        // [Implementação Futura: Recarregar dados após sucesso]
+        console.log("Feature alterada. Recarregando dados.");
+        // refreshData(); 
+        setIsModalOpen(false); 
+        setFeatureToEdit(undefined);
+    };
+
+    // --- Funções de Ação ---
     
-    // --- Funções de Ação Futuras ---
+    const handleNewFeature = () => {
+        setFeatureToEdit(undefined); // Criação de um novo
+        setIsModalOpen(true);
+    };
+
     const handleEdit = (feature: Feature) => {
-        console.log("Abrir modal de edição para a feature:", feature.name);
-        // FUTURO: Implementar modal de edição.
+        setFeatureToEdit(feature); // Define a feature a ser editada
+        setIsModalOpen(true);
     };
     
-    const handleDelete = (feature: Feature) => {
-        if (confirm(`Tem certeza que deseja deletar a Feature "${feature.name}"?`)) {
-            console.log("Deletar a Feature:", feature.name);
-            // FUTURO: Chamar o Service de Delete no Backend.
+    const handleDelete = async (feature: Feature) => {
+        // 1. Confirmação
+        if (confirm(`Tem certeza que deseja DELETAR a Feature "${feature.name}"? Isso pode quebrar Planos vinculados.`)) {
+            
+            try {
+                // 2. Chamada de Mutação DELETE
+                await deleteFeature(feature.id);
+                console.log(`Feature ${feature.name} deletada com sucesso.`);
+                // [Implementação Futura: Recarregar dados]
+                // refreshData();
+            } catch (error) {
+                // O erro já é tratado no useFeatureMutation, mas podemos logar.
+                console.error("Falha ao deletar:", error);
+            }
         }
     };
 
     // --- Helpers de Visualização ---
-    const renderTypeBadge = (type: 'boolean' | 'quantity') => {
-        const isQuantity = type === 'quantity';
+    const renderTypeBadge = (type: FeatureType) => {
+        const isQuantity = type === FeatureType.QUANTITY;
         const colorClass = isQuantity ? 'text-accent-secondary bg-violet-900/40' : 'text-success bg-green-900/40';
         const icon = isQuantity ? <FaCalculator className="w-3 h-3" /> : <FaTag className="w-3 h-3" />;
 
@@ -7894,12 +8133,12 @@ export const FeatureTable: React.FC = () => {
         );
     };
 
-    // --- Tratamento de Estado (Igual ao PlanTable) ---
+    // --- Tratamento de Estado (Loading / Error) ---
 
-    if (isLoading) {
+    if (isLoading || isDeleting) {
         return (
             <div className="text-center py-12 text-accent-secondary">
-                <span className="animate-spin text-xl">⏳</span> Carregando Catálogo de Features...
+                <span className="animate-spin text-xl">⏳</span> {isDeleting ? 'Deletando Feature...' : 'Carregando Catálogo de Features...'}
             </div>
         );
     }
@@ -7918,6 +8157,7 @@ export const FeatureTable: React.FC = () => {
             {/* Botão de Criação */}
             <div className="flex justify-end">
                 <button 
+                    onClick={handleNewFeature} 
                     className="flex items-center space-x-2 px-4 py-2 bg-accent-primary text-base-dark font-bold rounded-lg hover:bg-orange-500 transition duration-150 shadow-lg"
                 >
                     <FaPlus />
@@ -7991,6 +8231,495 @@ export const FeatureTable: React.FC = () => {
                     Nenhuma Feature cadastrada. Você deve inserir as Features essenciais via Migration.
                 </div>
             )}
+
+            {/* --- MODAL DE CRIAÇÃO/EDIÇÃO --- */}
+            <FeatureModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                currentFeature={featureToEdit}
+                onSuccess={handleSuccess}
+            />
+            {/* ------------------------------- */}
+        </div>
+    );
+};
+
+
+// ===== FILE: src/components/admin/PlanModal.tsx =====
+
+// src/components/admin/PlanModal.tsx
+
+import React, { useState, useEffect } from 'react';
+import { FaTimes, FaDollarSign, FaListUl } from 'react-icons/fa'; // Adicionamos FaListUl
+import { usePlanMutation } from '@/hooks/usePlanMutation';
+import { Plan } from '@/types/acl'; 
+// --- NOVA IMPORTAÇÃO ---
+import { PlanRuleManager } from './PlanRuleManager'; // Importamos o Gerenciador de Regras
+// ------------------------
+
+// Propriedades do Modal (inalterado)
+interface PlanModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    currentPlan?: Plan; 
+    onSuccess: () => void;
+}
+
+// Tipos de Aba
+type PlanModalTab = 'DETAILS' | 'RULES';
+
+/**
+ * @component PlanModal
+ * @description Modal de Criação e Edição de Planos para o Admin Global.
+ */
+export const PlanModal: React.FC<PlanModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    currentPlan, 
+    onSuccess 
+}) => {
+    
+    // 1. ESTADO DO FORMULÁRIO E HOOKS
+    const isEditing = !!currentPlan;
+    const { createPlan, updatePlan, isLoading, error } = usePlanMutation();
+    
+    // --- ESTADO DE ABAS E FORM ---
+    const [currentTab, setCurrentTab] = useState<PlanModalTab>('DETAILS');
+    const [formData, setFormData] = useState({
+        name: currentPlan?.name || '',
+        description: currentPlan?.description || '',
+        price: currentPlan?.price || 0.00,
+        isActive: currentPlan?.isActive ?? true,
+    });
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
+    // Sincroniza o formulário ao trocar o plano de edição
+    useEffect(() => {
+        setFormData({
+            name: currentPlan?.name || '',
+            description: currentPlan?.description || '',
+            price: currentPlan?.price || 0.00,
+            isActive: currentPlan?.isActive ?? true,
+        });
+        setSubmitError(null);
+        // Ao abrir o modal (ou mudar o plano), volta para a aba Detalhes
+        setCurrentTab('DETAILS'); 
+    }, [currentPlan, isOpen]);
+
+    // Lida com a mudança nos campos do formulário (inalterado)
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value, type } = e.target;
+        
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'number' 
+                      ? parseFloat(value) || 0 
+                      : type === 'checkbox' 
+                        ? (e.target as HTMLInputElement).checked 
+                        : value,
+        }));
+    };
+
+    // 2. LÓGICA DE SUBMISSÃO (Apenas Detalhes)
+    const handleSubmitDetails = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmitError(null);
+
+        try {
+            if (isEditing && currentPlan) {
+                await updatePlan(currentPlan.id, formData);
+            } else {
+                // A criação de um plano deve ser simples, sem regras ainda.
+                await createPlan(formData as any); 
+            }
+            
+            // Se estiver editando, apenas salva os detalhes e permanece no modal,
+            // permitindo que o Admin clique na aba RULES para configurar.
+            if(isEditing) {
+                 alert("Detalhes do Plano salvos. Configure as Regras de Feature.");
+                 // Move para a aba de regras após salvar os detalhes
+                 setCurrentTab('RULES'); 
+            } else {
+                 // Após criar, fecha o modal e recarrega
+                 onSuccess();   
+                 onClose();
+            }
+            
+        } catch (err: any) {
+            setSubmitError(error || err.response?.data?.message || 'Ocorreu um erro desconhecido.');
+        }
+    };
+    
+    // Helper para Abas
+    const getTabClass = (tab: PlanModalTab) => {
+        return `px-4 py-2 text-sm font-medium rounded-t-lg transition duration-150 
+            ${currentTab === tab 
+                ? 'bg-gray-800 text-accent-primary border-b-2 border-accent-primary' 
+                : 'text-gray-400 hover:bg-gray-700'
+            }`;
+    };
+
+    if (!isOpen) return null;
+
+    // 3. RENDERIZAÇÃO
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div className="bg-base-metallic p-6 rounded-lg shadow-2xl w-full max-w-lg">
+                
+                {/* Cabeçalho do Modal */}
+                <div className="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
+                    <h2 className="text-xl font-bold text-white">
+                        {isEditing ? `Gerenciar Plano: ${currentPlan?.name}` : 'Criar Novo Plano'}
+                    </h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white">
+                        <FaTimes className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* --- Navegação por Abas (Apenas na Edição) --- */}
+                {isEditing && (
+                    <div className="flex mb-4 border-b border-gray-700 -mx-6 px-6">
+                        <button 
+                            onClick={() => setCurrentTab('DETAILS')}
+                            className={getTabClass('DETAILS')}
+                        >
+                             <FaDollarSign className="inline w-3 h-3 mr-1" /> Detalhes Básicos
+                        </button>
+                        <button 
+                            onClick={() => setCurrentTab('RULES')}
+                            className={getTabClass('RULES')}
+                        >
+                            <FaListUl className="inline w-3 h-3 mr-1" /> Regras de Feature
+                        </button>
+                    </div>
+                )}
+
+
+                {/* Mensagens de Erro */}
+                {(submitError || error) && (
+                    <div className="p-3 mb-4 text-sm font-medium text-danger bg-red-900/50 rounded-md">
+                        {submitError || error}
+                    </div>
+                )}
+                
+                {/* --- CONTEÚDO PRINCIPAL (BASEADO NA ABA) --- */}
+                
+                {/* ABA 1: DETALHES DO PLANO */}
+                {currentTab === 'DETAILS' && (
+                    <form onSubmit={handleSubmitDetails} className="space-y-4">
+                        
+                        {/* Campos de Nome, Preço, Descrição, Ativo */}
+                        {/* ... (CÓDIGO DOS CAMPOS INALTERADO) */}
+                        
+                        {/* Campo Nome */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300">
+                                Nome do Plano
+                            </label>
+                            <input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                required
+                                className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
+                                placeholder="Ex: Plano Profissional"
+                            />
+                        </div>
+                        
+                        {/* Campo Preço */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300">
+                                Preço (R$)
+                            </label>
+                            <input
+                                type="number"
+                                name="price"
+                                value={formData.price.toFixed(2)} 
+                                onChange={handleChange}
+                                required
+                                min="0.00"
+                                step="0.01"
+                                className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
+                                placeholder="Ex: 99.90"
+                            />
+                        </div>
+
+                        {/* Campo Descrição */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300">
+                                Descrição (Opcional)
+                            </label>
+                            <textarea
+                                name="description"
+                                value={formData.description || ''}
+                                onChange={handleChange}
+                                rows={3}
+                                className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
+                                placeholder="Recursos incluídos no plano..."
+                            />
+                        </div>
+                        
+                        {/* Campo Status (Apenas Edição) */}
+                        {isEditing && (
+                            <div className="flex items-center space-x-3 pt-2">
+                                <input
+                                    id="isActive"
+                                    type="checkbox"
+                                    name="isActive"
+                                    checked={formData.isActive}
+                                    onChange={handleChange}
+                                    className="h-4 w-4 text-accent-secondary border-gray-600 rounded"
+                                />
+                                <label htmlFor="isActive" className="text-sm font-medium text-gray-300">
+                                    Plano Ativo (Permitir novos Tenants)
+                                </label>
+                            </div>
+                        )}
+                        
+                        {/* Botão de Ação */}
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-base-dark bg-accent-secondary hover:bg-violet-600 transition disabled:bg-gray-500"
+                        >
+                            {isLoading ? 'Salvando Detalhes...' : (isEditing ? 'Salvar Detalhes' : 'Criar Plano')}
+                        </button>
+                    </form>
+                )}
+
+                {/* ABA 2: GERENCIAMENTO DE REGRAS */}
+                {currentTab === 'RULES' && isEditing && currentPlan && (
+                    <PlanRuleManager 
+                        planoId={currentPlan.id} 
+                        onSyncSuccess={onSuccess} // Usa o callback principal do modal
+                    />
+                )}
+                {/* --------------------------------------------- */}
+            </div>
+        </div>
+    );
+};
+
+
+// ===== FILE: src/components/admin/PlanRuleManager.tsx =====
+
+// src/components/admin/PlanRuleManager.tsx
+
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { FaSave, FaTag, FaCalculator } from 'react-icons/fa';
+import { useFeatures } from '@/hooks/useFeatures'; // Traz a lista de todas as Features
+import { usePlanRules } from '@/hooks/usePlanRules'; // Traz as regras atuais do Plano
+import { usePlanMutation } from '@/hooks/usePlanMutation'; // Hook para syncPlanRules
+import { Feature, FeatureType, PlanFeatureRule } from '@/types/acl';
+
+// Propriedades do Manager
+interface PlanRuleManagerProps {
+    planoId: string;
+    onSyncSuccess: () => void; // Callback para o Modal
+}
+
+// Tipo de Estado da Regra (Combina Feature + Valor Atual)
+interface RuleState {
+    feature: Feature;
+    limitValue: number;
+    // O valor -1 será usado para representar o status "Ativo/Ilimitado" para booleanas ou quantity.
+}
+
+/**
+ * @component PlanRuleManager
+ * @description Interface para gerenciar as regras (PlanFeature) de um Plano específico.
+ * Porquê: Centraliza a lógica de mapeamento, edição de limites e chamada transacional de sincronização.
+ */
+export const PlanRuleManager: React.FC<PlanRuleManagerProps> = ({ planoId, onSyncSuccess }) => {
+    
+    // Hooks de Leitura
+    const { features, isLoading: loadingFeatures, error: featuresError } = useFeatures();
+    const { rules, isLoading: loadingRules, error: rulesError, fetchRules } = usePlanRules(planoId);
+    
+    // Hooks de Mutação
+    const { syncPlanRules, isLoading: isSyncing, error: syncError } = usePlanMutation();
+
+    // Estado principal que armazena a lista de regras para edição
+    const [ruleState, setRuleState] = useState<RuleState[]>([]);
+    
+    // --- LÓGICA DE MAPEAR REGRAS ---
+    
+    useEffect(() => {
+        if (!loadingFeatures && features.length > 0) {
+            // Mapeia todas as Features disponíveis (features)
+            const initialRules: RuleState[] = features.map(feature => {
+                // Encontra a regra atual (rules) para esta feature
+                const currentRule = rules.find(r => r.featureId === feature.id);
+                
+                // Define o valor limite inicial:
+                let initialLimit = 0; // Default: Inativo/Não permitido
+                
+                if (currentRule) {
+                    initialLimit = currentRule.limitValue;
+                } else if (feature.type === FeatureType.BOOLEAN) {
+                    // Se a feature for booleana e não tem regra, setamos 0 (Inativo)
+                    initialLimit = 0;
+                }
+                
+                return {
+                    feature,
+                    limitValue: initialLimit,
+                };
+            });
+
+            setRuleState(initialRules);
+        }
+    }, [features, rules, loadingFeatures, loadingRules]); // Dependências de recarregamento
+    
+    // --- FUNÇÕES DE AÇÃO E EDIÇÃO ---
+
+    const handleLimitChange = (featureId: string, value: string) => {
+        // Converte a entrada de texto (quantity) para número
+        const numericValue = parseInt(value, 10);
+        
+        setRuleState(prev => prev.map(item => {
+            if (item.feature.id === featureId) {
+                return {
+                    ...item,
+                    // Garante que o valor seja um número válido ou -1 (Ilimitado)
+                    limitValue: isNaN(numericValue) ? 0 : numericValue, 
+                };
+            }
+            return item;
+        }));
+    };
+
+    const handleBooleanToggle = (featureId: string, isActive: boolean) => {
+        // Para booleanas, 1 é Ativo, 0 é Inativo
+        const value = isActive ? 1 : 0;
+        
+        setRuleState(prev => prev.map(item => {
+            if (item.feature.id === featureId) {
+                return {
+                    ...item,
+                    limitValue: value,
+                };
+            }
+            return item;
+        }));
+    };
+
+    const handleSyncRules = async () => {
+        // 1. Filtrar apenas as regras ATIVAS ou com LIMITES definidos (> 0 ou != 0)
+        // Porquê: Não queremos enviar regras com limitValue = 0 ou null, 
+        // a menos que seja uma booleana explícita.
+        const rulesToSend: PlanFeatureRule[] = ruleState
+            .filter(item => item.limitValue !== 0)
+            .map(item => ({
+                featureId: item.feature.id,
+                limitValue: item.limitValue,
+            }));
+
+        try {
+            // 2. Chamada de Sincronização Transacional
+            await syncPlanRules(planoId, rulesToSend);
+            alert("Regras do Plano salvas com sucesso!");
+            
+            // 3. Callback de sucesso e recarregamento da tela.
+            await fetchRules(); // Revalida os dados da tabela de regras
+            onSyncSuccess(); // Callback para o modal principal
+            
+        } catch (error) {
+            console.error("Falha na sincronização:", error);
+        }
+    };
+    
+    // --- RENDERIZAÇÃO DE ESTADO ---
+    if (loadingFeatures || loadingRules) {
+        return <div className="text-center text-gray-400 py-4">Carregando Features e Regras...</div>;
+    }
+    
+    if (featuresError || rulesError || syncError) {
+        return <div className="p-3 bg-danger/20 text-danger rounded-lg">Erro: {featuresError || rulesError || syncError}</div>;
+    }
+
+    // --- RENDERIZAÇÃO DA TABELA DE REGRAS ---
+
+    return (
+        <div className="space-y-4">
+            <h3 className="text-lg font-bold text-base-text border-b border-gray-700 pb-2">
+                Configuração de Limites por Feature
+            </h3>
+            
+            <div className="overflow-x-auto bg-gray-800 rounded-lg">
+                <table className="min-w-full divide-y divide-gray-700">
+                    <thead className="bg-gray-700">
+                        <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-300">Feature</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-300">Tipo de Controle</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 w-1/4">Valor / Acesso</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-700">
+                        {ruleState.map(item => (
+                            <tr key={item.feature.id}>
+                                {/* Nome da Feature */}
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                    <div className="text-sm text-white">{item.feature.name}</div>
+                                    <div className="text-xs text-gray-400 font-mono">{item.feature.key}</div>
+                                </td>
+                                
+                                {/* Tipo de Controle (Badge) */}
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                    <span 
+                                        className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ${item.feature.type === FeatureType.QUANTITY ? 'bg-violet-900/40 text-accent-secondary' : 'bg-green-900/40 text-success'}`}
+                                    >
+                                        {item.feature.type === FeatureType.QUANTITY ? <FaCalculator className="w-3 h-3 mr-1" /> : <FaTag className="w-3 h-3 mr-1" />}
+                                        {item.feature.type === FeatureType.QUANTITY ? 'Quantitativo' : 'Booleano'}
+                                    </span>
+                                </td>
+                                
+                                {/* Campo de Edição (Valor / Acesso) */}
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                    {item.feature.type === FeatureType.BOOLEAN ? (
+                                        // Toggle para Booleano
+                                        <div className="flex items-center">
+                                            <input
+                                                id={`bool-${item.feature.id}`}
+                                                type="checkbox"
+                                                checked={item.limitValue === 1}
+                                                onChange={(e) => handleBooleanToggle(item.feature.id, e.target.checked)}
+                                                className="h-4 w-4 text-accent-secondary border-gray-600 rounded"
+                                            />
+                                            <label htmlFor={`bool-${item.feature.id}`} className="ml-2 text-sm text-gray-300">
+                                                Permitir Acesso
+                                            </label>
+                                        </div>
+                                    ) : (
+                                        // Campo de Entrada para Quantidade
+                                        <input
+                                            type="number"
+                                            value={item.limitValue}
+                                            onChange={(e) => handleLimitChange(item.feature.id, e.target.value)}
+                                            min="-1"
+                                            className="block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
+                                            placeholder="-1 (Ilimitado) ou Limite"
+                                        />
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Botão de Sincronização */}
+            <button
+                onClick={handleSyncRules}
+                disabled={isSyncing}
+                className="w-full flex items-center justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-base-dark bg-accent-primary hover:bg-orange-500 transition disabled:bg-gray-500"
+            >
+                <FaSave className="w-4 h-4 mr-2" />
+                {isSyncing ? 'Sincronizando Regras...' : 'Salvar Regras do Plano'}
+            </button>
         </div>
     );
 };
@@ -8002,19 +8731,14 @@ export const FeatureTable: React.FC = () => {
 
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react'; // <--- CORREÇÃO 1: Importar useState
 import { usePlans } from '@/hooks/usePlans';
 import { FaEdit, FaTrash, FaCheckCircle, FaTimesCircle, FaDollarSign, FaPlus } from 'react-icons/fa';
-
-// Usamos o tipo do hook
-interface Plan {
-    id: string;
-    name: string;
-    description: string | null;
-    price: number;
-    isActive: boolean;
-    createdAt: string;
-}
+// --- CORREÇÃO 2: Remover a interface Plan local e usar a importada ---
+import { Plan } from '@/types/acl'; 
+import { PlanModal } from './PlanModal'; // Assumindo que o PlanModal foi importado
+import { usePlanMutation } from '@/hooks/usePlanMutation'; // Assumindo que o usePlanMutation foi importado
+// ----------------------------------------------------------------------
 
 /**
  * @component PlanTable
@@ -8023,12 +8747,34 @@ interface Plan {
  */
 export const PlanTable: React.FC = () => {
     
+    // --- CORREÇÃO 1: Definição do Estado do Modal ---
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [planToEdit, setPlanToEdit] = useState<Plan | undefined>(undefined);
+    // -------------------------------------------------
+
     const { plans, isLoading, error } = usePlans();
+    // FUTURO: Integração do hook de mutação
+    // const { deletePlan, isLoading: isDeleting } = usePlanMutation();
+    const isDeleting = false; // Placeholder
     
+    // Recarrega os dados após sucesso na mutação (FUTURO: Deve chamar refreshData do usePlans)
+    const handleSuccess = () => {
+        console.log("Plano alterado. Recarregando dados.");
+        // FUTURO: Chamar refreshData() do usePlans
+        setIsModalOpen(false);
+        setPlanToEdit(undefined);
+    };
+
     // --- Funções de Ação Futuras ---
-    const handleEdit = (plan: Plan) => {
-        console.log("Abrir modal de edição para o plano:", plan.name);
-        // FUTURO: Implementar modal de edição.
+    
+    const handleNewPlan = () => {
+        setPlanToEdit(undefined); // Criação de um novo plano (passa undefined)
+        setIsModalOpen(true);
+    };
+
+    const handleEdit = (plan: Plan) => { // O tipo Plan é o importado de @/types/acl
+        setPlanToEdit(plan);
+        setIsModalOpen(true);
     };
     
     const handleDelete = (plan: Plan) => {
@@ -8040,21 +8786,14 @@ export const PlanTable: React.FC = () => {
 
     // --- Tratamento de Estado ---
 
-    if (isLoading) {
+    if (isLoading || isDeleting) {
         return (
             <div className="text-center py-12 text-accent-secondary">
                 <span className="animate-spin text-xl">⏳</span> Carregando Planos...
             </div>
         );
     }
-
-    if (error) {
-        return (
-            <div className="p-4 bg-danger/20 border border-danger rounded-lg text-danger">
-                {error}
-            </div>
-        );
-    }
+// ... (O restante da lógica de erro e renderização é mantido)
     
     return (
         <div className="space-y-4">
@@ -8062,6 +8801,7 @@ export const PlanTable: React.FC = () => {
             {/* Botão de Criação */}
             <div className="flex justify-end">
                 <button 
+                    onClick={handleNewPlan}
                     className="flex items-center space-x-2 px-4 py-2 bg-accent-primary text-base-dark font-bold rounded-lg hover:bg-orange-500 transition duration-150 shadow-lg"
                 >
                     <FaPlus />
@@ -8148,6 +8888,229 @@ export const PlanTable: React.FC = () => {
                     Nenhum plano cadastrado. Comece criando o seu primeiro plano!
                 </div>
             )}
+            
+            {/* --- MODAL DE CRIAÇÃO/EDIÇÃO (FUTURO) --- */}
+            {/* O Modal precisa ser renderizado aqui para o estado funcionar */}
+            {/* Exemplo de integração (assumindo que PlanModal foi importado e props definidos): */}
+            {/*
+            <PlanModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                currentPlan={planToEdit}
+                onSuccess={handleSuccess}
+            />
+            */}
+        </div>
+    );
+};
+
+
+// ===== FILE: src/components/admin/TenantModal.tsx =====
+
+// src/components/admin/TenantModal.tsx
+
+import React, { useState, useEffect } from 'react';
+import { FaTimes, FaLink } from 'react-icons/fa';
+import { Tenant, TenantModalProps, UpdateTenantAdminDto } from '@/types/tenant'; // Assumindo Tenant e UpdateTenantAdminDto estão aqui
+import { Plan } from '@/types/acl'; // Lista de Planos para o select
+import { useTenantAdminMutation } from '@/hooks/useTenantAdminMutation';
+import { usePlans } from '@/hooks/usePlans'; // Para popular o SELECT de Planos
+
+
+
+// --- NOVO: Função de Auxílio para Renderizar as Opções de Plano ---
+const renderPlanOptions = (plans: Plan[]) => {
+    return plans.map((plan: Plan) => (
+        <option 
+            key={plan.id} 
+            value={plan.id} 
+            // Regra: Não permitir selecionar Planos inativos
+            disabled={!plan.isActive}
+        >
+            {plan.name} {plan.isActive ? '' : '(Inativo)'}
+        </option>
+    ));
+};
+
+/**
+ * @component TenantModal
+ * @description Modal de Edição/Soft Delete de Tenants, usado pelo GLOBAL_ADMIN.
+ */
+export const TenantModal: React.FC<TenantModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    currentTenant, 
+    onSuccess 
+}) => {
+    
+    // 1. HOOKS DE DADOS E MUTATION
+    const { updateTenant, toggleActiveStatus, isLoading: isMutating, error: mutationError } = useTenantAdminMutation();
+    const { plans, isLoading: loadingPlans, error: plansError } = usePlans();
+    
+    // 2. ESTADO DO FORMULÁRIO
+    const [formData, setFormData] = useState<UpdateTenantAdminDto>({
+        razaoSocial: currentTenant.razaoSocial,
+        nomeFantasia: currentTenant.nomeFantasia || '',
+        planoId: currentTenant.planoId,
+        isActive: currentTenant.isActive,
+    });
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
+    // Sincroniza o formulário ao abrir ou se o Tenant mudar
+    useEffect(() => {
+        setFormData({
+            razaoSocial: currentTenant.razaoSocial,
+            nomeFantasia: currentTenant.nomeFantasia || '',
+            planoId: currentTenant.planoId,
+            isActive: currentTenant.isActive,
+        });
+        setSubmitError(null);
+    }, [currentTenant, isOpen]);
+
+    // Lida com a mudança nos campos
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value, type } = e.target;
+        
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' 
+                      ? (e.target as HTMLInputElement).checked 
+                      : value,
+        }));
+    };
+    
+    // 3. LÓGICA DE SUBMISSÃO (Edição)
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmitError(null);
+
+        try {
+            // Apenas envia campos que foram modificados no formulário
+            const changes: UpdateTenantAdminDto = {};
+            if (formData.razaoSocial !== currentTenant.razaoSocial) changes.razaoSocial = formData.razaoSocial;
+            if (formData.nomeFantasia !== currentTenant.nomeFantasia) changes.nomeFantasia = formData.nomeFantasia;
+            if (formData.planoId !== currentTenant.planoId) changes.planoId = formData.planoId;
+            // isActive é tratado pelo toggleStatus
+
+            if (Object.keys(changes).length > 0) {
+                 await updateTenant(currentTenant.id, changes);
+            }
+            
+            onSuccess(); // Chama a recarga da tabela
+            onClose();   // Fecha o modal
+            
+        } catch (err: any) {
+            setSubmitError(mutationError || err.response?.data?.message || 'Falha ao salvar edições.');
+        }
+    };
+    
+    // 4. LÓGICA DE SOFT DELETE/ATIVE
+    const handleToggleStatus = async () => {
+        try {
+            await toggleActiveStatus(currentTenant.id, currentTenant.isActive);
+            onSuccess();
+        } catch (err) {
+             setSubmitError(mutationError || 'Falha ao alterar o status do Tenant.');
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div className="bg-base-metallic p-6 rounded-lg shadow-2xl w-full max-w-lg">
+                
+                {/* Cabeçalho do Modal */}
+                <div className="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
+                    <h2 className="text-xl font-bold text-white">
+                        Gerenciar Tenant: {currentTenant.razaoSocial}
+                    </h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white">
+                        <FaTimes className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Mensagens de Erro e Loading */}
+                {(submitError || mutationError || plansError) && (
+                    <div className="p-3 mb-4 text-sm font-medium text-danger bg-red-900/50 rounded-md">
+                        {submitError || mutationError || plansError}
+                    </div>
+                )}
+
+                {/* Status Atual e Ação Soft Delete */}
+                <div className={`p-3 mb-4 rounded-lg flex justify-between items-center ${currentTenant.isActive ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+                    <span className="font-semibold">
+                        Status Atual: {currentTenant.isActive ? 'ATIVO' : 'INATIVO'}
+                    </span>
+                    <button 
+                        onClick={handleToggleStatus}
+                        disabled={isMutating || loadingPlans}
+                        className="flex items-center space-x-2 px-3 py-1 text-sm font-medium rounded-lg border border-current hover:opacity-80 transition"
+                    >
+                        <FaLink className="w-4 h-4" />
+                        <span>{currentTenant.isActive ? 'Desativar Conta' : 'Reativar Conta'}</span>
+                    </button>
+                </div>
+
+
+                {/* Formulário de Edição */}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    
+                    {/* Razão Social */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300">Razão Social</label>
+                        <input
+                            type="text"
+                            name="razaoSocial"
+                            value={formData.razaoSocial}
+                            onChange={handleChange}
+                            required
+                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
+                        />
+                    </div>
+                    
+                    {/* Nome Fantasia */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300">Nome Fantasia</label>
+                        <input
+                            type="text"
+                            name="nomeFantasia"
+                            value={formData.nomeFantasia || ''}
+                            onChange={handleChange}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
+                        />
+                    </div>
+                    
+                    {/* Seleção de Plano */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300">Alterar Plano de Assinatura</label>
+                        <select
+                            name="planoId"
+                            value={formData.planoId}
+                            onChange={handleChange}
+                            disabled={loadingPlans || isMutating}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white disabled:bg-gray-600"
+                        >
+                            {loadingPlans ? (
+                                <option>Carregando Planos...</option>
+                            ) : (
+                                // --- CORREÇÃO: Chamada à função auxiliar ---
+                                renderPlanOptions(plans) 
+                                // ------------------------------------------
+                            )}
+                        </select>
+                    </div>
+
+                    {/* Botão de Ação */}
+                    <button
+                        type="submit"
+                        disabled={isMutating || loadingPlans}
+                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-base-dark bg-accent-secondary hover:bg-violet-600 transition disabled:bg-gray-500"
+                    >
+                        {isMutating ? 'Salvando...' : 'Salvar Detalhes do Tenant'}
+                    </button>
+                </form>
+            </div>
         </div>
     );
 };
@@ -8159,23 +9122,16 @@ export const PlanTable: React.FC = () => {
 
 "use client";
 
-import React from 'react';
-import { FaEdit, FaCheckCircle, FaTimesCircle, FaLink, FaBuilding, FaUserTie } from 'react-icons/fa';
-import { useTenants } from '@/hooks/useTenants'; // Hook de dados
-import { UserRole } from '@/modules/user/entities/User'; // Tipagem da Role
+import React, { useState } from 'react'; 
+import { FaEdit, FaCheckCircle, FaTimesCircle, FaLink, FaBuilding, FaUserTie, FaPlus } from 'react-icons/fa';
+import { useTenants } from '@/hooks/useTenants'; 
+import { UserRole } from '@/types/user'; 
+import { Tenant, TenantWithPlan } from '@/types/tenant'; // Importar o tipo Tenant
+// --- NOVAS IMPORTAÇÕES ---
+import { TenantModal } from './TenantModal'; // Importar o Modal de Edição
+import { useTenantAdminMutation } from '@/hooks/useTenantAdminMutation'; // Hook para Soft Delete/Edição
+// -------------------------
 
-// Tipagem local para o componente (espelha TenantWithPlan do hook)
-interface Tenant {
-    id: string;
-    cnpjCpf: string;
-    razaoSocial: string;
-    emailContato: string;
-    isActive: boolean;
-    plan: {
-        id: string;
-        name: string;
-    };
-}
 
 /**
  * @component TenantTable
@@ -8184,26 +9140,44 @@ interface Tenant {
  */
 export const TenantTable: React.FC = () => {
     
-    // 1. CONSUMO DO HOOK
-    const { tenants, isLoading, error } = useTenants();
+    // 1. ESTADO PARA MODAL E DADOS DE EDIÇÃO
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [tenantToEdit, setTenantToEdit] = useState<TenantWithPlan | undefined>(undefined);
 
-    // --- Funções de Ação Futuras ---
-    const handleEdit = (tenant: Tenant) => {
-        console.log("Abrir modal de edição/atualização de Plano para o Tenant:", tenant.razaoSocial);
-        // FUTURO: Implementar modal de edição (incluindo alteração de plano e status).
+    // Hooks de Dados e Mutação
+    const { tenants, isLoading: loadingTenants, error, refreshData } = useTenants(); // Assumindo refreshData para recarregar
+    const { toggleActiveStatus, isLoading: isToggling } = useTenantAdminMutation();
+
+    // Recarrega os dados após sucesso na mutação
+    const handleSuccess = () => {
+        console.log("Tenant alterado. Recarregando dados.");
+        // FUTURO: Chamar refreshData()
+        setIsModalOpen(false);
+        setTenantToEdit(undefined);
     };
 
-    const handleSoftDelete = (tenant: Tenant) => {
+    // --- Funções de Ação ---
+    
+    const handleEdit = (tenant: TenantWithPlan) => {
+        setTenantToEdit(tenant); // Define o tenant a ser editado
+        setIsModalOpen(true);
+    };
+
+    const handleSoftDelete = async (tenant: TenantWithPlan) => {
         const action = tenant.isActive ? 'desativar' : 'ativar';
         if (confirm(`Tem certeza que deseja ${action} o Tenant "${tenant.razaoSocial}"?`)) {
-            console.log(`${action.toUpperCase()} o Tenant:`, tenant.id);
-            // FUTURO: Chamar o Service de PATCH para mudar isActive.
+            try {
+                // Chamada de Mutação Soft Delete
+                await toggleActiveStatus(tenant.id, tenant.isActive);
+                console.log(`Tenant ${tenant.razaoSocial} ${action} com sucesso.`);
+                // FUTURO: Chamar refreshData()
+            } catch (error) {
+                console.error(`Falha ao ${action} o Tenant:`, error);
+            }
         }
     };
 
     // --- Helpers de Visualização ---
-
-    // Renderiza a tag de status (Ativo/Inativo)
     const renderStatusBadge = (isActive: boolean) => {
         const colorClass = isActive ? 'text-success bg-green-900/40' : 'text-danger bg-red-900/40';
         const icon = isActive ? <FaCheckCircle className="w-3 h-3" /> : <FaTimesCircle className="w-3 h-3" />;
@@ -8216,8 +9190,8 @@ export const TenantTable: React.FC = () => {
         );
     };
 
-    // Renderiza a tag de Role (para Tenants, é sempre TENANT_ADMIN, mas o componente é genérico)
-    const renderRoleBadge = (role: UserRole) => {
+    // A Role Badge não é usada para Tenants, mas o helper é mantido.
+    const renderRoleBadge = (role: typeof UserRole[keyof typeof UserRole]) => {
         const colorClass = role === UserRole.GLOBAL_ADMIN ? 'text-accent-secondary bg-violet-900/40' : 'text-accent-primary bg-orange-900/40';
         const icon = role === UserRole.GLOBAL_ADMIN ? <FaUserTie className="w-3 h-3" /> : <FaBuilding className="w-3 h-3" />;
 
@@ -8229,12 +9203,12 @@ export const TenantTable: React.FC = () => {
         );
     };
 
-    // --- Tratamento de Estado (Loading / Error) ---
+    // --- Tratamento de Estado ---
 
-    if (isLoading) {
+    if (loadingTenants || isToggling) {
         return (
             <div className="text-center py-12 text-accent-secondary">
-                <span className="animate-spin text-xl">⏳</span> Carregando Lista de Tenants...
+                <span className="animate-spin text-xl">⏳</span> {isToggling ? 'Alterando Status...' : 'Carregando Lista de Tenants...'}
             </div>
         );
     }
@@ -8250,6 +9224,18 @@ export const TenantTable: React.FC = () => {
     return (
         <div className="space-y-4">
             
+            {/* Botão de Criação (Placeholder - Criação de Tenant é pelo /register) */}
+            <div className="flex justify-end">
+                <button 
+                    // NOTE: A criação de tenant é via /register. Mantemos o placeholder inativo.
+                    onClick={() => console.log('Acesso à criação de Tenant é via /register')} 
+                    className="flex items-center space-x-2 px-4 py-2 bg-gray-500 text-base-dark font-bold rounded-lg opacity-50 cursor-not-allowed"
+                >
+                    <FaPlus />
+                    <span>Novo Tenant</span>
+                </button>
+            </div>
+
             {/* Tabela Responsiva */}
             <div className="overflow-x-auto bg-base-metallic rounded-lg shadow-xl">
                 <table className="min-w-full divide-y divide-gray-700">
@@ -8275,7 +9261,7 @@ export const TenantTable: React.FC = () => {
                     <tbody className="divide-y divide-gray-700">
                         {tenants.map((tenant) => (
                             <tr key={tenant.id} className="hover:bg-gray-700 transition duration-100">
-                                {/* Razão Social / Documento */}
+                                {/* Nome / Documento */}
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm font-medium text-white">{tenant.razaoSocial}</div>
                                     <div className="text-xs text-gray-400 font-mono">CNPJ/CPF: {tenant.cnpjCpf}</div>
@@ -8307,6 +9293,7 @@ export const TenantTable: React.FC = () => {
                                     </button>
                                     <button 
                                         onClick={() => handleSoftDelete(tenant)}
+                                        disabled={isToggling}
                                         className={tenant.isActive ? 'text-danger hover:text-red-600' : 'text-success hover:text-green-500'}
                                         title={tenant.isActive ? 'Desativar Tenant' : 'Ativar Tenant'}
                                     >
@@ -8319,11 +9306,22 @@ export const TenantTable: React.FC = () => {
                 </table>
             </div>
             
-            {tenants.length === 0 && !isLoading && !error && (
+            {tenants.length === 0 && !loadingTenants && !error && (
                 <div className="text-center py-8 text-gray-500">
                     Nenhum Tenant cadastrado além do ambiente de teste.
                 </div>
             )}
+
+            {/* --- MODAL DE CRIAÇÃO/EDIÇÃO --- */}
+            {isModalOpen && tenantToEdit && (
+                <TenantModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    currentTenant={tenantToEdit}
+                    onSuccess={handleSuccess}
+                />
+            )}
+            {/* ------------------------------- */}
         </div>
     );
 };
@@ -8613,13 +9611,94 @@ export const forceGlobalLogout = () => {
 };
 
 
+// ===== FILE: src/hooks/useFeatureMutation.ts =====
+
+// src/hooks/useFeatureMutation.ts
+
+import { useState } from 'react';
+import { api } from '@/utils/api';
+import { CreateFeatureDto, Feature, UpdateFeatureDto } from '@/types/acl'; // Entidade Feature (usada no PATCH)
+
+/**
+ * @function useFeatureMutation
+ * @description Hook de mutação para gerenciar as operações de escrita (C/U/D) sobre Features.
+ * Porquê: Centraliza o tratamento de loading, erros de API e lógica de envio.
+ */
+export function useFeatureMutation() {
+    
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // --- MÉTODOS DE MUTATION ---
+
+    /**
+     * @method createFeature
+     * @description Envia uma requisição POST para criar uma nova Feature.
+     */
+    const createFeature = async (data: CreateFeatureDto): Promise<Feature> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.post('/admin/features', data);
+            return response.data as Feature;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao criar a Feature.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    /**
+     * @method updateFeature
+     * @description Envia uma requisição PATCH para atualizar uma Feature existente.
+     */
+    const updateFeature = async (id: string, data: UpdateFeatureDto): Promise<Feature> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.patch(`/admin/features/${id}`, data);
+            return response.data as Feature;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao atualizar a Feature.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    /**
+     * @method deleteFeature
+     * @description Envia uma requisição DELETE para remover uma Feature.
+     */
+    const deleteFeature = async (id: string): Promise<void> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            // Requisição DELETE para o endpoint
+            await api.delete(`/admin/features/${id}`);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao deletar a Feature.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return { createFeature, updateFeature, deleteFeature, isLoading, error };
+}
+
+
 // ===== FILE: src/hooks/useFeatures.ts =====
 
 // src/hooks/useFeatures.ts
 
 import { useState, useEffect } from 'react';
 import { api } from '@/utils/api';
-import { Feature } from '@/types/user'; // Tipagem correta (assumindo que o src/types/user.ts está corrigido)
+import { Feature } from '@/types/acl'; // Tipagem correta (assumindo que o src/types/user.ts está corrigido)
 
 /**
  * @function useFeatures
@@ -8656,6 +9735,193 @@ export function useFeatures() {
     }, []); // Roda apenas uma vez na montagem
 
     return { features, isLoading, error };
+}
+
+
+// ===== FILE: src/hooks/usePlanMutation.ts =====
+
+// src/hooks/usePlanMutation.ts
+
+import { useState } from 'react';
+import { api } from '@/utils/api';
+import { Plan } from '@/types/acl'; // Entidade Plan
+import { PlanFeatureRule } from '@/types/acl'; // Para a mutação de regras (P4)
+
+// DTO para Criação (Baseado em CreatePlan.dto.ts do Backend)
+interface CreatePlanDto {
+    name: string;
+    description?: string;
+    price: number;
+    isActive?: boolean;
+}
+
+// DTO para Atualização (Baseado em UpdatePlan.dto.ts do Backend)
+interface UpdatePlanDto {
+    name?: string;
+    description?: string;
+    price?: number;
+    isActive?: boolean;
+}
+
+/**
+ * @function usePlanMutation
+ * @description Hook de mutação para gerenciar as operações de escrita (C/U/D) sobre Planos.
+ * Porquê: Centraliza o tratamento de loading, erros de API e lógica de envio para o módulo ACL.
+ */
+export function usePlanMutation() {
+    
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // --- MÉTODOS DE MUTATION ---
+
+    /**
+     * @method createPlan
+     * @description Envia uma requisição POST para criar um novo Plano.
+     */
+    const createPlan = async (data: CreatePlanDto): Promise<Plan> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.post('/admin/plans', data);
+            return response.data as Plan;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao criar o Plano.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    /**
+     * @method updatePlan
+     * @description Envia uma requisição PATCH para atualizar um Plano existente.
+     */
+    const updatePlan = async (id: string, data: UpdatePlanDto): Promise<Plan> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.patch(`/admin/plans/${id}`, data);
+            return response.data as Plan;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao atualizar o Plano.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    /**
+     * @method syncPlanRules
+     * @description Envia uma requisição PATCH para sincronizar as regras de Features do Plano.
+     * (Implementação para P4)
+     */
+    const syncPlanRules = async (id: string, rules: PlanFeatureRule[]): Promise<void> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            // Chamada para o novo endpoint transacional do Backend
+            await api.patch(`/admin/plans/${id}/rules`, rules);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao sincronizar as regras do Plano.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    /**
+     * @method deletePlan
+     * @description Envia uma requisição DELETE para remover um Plano.
+     */
+    const deletePlan = async (id: string): Promise<void> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            // Requisição DELETE para o endpoint
+            await api.delete(`/admin/plans/${id}`);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao deletar o Plano.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return { 
+        createPlan, 
+        updatePlan, 
+        syncPlanRules,
+        deletePlan, 
+        isLoading, 
+        error 
+    };
+}
+
+
+// ===== FILE: src/hooks/usePlanRules.ts =====
+
+// src/hooks/usePlanRules.ts
+
+import { useState, useEffect } from 'react';
+import { api } from '@/utils/api';
+import { PlanFeatureRule, FeatureKey } from '@/types/acl';
+
+// Tipagem da resposta do Backend para PlanFeature
+interface PlanRuleResponse {
+    id: string;
+    planoId: string;
+    featureId: string;
+    limitValue: number;
+    // Adicionamos a feature aqui se a API retornar a relação,
+    // mas por enquanto, buscaremos a FeatureKey separadamente para simplificar o backend.
+}
+
+/**
+ * @function usePlanRules
+ * @description Hook customizado para buscar e gerenciar o estado das regras (PlanFeature) de um Plano.
+ * Porquê: Isolamos a chamada de leitura de regras para o Modal de Edição de Planos (P4).
+ */
+export function usePlanRules(planoId?: string) {
+    
+    const [rules, setRules] = useState<PlanRuleResponse[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // O useCallback é ideal aqui, mas usaremos uma função interna para simplicidade no escopo atual.
+    const fetchRules = async () => {
+        if (!planoId) return;
+
+        setIsLoading(true);
+        setError(null);
+        try {
+            // GET para a nova rota de leitura de regras do Plano
+            const response = await api.get(`/admin/plans/${planoId}/rules`);
+            
+            // Sucesso
+            setRules(response.data as PlanRuleResponse[]);
+            
+        } catch (err: any) {
+            console.error(`Erro ao buscar regras para o Plano ${planoId}:`, err);
+            const errorMessage = err.response?.data?.message || "Falha ao carregar regras de Feature.";
+            setError(errorMessage);
+            
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        // Recarrega as regras sempre que o planoId mudar
+        fetchRules();
+    }, [planoId]); 
+
+    // Retorna a função de busca para ser usada no onSuccess do formulário (revalidação)
+    return { rules, isLoading, error, fetchRules };
 }
 
 
@@ -8771,12 +10037,73 @@ export function useRegister() {
 }
 
 
+// ===== FILE: src/hooks/useTenantAdminMutation.ts =====
+
+// src/hooks/useTenantAdminMutation.ts
+
+import { useState } from 'react';
+import { api } from '@/utils/api';
+import { UpdateTenantAdminDto, TenantResponse } from '@/types/tenant'; // Entidade Tenant
+
+
+/**
+ * @function useTenantAdminMutation
+ * @description Hook de mutação para gerenciar as operações de escrita (Update/Soft Delete)
+ * sobre Tenants, usado exclusivamente pelo Admin Global.
+ * Porquê: Centraliza o tratamento de loading, erros de API e lógica de envio para o módulo Tenant.
+ */
+export function useTenantAdminMutation() {
+    
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    /**
+     * @method updateTenant
+     * @description Envia uma requisição PATCH para atualizar um Tenant existente.
+     */
+    const updateTenant = async (id: string, data: UpdateTenantAdminDto): Promise<TenantResponse> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.patch(`/admin/tenants/${id}`, data);
+            return response.data as TenantResponse;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao atualizar o Tenant.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    /**
+     * @method toggleActiveStatus
+     * @description Alterna o status isActive de um Tenant (Soft Delete).
+     */
+    const toggleActiveStatus = async (id: string, currentStatus: boolean): Promise<TenantResponse> => {
+        // Envia apenas a propriedade isActive com o valor invertido.
+        const newStatus = !currentStatus;
+        
+        return updateTenant(id, { isActive: newStatus });
+    };
+
+    return { 
+        updateTenant, 
+        toggleActiveStatus,
+        isLoading, 
+        error 
+    };
+}
+
+
 // ===== FILE: src/hooks/useTenants.ts =====
 
 // src/hooks/useTenants.ts
 
 import { useState, useEffect } from 'react';
 import { api } from '@/utils/api';
+import { Plan } from '@/types/acl';
+import { Tenant } from '@/types/tenant';
 // Importamos os tipos necessários
 
 // Tipagem completa do Tenant para uso no Frontend (inclui a relação 'plan')
@@ -8826,6 +10153,73 @@ export function useTenants() {
 }
 
 
+// ===== FILE: src/types/acl.ts =====
+
+// src/types/acl.ts
+
+// Definições de Entidades de ACL (Administração)
+
+// --- Novo tipo para as opções de controle ---
+export const FeatureType = {
+    BOOLEAN: 'boolean', // Permissão simples (sim/não)
+    QUANTITY: 'quantity', // Permissão com limite numérico
+} as const;
+
+export type FeatureType = 'boolean' | 'quantity';
+
+// Tipagem da FeatureKey (Importado do Backend, mas definido aqui para tipagem Frontend)
+export type FeatureKey = 
+    'PLANO_GERENCIAR' | 'DASHBOARD_USO_VIEW' | 
+    'CLIENTE_ADD' | 'CLIENTE_VIEW' | 'CLIENTE_EDIT' | 
+    'CLIENTE_DELETE' | 'PRODUTO_ADD' | 'PRODUTO_VIEW' |
+    'ESTOQUE_MOVIMENTAR' | 'FATURAMENTO_MAX_NF_E' | 
+    'ACESSO_SISTEMA_LOGIN';
+
+// Tipagem do Plano
+export interface Plan {
+    id: string;
+    name: string;
+    description: string | null;
+    price: number; // Agora é garantido como number pelo TypeormNumericTransformer
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Tipagem da Feature
+export interface Feature {
+    id: string;
+    key: string;
+    name: string;
+    description: string | null;
+    type: 'boolean' | 'quantity';
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Tipagem da Regra de Atrelamento Plan <-> Feature
+export interface PlanFeatureRule {
+    featureId: string;
+    limitValue: number;
+}
+
+// DTO para Criação (corpo do POST)
+export interface CreateFeatureDto {
+    key: FeatureKey;
+    name: string;
+    description?: string;
+    type: 'boolean' | 'quantity';
+}
+
+// DTO para Atualização (corpo do PATCH)
+export interface UpdateFeatureDto {
+    name?: string;
+    description?: string;
+    type?: 'boolean' | 'quantity';
+}
+
+
+
 // ===== FILE: src/types/auth.ts =====
 
 // src/types/auth.ts (MODIFICAÇÃO)
@@ -8853,32 +10247,94 @@ export interface LoginResponse {
 }
 
 
+// ===== FILE: src/types/tenant.ts =====
+
+// src/types/tenant.ts
+
+import { Plan } from "./acl"; // Importa o tipo Plan do novo módulo
+
+/**
+ * @interface Tenant
+ * @description Tipagem para a Entidade Tenant.
+ */
+export interface Tenant {
+    id: string;
+    cnpjCpf: string;
+    razaoSocial: string;
+    nomeFantasia: string | null;
+    emailContato: string;
+    planoId: string;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+    
+    // Relação (opcional no FindBy/FindAll do Admin)
+    plan?: Plan;
+}
+
+// DTO para Atualização (Baseado em UpdateTenantAdmin.dto.ts do Backend)
+export interface UpdateTenantAdminDto {
+    razaoSocial?: string;
+    nomeFantasia?: string;
+    planoId?: string;
+    isActive?: boolean;
+}
+
+// Tipagem completa do Tenant retornado
+export interface TenantResponse extends Tenant {
+    plan?: Plan; // O Backend retorna a relação Plan no find/update
+}
+
+// Propriedades do Modal
+export interface TenantModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    // Dados do Tenant a ser editado
+    currentTenant: Tenant; 
+    onSuccess: () => void; // Callback para recarregar a tabela
+}
+
+// DTO de Edição (Usado no formulário)
+// Repetindo a tipagem para clareza, mas idealmente viria do types/tenant.ts
+export interface UpdateTenantAdminDto {
+    razaoSocial?: string;
+    nomeFantasia?: string;
+    planoId?: string;
+    isActive?: boolean;
+}
+
+// Tipagem local para o componente (usa o tipo Tenant)
+export interface TenantWithPlan extends Tenant {
+    plan: {
+        id: string;
+        name: string;
+    };
+}
+
+
+
 // ===== FILE: src/types/user.ts =====
 
 // src/types/user.ts
 
+// --- CORREÇÃO: Usar um objeto const para garantir valores em runtime ---
+export const UserRole = {
+    GLOBAL_ADMIN: 'GLOBAL_ADMIN',
+    TENANT_ADMIN: 'TENANT_ADMIN',
+    MEMBER: 'MEMBER',
+} as const;
+
 // Reúsa o ENUM de Role do Backend (simplificado aqui)
 export type UserRole = 'GLOBAL_ADMIN' | 'TENANT_ADMIN' | 'MEMBER';
 
-export interface Feature {
-    id: string;
-    key: string;
-    name: string;
-    description: string | null;
-    type: 'boolean' | 'quantity';
-    createdAt: string;
-    updatedAt: string;
-}
+// Tipagem da Feature e Plan foram movidas para src/types/acl.ts
 
-// --- Tipagem do Plano ---
-export interface Plan {
+export interface User {
     id: string;
-    name: string;
-    description: string | null;
-    price: number;
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
+    email: string;
+    role: UserRole;
+    tenantId: string | null;
+    // Removido o Plan, Feature, etc.
 }
 
 

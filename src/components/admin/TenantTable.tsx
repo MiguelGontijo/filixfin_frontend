@@ -2,11 +2,18 @@
 
 "use client";
 
-import React from 'react';
-import { FaEdit, FaCheckCircle, FaTimesCircle, FaLink, FaBuilding, FaUserTie } from 'react-icons/fa';
-import { useTenants } from '@/hooks/useTenants'; // Hook de dados
-import { UserRole } from '@/types/user'; // Tipagem da Role
-import { Tenant } from '@/types/tenant'; // Tipagem do Tenant
+import React, { useState } from 'react'; 
+import { FaEdit, FaCheckCircle, FaTimesCircle, FaLink, FaBuilding, FaUserTie, FaPlus } from 'react-icons/fa';
+import { useTenants } from '@/hooks/useTenants'; 
+import { UserRole } from '@/types/user'; 
+import { Tenant, TenantWithPlan } from '@/types/tenant'; // Importar o tipo Tenant
+// --- NOVAS IMPORTAÇÕES ---
+import { TenantModal } from './TenantModal'; // Importar o Modal de Edição
+import { useTenantAdminMutation } from '@/hooks/useTenantAdminMutation'; // Hook para Soft Delete/Edição
+import { useRouter } from 'next/navigation';
+
+// -------------------------
+
 
 /**
  * @component TenantTable
@@ -15,26 +22,52 @@ import { Tenant } from '@/types/tenant'; // Tipagem do Tenant
  */
 export const TenantTable: React.FC = () => {
     
-    // 1. CONSUMO DO HOOK
-    const { tenants, isLoading, error } = useTenants();
+    // 1. ESTADO PARA MODAL E DADOS DE EDIÇÃO
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [tenantToEdit, setTenantToEdit] = useState<TenantWithPlan | undefined>(undefined);
 
-    // --- Funções de Ação Futuras ---
-    const handleEdit = (tenant: Tenant) => {
-        console.log("Abrir modal de edição/atualização de Plano para o Tenant:", tenant.razaoSocial);
-        // FUTURO: Implementar modal de edição (incluindo alteração de plano e status).
+    // Hooks de Dados e Mutação
+    const { tenants, isLoading: loadingTenants, error, refreshData } = useTenants(); // Assumindo refreshData para recarregar
+    const { toggleActiveStatus, isLoading: isToggling } = useTenantAdminMutation();
+
+    // --- NOVO: Hook de Roteamento ---
+    const router = useRouter();
+    
+    // Recarrega os dados após sucesso na mutação
+    const handleSuccess = () => {
+        console.log("Tenant alterado. Recarregando dados.");
+        // FUTURO: Chamar refreshData()
+        setIsModalOpen(false);
+        setTenantToEdit(undefined);
     };
 
-    const handleSoftDelete = (tenant: Tenant) => {
+    // --- Funções de Ação ---
+    
+    const handleCreateNewTenant = () => {
+        // Redireciona o Admin Global para a tela de Registro/Criação de Conta.
+        router.push('/register');
+    };
+
+    const handleEdit = (tenant: TenantWithPlan) => {
+        setTenantToEdit(tenant); // Define o tenant a ser editado
+        setIsModalOpen(true);
+    };
+
+    const handleSoftDelete = async (tenant: TenantWithPlan) => {
         const action = tenant.isActive ? 'desativar' : 'ativar';
         if (confirm(`Tem certeza que deseja ${action} o Tenant "${tenant.razaoSocial}"?`)) {
-            console.log(`${action.toUpperCase()} o Tenant:`, tenant.id);
-            // FUTURO: Chamar o Service de PATCH para mudar isActive.
+            try {
+                // Chamada de Mutação Soft Delete
+                await toggleActiveStatus(tenant.id, tenant.isActive);
+                console.log(`Tenant ${tenant.razaoSocial} ${action} com sucesso.`);
+                // FUTURO: Chamar refreshData()
+            } catch (error) {
+                console.error(`Falha ao ${action} o Tenant:`, error);
+            }
         }
     };
 
     // --- Helpers de Visualização ---
-
-    // Renderiza a tag de status (Ativo/Inativo)
     const renderStatusBadge = (isActive: boolean) => {
         const colorClass = isActive ? 'text-success bg-green-900/40' : 'text-danger bg-red-900/40';
         const icon = isActive ? <FaCheckCircle className="w-3 h-3" /> : <FaTimesCircle className="w-3 h-3" />;
@@ -47,8 +80,8 @@ export const TenantTable: React.FC = () => {
         );
     };
 
-    // Renderiza a tag de Role (para Tenants, é sempre TENANT_ADMIN, mas o componente é genérico)
-    const renderRoleBadge = (role: UserRole) => {
+    // A Role Badge não é usada para Tenants, mas o helper é mantido.
+    const renderRoleBadge = (role: typeof UserRole[keyof typeof UserRole]) => {
         const colorClass = role === UserRole.GLOBAL_ADMIN ? 'text-accent-secondary bg-violet-900/40' : 'text-accent-primary bg-orange-900/40';
         const icon = role === UserRole.GLOBAL_ADMIN ? <FaUserTie className="w-3 h-3" /> : <FaBuilding className="w-3 h-3" />;
 
@@ -60,12 +93,12 @@ export const TenantTable: React.FC = () => {
         );
     };
 
-    // --- Tratamento de Estado (Loading / Error) ---
+    // --- Tratamento de Estado ---
 
-    if (isLoading) {
+    if (loadingTenants || isToggling) {
         return (
             <div className="text-center py-12 text-accent-secondary">
-                <span className="animate-spin text-xl">⏳</span> Carregando Lista de Tenants...
+                <span className="animate-spin text-xl">⏳</span> {isToggling ? 'Alterando Status...' : 'Carregando Lista de Tenants...'}
             </div>
         );
     }
@@ -81,6 +114,17 @@ export const TenantTable: React.FC = () => {
     return (
         <div className="space-y-4">
             
+            {/* Botão de Criação (Placeholder - Criação de Tenant é pelo /register) */}
+            <div className="flex justify-end">
+                <button 
+                    // NOTE: A criação de tenant é via /register. Mantemos o placeholder inativo.
+                    onClick={handleCreateNewTenant} 
+                    className="flex items-center space-x-2 px-4 py-2 bg-accent-primary text-base-dark font-bold rounded-lg hover:bg-orange-500 transition duration-150 shadow-lg"                >
+                    <FaPlus />
+                    <span>Novo Tenant</span>
+                </button>
+            </div>
+
             {/* Tabela Responsiva */}
             <div className="overflow-x-auto bg-base-metallic rounded-lg shadow-xl">
                 <table className="min-w-full divide-y divide-gray-700">
@@ -106,7 +150,7 @@ export const TenantTable: React.FC = () => {
                     <tbody className="divide-y divide-gray-700">
                         {tenants.map((tenant) => (
                             <tr key={tenant.id} className="hover:bg-gray-700 transition duration-100">
-                                {/* Razão Social / Documento */}
+                                {/* Nome / Documento */}
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm font-medium text-white">{tenant.razaoSocial}</div>
                                     <div className="text-xs text-gray-400 font-mono">CNPJ/CPF: {tenant.cnpjCpf}</div>
@@ -138,6 +182,7 @@ export const TenantTable: React.FC = () => {
                                     </button>
                                     <button 
                                         onClick={() => handleSoftDelete(tenant)}
+                                        disabled={isToggling}
                                         className={tenant.isActive ? 'text-danger hover:text-red-600' : 'text-success hover:text-green-500'}
                                         title={tenant.isActive ? 'Desativar Tenant' : 'Ativar Tenant'}
                                     >
@@ -150,11 +195,22 @@ export const TenantTable: React.FC = () => {
                 </table>
             </div>
             
-            {tenants.length === 0 && !isLoading && !error && (
+            {tenants.length === 0 && !loadingTenants && !error && (
                 <div className="text-center py-8 text-gray-500">
                     Nenhum Tenant cadastrado além do ambiente de teste.
                 </div>
             )}
+
+            {/* --- MODAL DE CRIAÇÃO/EDIÇÃO --- */}
+            {isModalOpen && tenantToEdit && (
+                <TenantModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    currentTenant={tenantToEdit}
+                    onSuccess={handleSuccess}
+                />
+            )}
+            {/* ------------------------------- */}
         </div>
     );
 };
