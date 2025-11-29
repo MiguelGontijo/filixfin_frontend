@@ -7225,6 +7225,47 @@ export default function AdminTenantsPage() {
 }
 
 
+// ===== FILE: src/app/clients/layout.tsx =====
+
+// src/app/clients/layout.tsx
+
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { UserRole } from '@/types/user';
+// MODIFICAÇÃO: Importa o novo componente ClientSidebar (R3).
+import { ClientSidebar } from '@/components/layout/ClientSidebar'; 
+
+/**
+ * @component ClientRootLayout
+ * @description Layout principal para todas as rotas sob /clients (Área de Negócio do Tenant).
+ * Porquê: Aplica o AuthGuard, verifica as roles e configura o layout com a sidebar de navegação.
+ */
+export default function ClientRootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  
+  // O GLOBAL_ADMIN NÃO deve acessar rotinas de Tenant por aqui, apenas por /admin.
+  const allowedRoles: UserRole[] = [UserRole.TENANT_ADMIN, UserRole.MEMBER];
+
+  return (
+    // O AuthGuard protege toda esta seção do aplicativo
+    <AuthGuard allowedRoles={allowedRoles}>
+      <div className="flex min-h-screen bg-base-dark">
+        
+        {/* MODIFICAÇÃO: Renderiza o ClientSidebar. */}
+        <ClientSidebar /> 
+        
+        {/* Conteúdo Principal */}
+        <main className="flex-1 p-8 overflow-y-auto">
+          {children}
+        </main>
+      </div>
+    </AuthGuard>
+  );
+}
+
+
 // ===== FILE: src/app/clients/page.tsx =====
 
 // src/app/clients/page.tsx
@@ -7270,43 +7311,79 @@ export default function ClientsPage() {
 
 // src/app/dashboard/page.tsx
 
+"use client"; // Necessário para usar hooks como useEffect
+
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { UserRole } from '@/types/user';
 import Link from 'next/link';
+import React, { useEffect } from 'react'; // MODIFICAÇÃO: Importa useEffect e React
+import { useAuth } from '@/contexts/AuthContext'; // MODIFICAÇÃO: Importa useAuth
+import { useNavigation } from '@/hooks/useNavigation'; // MODIFICAÇÃO: Importa useNavigation
 
 /**
  * @component DashboardPage
  * @description Página inicial da aplicação após o Login (Painel de Controle do Admin Global).
+ * Porquê: Agora funciona como um "router de entrada" para segmentar GLOBAL_ADMIN de TENANT_ADMIN.
  */
 export default function DashboardPage() {
     
+    // Hooks para lógica de redirecionamento
+    const { user, isLoggedIn } = useAuth(); // MODIFICAÇÃO: Acesso ao contexto
+    const { toAdminPlans, rawPush } = useNavigation(); // MODIFICAÇÃO: Acesso ao roteador
+    
+    // Lógica de Redirecionamento Pós-Login
+    useEffect(() => {
+        if (isLoggedIn && user) {
+            // Regra: Se for GLOBAL_ADMIN, redireciona imediatamente para a tela de gestão de Tenants/Planos.
+            if (user.role === UserRole.GLOBAL_ADMIN) {
+                // Rota sugerida de entrada para o Global Admin: Lista de Tenants
+                rawPush('/admin/tenants'); // Usar rawPush para rota específica
+            }
+            // Se for TENANT_ADMIN ou MEMBER, permanece no Dashboard.
+        }
+    }, [isLoggedIn, user, rawPush]); // MODIFICAÇÃO: Dependências de navegação e autenticação
+
     // Lista de roles que podem acessar esta página
     const allowedRoles: UserRole[] = ['GLOBAL_ADMIN', 'TENANT_ADMIN'];
-
+    
+    // Se o GLOBAL_ADMIN for redirecionado, esta tela piscará brevemente.
+    if (isLoggedIn && user?.role === UserRole.GLOBAL_ADMIN) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-base-dark text-accent-secondary">
+                Redirecionando para a Área de Administração...
+            </div>
+        );
+    }
+    
     return (
         // Envolve o conteúdo com o AuthGuard
         <AuthGuard allowedRoles={allowedRoles}>
             <div className="p-8 space-y-8 min-h-screen bg-base-metallic">
                 
                 <h1 className="text-4xl font-extrabold text-white border-l-4 border-accent-secondary pl-4">
-                    Painel de Controle Mestre
+                    Painel de 
+                    Controle Mestre
                 </h1>
                 
                 <p className="text-gray-400">
                     Sua plataforma de gestão full-stack está ativa. O próximo passo é criar os módulos de negócio.
+               
                 </p>
                 
                 {/* Futuras Ações Rápidas */}
                 <div className="flex space-x-4">
                     <Link href="/admin/plans" legacyBehavior>
+                       
                         <a className="px-4 py-2 bg-accent-primary rounded-lg text-base-dark font-medium hover:bg-orange-500 transition">
                             Gerenciar Planos (ACL)
                         </a>
                     </Link>
+                 
                     <Link href="/logout" legacyBehavior>
                         <a className="px-4 py-2 border border-gray-600 rounded-lg text-gray-400 hover:text-white transition">
                             Sair
                         </a>
+           
                     </Link>
                 </div>
             </div>
@@ -7439,8 +7516,8 @@ export default function RootLayout({
 
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginDto } from '@/types/auth';
-import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * @component LoginPage
@@ -7449,8 +7526,13 @@ import React, { useEffect, useState } from 'react';
  */
 export default function LoginPage() {
     
-    const router = useRouter();
-    const auth = useAuth(); // Usar o contexto de autenticação
+    // MODIFICAÇÃO: Obtemos a função de navegação, mas não precisamos dela aqui,
+    // pois o AuthContext agora lida com o redirecionamento pós-login.
+    // const router = useRouter();
+    const router = useNavigation(); // MODIFICAÇÃO: Mantemos a variável para evitar erro, mas usamos a função para isReady
+
+    const auth = useAuth();
+    // Usar o contexto de autenticação
     
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -7461,7 +7543,6 @@ export default function LoginPage() {
         e.preventDefault();
         setError(null);
         setIsLoading(true);
-
         // Lógica de Validação Front-end Básica
         if (!email || !password) {
             setError("Por favor, preencha todos os campos.");
@@ -7472,15 +7553,11 @@ export default function LoginPage() {
         try {
             
             const credentials: LoginDto = { email, password };
-            
             // 1. CHAMADA AO CONTEXTO DE LOGIN
             // O Contexto (AuthProvider) fará a chamada à API do Backend
             // e atualizará o estado global (token, user).
             await auth.login(credentials); 
             
-            // 2. REDIRECIONAMENTO DE SUCESSO
-            // Porquê: Após o sucesso, o usuário deve ser levado para a área restrita.
-            // router.push('/dashboard');
 
         } catch (err) {
             setError("Falha na autenticação. Verifique suas credenciais.");
@@ -7489,24 +7566,6 @@ export default function LoginPage() {
             setIsLoading(false);
         }
     };
-
-    // Se o usuário já estiver logado, redireciona imediatamente
-    // useEffect(() => {
-    //     if (auth.isLoggedIn) {
-    //         router.push('/dashboard');
-    //     }
-    // }, [auth.isLoggedIn, router]);
-
-
-    // Se o usuário está logado, retornamos um componente de carregamento breve
-    // (A lógica de redirecionamento está agora no useEffect)
-    // if (auth.isLoggedIn) {
-    //     return (
-    //         <div className="flex items-center justify-center min-h-screen bg-base-dark text-accent-secondary">
-    //             Redirecionando...
-    //         </div>
-    //     );
-    // }
 
     return (
         // Centraliza o conteúdo na tela
@@ -7525,7 +7584,7 @@ export default function LoginPage() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    
+      
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-300">
                             E-mail
@@ -7579,8 +7638,8 @@ export default function LoginPage() {
 "use client";
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigation } from '@/hooks/useNavigation'; // MODIFICAÇÃO: Importa o hook centralizado (R1)
 
 /**
  * @component LogoutPage
@@ -7589,16 +7648,20 @@ import { useAuth } from '@/contexts/AuthContext';
  * e o usuário seja redirecionado para a tela de login.
  */
 export default function LogoutPage() {
+    // MODIFICAÇÃO: Usamos o hook useNavigation para redirecionamento
+    const { toLogin } = useNavigation();
+    
+    // O router do AuthContext.tsx agora tem a lógica de toLogin
     const { logout } = useAuth();
-    const router = useRouter();
-
+    
     useEffect(() => {
         // Limpa o estado e o localStorage
         logout(); 
         
         // Redireciona para a tela de Login
-        router.push('/login');
-    }, [logout, router]);
+        // MODIFICAÇÃO: Chamada explícita ao método centralizado toLogin
+        toLogin(); 
+    }, [logout, toLogin]); // MODIFICAÇÃO: Dependência atualizada (toLogin)
 
     // Retorna um placeholder simples durante o redirecionamento
     return (
@@ -7671,11 +7734,9 @@ export default function LandingPage() {
 "use client";
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-// --- NOVA IMPORTAÇÃO ---
-import { useRegister } from '@/hooks/useRegister'; // Importamos o hook real
-// ------------------------
+import { useRegister } from '@/hooks/useRegister';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * @component RegisterPage
@@ -7684,10 +7745,11 @@ import { useRegister } from '@/hooks/useRegister'; // Importamos o hook real
  */
 export default function RegisterPage() {
     
-    const router = useRouter();
+    // MODIFICAÇÃO: Usa o hook useNavigation.
+    const { toLogin } = useNavigation();
+    
     // --- NOVO: Uso do hook de registro ---
     const { registerTenant, isLoading, error: apiError } = useRegister();
-    
     const [formData, setFormData] = useState({
         cnpjCpf: '',
         razaoSocial: '',
@@ -7696,11 +7758,11 @@ export default function RegisterPage() {
         password: '', // Senha do Admin Global (User Nível Zero)
         planoId: '00000000-0000-0000-0000-000000000001', // Plano Básico Padrão (Hardcoded para simplificar)
     });
+    
     // Usamos o erro do hook para exibir mensagens
-    const [localError, setLocalError] = useState<string | null>(null); 
+    const [localError, setLocalError] = useState<string | null>(null);
     
     // Removido o estado de isLoading e error locais, usaremos os do hook.
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
             ...formData,
@@ -7712,7 +7774,6 @@ export default function RegisterPage() {
         e.preventDefault();
         setLocalError(null);
         // Não precisamos de setIsLoading(true) aqui, o hook já faz.
-        
         // Validação Front-end Básica 
         if (!formData.emailContato || !formData.password || !formData.cnpjCpf) {
             setLocalError("Por favor, preencha os campos obrigatórios (CNPJ/CPF, E-mail, Senha).");
@@ -7722,10 +7783,9 @@ export default function RegisterPage() {
         try {
             // --- MODIFICAÇÃO: Chamada REAL à API via Hook ---
             await registerTenant(formData);
-            
             // Sucesso: Redirecionar para a página de Login
             alert("Registro Bem-sucedido! O administrador da sua conta foi criado. Faça seu login.");
-            router.push('/login'); 
+            toLogin(); // MODIFICAÇÃO: Usa o método centralizado toLogin (R1).
 
         } catch (err) {
             // O erro já foi capturado e setado em apiError pelo hook (useRegister),
@@ -7797,14 +7857,13 @@ export default function RegisterPage() {
                                 placeholder="admin@seusite.com" />
                         </div>
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-300">Senha * (Mín. 8 caracteres)</label>
+                            <label htmlFor="password" className="block text-sm font-medium text-gray-300">Senha * (Mín.8 caracteres)</label>
                             <input type="password" id="password" name="password" required
                                 value={formData.password} onChange={handleChange}
                                 className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
                                 placeholder="••••••••" />
                         </div>
                     </div>
-               
                     <button
                         type="submit"
                         // --- MODIFICAÇÃO: Usar o isLoading do hook ---
@@ -9180,16 +9239,20 @@ export const TenantModal: React.FC<TenantModalProps> = ({
 
 "use client";
 
-import React, { useState } from 'react'; 
+import React, { useState } from 'react';
 import { FaEdit, FaCheckCircle, FaTimesCircle, FaLink, FaBuilding, FaUserTie, FaPlus } from 'react-icons/fa';
-import { useTenants } from '@/hooks/useTenants'; 
+import { useTenants } from '@/hooks/useTenants';
 import { UserRole } from '@/types/user'; 
-import { Tenant, TenantWithPlan } from '@/types/tenant'; // Importar o tipo Tenant
+import { Tenant, TenantWithPlan } from '@/types/tenant';
+// Importar o tipo Tenant
 // --- NOVAS IMPORTAÇÕES ---
-import { TenantModal } from './TenantModal'; // Importar o Modal de Edição
-import { useTenantAdminMutation } from '@/hooks/useTenantAdminMutation'; // Hook para Soft Delete/Edição
-import { useRouter } from 'next/navigation';
-
+import { TenantModal } from './TenantModal';
+// Importar o Modal de Edição
+import { useTenantAdminMutation } from '@/hooks/useTenantAdminMutation';
+// Hook para Soft Delete/Edição
+// MODIFICAÇÃO: Substituímos o useRouter pelo hook centralizado.
+// import { useRouter } from 'next/navigation';
+import { useNavigation } from '@/hooks/useNavigation'; // MODIFICAÇÃO: Importa o useNavigation (R1)
 // -------------------------
 
 
@@ -9205,32 +9268,31 @@ export const TenantTable: React.FC = () => {
     const [tenantToEdit, setTenantToEdit] = useState<TenantWithPlan | undefined>(undefined);
 
     // Hooks de Dados e Mutação
-    const { tenants, isLoading: loadingTenants, error, refreshData } = useTenants(); // Assumindo refreshData para recarregar
+    const { tenants, isLoading: loadingTenants, error, refreshData } = useTenants();
+    // Assumindo refreshData para recarregar
     const { toggleActiveStatus, isLoading: isToggling } = useTenantAdminMutation();
-
     // --- NOVO: Hook de Roteamento ---
-    const router = useRouter();
-    
+    // MODIFICAÇÃO: Usamos o hook useNavigation.
+    const { toRegister } = useNavigation();
     // Recarrega os dados após sucesso na mutação
     const handleSuccess = () => {
         console.log("Tenant alterado. Recarregando dados.");
-        // FUTURO: Chamar refreshData()
+    // FUTURO: Chamar refreshData()
         setIsModalOpen(false);
         setTenantToEdit(undefined);
     };
-
     // --- Funções de Ação ---
-    
     const handleCreateNewTenant = () => {
         // Redireciona o Admin Global para a tela de Registro/Criação de Conta.
-        router.push('/register');
+        // MODIFICAÇÃO: Usa o método centralizado toRegister.
+        toRegister();
     };
 
     const handleEdit = (tenant: TenantWithPlan) => {
-        setTenantToEdit(tenant); // Define o tenant a ser editado
+        setTenantToEdit(tenant);
+        // Define o tenant a ser editado
         setIsModalOpen(true);
     };
-
     const handleSoftDelete = async (tenant: TenantWithPlan) => {
         const action = tenant.isActive ? 'desativar' : 'ativar';
         if (confirm(`Tem certeza que deseja ${action} o Tenant "${tenant.razaoSocial}"?`)) {
@@ -9244,12 +9306,10 @@ export const TenantTable: React.FC = () => {
             }
         }
     };
-
     // --- Helpers de Visualização ---
     const renderStatusBadge = (isActive: boolean) => {
-        const colorClass = isActive ? 'text-success bg-green-900/40' : 'text-danger bg-red-900/40';
+        const colorClass = isActive ?'text-success bg-green-900/40' : 'text-danger bg-red-900/40';
         const icon = isActive ? <FaCheckCircle className="w-3 h-3" /> : <FaTimesCircle className="w-3 h-3" />;
-
         return (
             <span className={`inline-flex items-center space-x-1 px-3 py-1 text-xs font-medium rounded-full ${colorClass}`}>
                 {icon}
@@ -9272,7 +9332,6 @@ export const TenantTable: React.FC = () => {
     };
 
     // --- Tratamento de Estado ---
-
     if (loadingTenants || isToggling) {
         return (
             <div className="text-center py-12 text-accent-secondary">
@@ -9312,7 +9371,7 @@ export const TenantTable: React.FC = () => {
                                 Razão Social / Documento
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                Plano Atual
+                               Plano Atual
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                                 Contato
@@ -9333,8 +9392,8 @@ export const TenantTable: React.FC = () => {
                                     <div className="text-sm font-medium text-white">{tenant.razaoSocial}</div>
                                     <div className="text-xs text-gray-400 font-mono">CNPJ/CPF: {tenant.cnpjCpf}</div>
                                 </td>
-                                
-                                {/* Plano Atual */}
+                           
+                                  {/* Plano Atual */}
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-accent-secondary">
                                     {tenant.plan ? tenant.plan.name : 'N/A'}
                                 </td>
@@ -9348,7 +9407,7 @@ export const TenantTable: React.FC = () => {
                                 <td className="px-6 py-4 whitespace-nowrap text-center">
                                     {renderStatusBadge(tenant.isActive)}
                                 </td>
-                                
+        
                                 {/* Ações (CRUD) */}
                                 <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-3">
                                     <button 
@@ -9356,7 +9415,7 @@ export const TenantTable: React.FC = () => {
                                         className="text-accent-primary hover:text-orange-500"
                                         title="Editar Plano e Dados"
                                     >
-                                        <FaEdit className="w-4 h-4" />
+                                    <FaEdit className="w-4 h-4" />
                                     </button>
                                     <button 
                                         onClick={() => handleSoftDelete(tenant)}
@@ -9401,9 +9460,9 @@ export const TenantTable: React.FC = () => {
 "use client";
 
 import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext'; // Hook de autenticação
+import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types/user'; // Tipos de permissão
+import { useNavigation } from '@/hooks/useNavigation'; // MODIFICAÇÃO: Importa o hook centralizado (R1)
 
 interface AuthGuardProps {
     children: React.ReactNode;
@@ -9418,23 +9477,27 @@ interface AuthGuardProps {
  */
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles }) => {
     const { isLoggedIn, user, token } = useAuth();
-    const router = useRouter();
-    const isReady = token !== undefined; // Verifica se o contexto carregou
+    // MODIFICAÇÃO: Usamos o hook useNavigation.
+    const { toLogin, toDashboard } = useNavigation();
+    const isReady = token !== undefined;
+    // Verifica se o contexto carregou
 
     useEffect(() => {
         if (isReady && !isLoggedIn) {
             // Se o contexto carregou, mas o usuário não está logado, redireciona para o login
             console.log("DIAGNÓSTICO: Usuário não autenticado. Redirecionando para /login.");
-            router.push('/login');
+            // MODIFICAÇÃO: Usa o método centralizado toLogin().
+            toLogin();
         } else if (isLoggedIn && allowedRoles && !allowedRoles.includes(user!.role)) {
+     
             // Se logado, mas sem a permissão correta (Ex: Membro tentando acessar Admin Global)
             const userRoleString = user!.role;
             console.log(`DIAGNÓSTICO: Permissão Negada. Usuário ${userRoleString} tentou acessar rota restrita.`);
             alert("Acesso negado. Você não tem permissão para esta área.");
-            // router.push('/dashboard'); // Redireciona para um local seguro
+      
         }
-    }, [isLoggedIn, isReady, user, allowedRoles, router]);
-
+    }, [isLoggedIn, isReady, user, allowedRoles, toLogin]); 
+    
     // Renderiza a página se o usuário estiver logado e tiver a permissão correta
     if (!isReady || !isLoggedIn) {
         // Renderiza um placeholder enquanto verifica o estado (evita o flash de conteúdo)
@@ -9829,17 +9892,88 @@ export const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
 };
 
 
+// ===== FILE: src/components/layout/ClientSidebar.tsx =====
+
+// src/components/layout/ClientSidebar.tsx
+
+import React from 'react';
+import Link from 'next/link';
+import { FaUsers, FaHome, FaSignOutAlt } from 'react-icons/fa';
+
+// Definição dos links da área de negócio do Cliente/Tenant
+// PORQUÊ: Manteremos links estáticos por enquanto, mas esta lista será
+// o ponto onde a lógica de ACL e Plans será aplicada no futuro (ACL Dinâmica).
+const navItems = [
+  { name: 'Dashboard Principal', href: '/dashboard', icon: FaHome },
+  // Rotina de Negócio principal implementada
+  { name: 'Gerenciar Clientes', href: '/clients', icon: FaUsers }, 
+  // FUTURO: { name: 'Gerenciar Produtos', href: '/clients/products', icon: FaBox },
+];
+
+/**
+ * @component ClientSidebar
+ * @description Barra de navegação lateral para as rotinas de negócio do Tenant.
+ * Porquê: Oferece navegação estruturada e coerente na área de trabalho do cliente (R3).
+ */
+export const ClientSidebar: React.FC = () => {
+  return (
+    <div className="flex flex-col w-64 min-h-screen bg-base-metallic p-4 space-y-6 border-r border-gray-700">
+      
+      {/* Título */}
+      <div className="text-xl font-bold text-accent-secondary uppercase tracking-wider">
+        FilixFin Workspace
+      </div>
+
+      {/* Navegação Principal */}
+      <nav className="flex-1 space-y-2">
+        {navItems.map((item) => (
+          <Link 
+            key={item.name} 
+            href={item.href} 
+            legacyBehavior
+          >
+            <a 
+              className="flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150"
+            >
+              <item.icon className="w-4 h-4 text-accent-primary" />
+              <span>{item.name}</span>
+            </a>
+          </Link>
+        ))}
+        
+        {/* Link para área de Admin Global (Apenas se for Admin) */}
+        {/* LÓGICA FUTURA: if (user.role === 'TENANT_ADMIN') ... */}
+        <Link href="/admin/tenants" legacyBehavior>
+            <a className="flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-700 hover:text-white transition duration-150">
+                <FaSignOutAlt className="w-4 h-4 transform rotate-180 text-violet-400" />
+                <span>Configurações Admin</span>
+            </a>
+        </Link>
+        
+      </nav>
+      
+      {/* Logout Simples */}
+      <Link href="/logout" legacyBehavior>
+        <a className="text-sm text-red-400 hover:text-red-500 transition border-t border-gray-700 pt-4 flex items-center space-x-2">
+            <FaSignOutAlt className="w-4 h-4" />
+            <span>Sair / Logout</span>
+        </a>
+      </Link>
+    </div>
+  );
+};
+
+
 // ===== FILE: src/contexts/AuthContext.tsx =====
 
 // src/contexts/AuthContext.tsx (VERSÃO FINAL E CORRIGIDA PARA LOGOUT AUTOMÁTICO)
 
 "use client";
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation'; // <-- NOVO: Para redirecionamento
 import { LoginDto, LoginResponse } from '@/types/auth'; 
-import { UserRole } from '@/types/user'; 
-import { api } from '@/utils/api'; // <-- NOVO: Cliente de API para uso no login real
+import { UserRole } from '@/types/user';
+import { api } from '@/utils/api'; 
+import { useNavigation } from '@/hooks/useNavigation';
 
 // --- 1. Definição de Tipos e Variável Global ---
 
@@ -9868,7 +10002,6 @@ let globalLogoutAndRedirect: (() => void) | null = null;
 // --- 2. Criação do Contexto ---
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
-
 // --- 3. Criação do Provider ---
 
 interface AuthProviderProps {
@@ -9876,7 +10009,9 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    const router = useRouter(); // <-- NOVO: Hook de roteamento
+    // MODIFICAÇÃO: Usamos o hook useNavigation.
+    const { toLogin, rawPush } = useNavigation();
+    
     const [user, setUser] = useState<AuthUser | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const isLoggedIn = !!user;
@@ -9892,9 +10027,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Função principal de logout e redirecionamento (expõe o redirecionamento)
     const logoutAndRedirect = useCallback(() => {
         cleanSession();
-        router.push('/login');
-    }, [router]);
-    
+        toLogin(); 
+    }, [toLogin]);
+
     // Efeito para carregar estado do localStorage na inicialização (persistência)
     useEffect(() => {
         const storedToken = localStorage.getItem('auth_token');
@@ -9903,43 +10038,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (storedToken && storedUser) {
             setToken(storedToken);
             setUser(JSON.parse(storedUser));
+        } else {
+             // Caso não haja token, garante que o estado inicial seja null.
+             setToken(null);
         }
-    }, []);
-
+    }, []); 
+    
     // Efeito para injetar a função de logout no mecanismo global (Axios)
     useEffect(() => {
         globalLogoutAndRedirect = logoutAndRedirect;
         return () => {
             globalLogoutAndRedirect = null;
         };
-    }, [logoutAndRedirect]); // Depende da função de redirecionamento
+    }, [logoutAndRedirect]); 
 
     // --- NOVO: Função para obter a rota de destino (SRP) ---
     const getTargetRoute = (role: UserRole): string => {
         console.log("Determinando rota de destino para o papel:", role);
-        switch (role) {
-            case UserRole.GLOBAL_ADMIN:
-                // Leva para a tela de gestão principal de ACL
-                return '/admin/plans'; 
-            case UserRole.TENANT_ADMIN:
-            case UserRole.MEMBER:
-                // Leva para a tela de negócio principal
-                return '/clients'; 
-            default:
-                return '/dashboard';
-        }
+        // MODIFICAÇÃO: Todos são direcionados para o dashboard central (R4).
+        return '/dashboard';
     };
 
     const login = async (credentials: LoginDto) => {
         try {
             // 1. CHAMADA REAL À API DE LOGIN
-            // POST para a rota que implementamos no Backend
             const response = await api.post('/user/login', credentials);
-            
             // 2. Extrair Token e Dados
-            const result = response.data as LoginResponse; 
-            
-            const { token, user } = result; // <-- Desestruturação agora é segura
+            const result = response.data as LoginResponse;
+            const { token, user } = result;
             
             // Mapeamento de Tipos para o Contexto
             const authUser: AuthUser = {
@@ -9948,7 +10074,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 role: user.role as UserRole,
                 tenantId: user.tenantId,
             };
-
             // 3. Salvar estado no Contexto e no localStorage
             setToken(token);
             setUser(authUser);
@@ -9956,11 +10081,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             localStorage.setItem('auth_user', JSON.stringify(authUser));
 
             const targetRoute = getTargetRoute(authUser.role);
-            router.push(targetRoute);
-
+            rawPush(targetRoute); // Usar rawPush para redirecionamento dinâmico
         } catch (error) {
-            cleanSession(); // Limpa a sessão em caso de erro
-            throw error; // Propaga o erro (para o componente Login exibir a mensagem)
+            cleanSession();
+            throw error;
         }
     };
 
@@ -9969,7 +10093,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         token,
         isLoggedIn,
         login,
-        logout: logoutAndRedirect, // Expõe o logout que também redireciona
+        logout: logoutAndRedirect, 
     };
 
     return (
@@ -10220,6 +10344,79 @@ export function useFeatures() {
     }, []); // Roda apenas uma vez na montagem
 
     return { features, isLoading, error };
+}
+
+
+// ===== FILE: src/hooks/useNavigation.ts =====
+
+// src/hooks/useNavigation.ts
+
+import { useRouter } from 'next/navigation';
+
+/**
+ * @function useNavigation
+ * @description Hook customizado para centralizar a lógica de roteamento e navegação da aplicação.
+ * PORQUÊ: Abstrai o useRouter, permitindo que todas as chamadas de redirecionamento sejam 
+ * feitas de forma semântica e em um ponto único, facilitando a manutenção e a expansão (R1).
+ */
+export function useNavigation() {
+    
+    // Obter o roteador do Next.js
+    const router = useRouter();
+
+    // --- Métodos de Navegação Pública ---
+
+    /**
+     * @method toLogin
+     * @description Redireciona o usuário para a tela de login.
+     * Usado no Logout e no AuthGuard (acesso negado).
+     */
+    const toLogin = () => {
+        router.push('/login');
+    };
+
+    /**
+     * @method toDashboard
+     * @description Redireciona o usuário para o hub central após o login.
+     * É a rota inicial para todos os usuários autenticados (R4).
+     */
+    const toDashboard = () => {
+        router.push('/dashboard');
+    };
+
+    /**
+     * @method toAdminPlans
+     * @description Redireciona para a tela de Gerenciamento de Planos (Rota principal do Admin).
+     */
+    const toAdminPlans = () => {
+        router.push('/admin/plans');
+    };
+
+    /**
+     * @method toTenantClients
+     * @description Redireciona para a tela de Clientes (Rota principal de negócio do Tenant).
+     */
+    const toTenantClients = () => {
+        router.push('/clients');
+    };
+    
+    // Futuras rotas de expansão (Ex: toRegister, toAdminTenants, toAdminFeatures, toProduto, etc.)
+    const toRegister = () => {
+        router.push('/register');
+    };
+
+
+    return {
+        // Métodos de navegação semânticos
+        toLogin,
+        toDashboard,
+        toAdminPlans,
+        toTenantClients,
+        toRegister,
+        
+        // Expor o push cru (raw push) para casos específicos que precisem de rotas dinâmicas
+        rawPush: router.push,
+    };
 }
 
 

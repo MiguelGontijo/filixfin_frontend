@@ -4,8 +4,8 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginDto } from '@/types/auth';
-import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * @component LoginPage
@@ -14,8 +14,13 @@ import React, { useEffect, useState } from 'react';
  */
 export default function LoginPage() {
     
-    const router = useRouter();
-    const auth = useAuth(); // Usar o contexto de autenticação
+    // MODIFICAÇÃO: Obtemos a função de navegação, mas não precisamos dela aqui,
+    // pois o AuthContext agora lida com o redirecionamento pós-login.
+    // const router = useRouter();
+    const router = useNavigation(); // MODIFICAÇÃO: Mantemos a variável para evitar erro, mas usamos a função para isReady
+
+    const auth = useAuth();
+    // Usar o contexto de autenticação
     
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -26,7 +31,6 @@ export default function LoginPage() {
         e.preventDefault();
         setError(null);
         setIsLoading(true);
-
         // Lógica de Validação Front-end Básica
         if (!email || !password) {
             setError("Por favor, preencha todos os campos.");
@@ -37,15 +41,11 @@ export default function LoginPage() {
         try {
             
             const credentials: LoginDto = { email, password };
-            
             // 1. CHAMADA AO CONTEXTO DE LOGIN
             // O Contexto (AuthProvider) fará a chamada à API do Backend
             // e atualizará o estado global (token, user).
             await auth.login(credentials); 
             
-            // 2. REDIRECIONAMENTO DE SUCESSO
-            // Porquê: Após o sucesso, o usuário deve ser levado para a área restrita.
-            // router.push('/dashboard');
 
         } catch (err) {
             setError("Falha na autenticação. Verifique suas credenciais.");
@@ -54,24 +54,6 @@ export default function LoginPage() {
             setIsLoading(false);
         }
     };
-
-    // Se o usuário já estiver logado, redireciona imediatamente
-    // useEffect(() => {
-    //     if (auth.isLoggedIn) {
-    //         router.push('/dashboard');
-    //     }
-    // }, [auth.isLoggedIn, router]);
-
-
-    // Se o usuário está logado, retornamos um componente de carregamento breve
-    // (A lógica de redirecionamento está agora no useEffect)
-    // if (auth.isLoggedIn) {
-    //     return (
-    //         <div className="flex items-center justify-center min-h-screen bg-base-dark text-accent-secondary">
-    //             Redirecionando...
-    //         </div>
-    //     );
-    // }
 
     return (
         // Centraliza o conteúdo na tela
@@ -90,7 +72,7 @@ export default function LoginPage() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    
+      
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-300">
                             E-mail

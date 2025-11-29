@@ -3,11 +3,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-// --- NOVA IMPORTAÇÃO ---
-import { useRegister } from '@/hooks/useRegister'; // Importamos o hook real
-// ------------------------
+import { useRegister } from '@/hooks/useRegister';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * @component RegisterPage
@@ -16,10 +14,11 @@ import { useRegister } from '@/hooks/useRegister'; // Importamos o hook real
  */
 export default function RegisterPage() {
     
-    const router = useRouter();
+    // MODIFICAÇÃO: Usa o hook useNavigation.
+    const { toLogin } = useNavigation();
+    
     // --- NOVO: Uso do hook de registro ---
     const { registerTenant, isLoading, error: apiError } = useRegister();
-    
     const [formData, setFormData] = useState({
         cnpjCpf: '',
         razaoSocial: '',
@@ -28,11 +27,11 @@ export default function RegisterPage() {
         password: '', // Senha do Admin Global (User Nível Zero)
         planoId: '00000000-0000-0000-0000-000000000001', // Plano Básico Padrão (Hardcoded para simplificar)
     });
+    
     // Usamos o erro do hook para exibir mensagens
-    const [localError, setLocalError] = useState<string | null>(null); 
+    const [localError, setLocalError] = useState<string | null>(null);
     
     // Removido o estado de isLoading e error locais, usaremos os do hook.
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
             ...formData,
@@ -44,7 +43,6 @@ export default function RegisterPage() {
         e.preventDefault();
         setLocalError(null);
         // Não precisamos de setIsLoading(true) aqui, o hook já faz.
-        
         // Validação Front-end Básica 
         if (!formData.emailContato || !formData.password || !formData.cnpjCpf) {
             setLocalError("Por favor, preencha os campos obrigatórios (CNPJ/CPF, E-mail, Senha).");
@@ -54,10 +52,9 @@ export default function RegisterPage() {
         try {
             // --- MODIFICAÇÃO: Chamada REAL à API via Hook ---
             await registerTenant(formData);
-            
             // Sucesso: Redirecionar para a página de Login
             alert("Registro Bem-sucedido! O administrador da sua conta foi criado. Faça seu login.");
-            router.push('/login'); 
+            toLogin(); // MODIFICAÇÃO: Usa o método centralizado toLogin (R1).
 
         } catch (err) {
             // O erro já foi capturado e setado em apiError pelo hook (useRegister),
@@ -129,14 +126,13 @@ export default function RegisterPage() {
                                 placeholder="admin@seusite.com" />
                         </div>
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-300">Senha * (Mín. 8 caracteres)</label>
+                            <label htmlFor="password" className="block text-sm font-medium text-gray-300">Senha * (Mín.8 caracteres)</label>
                             <input type="password" id="password" name="password" required
                                 value={formData.password} onChange={handleChange}
                                 className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
                                 placeholder="••••••••" />
                         </div>
                     </div>
-               
                     <button
                         type="submit"
                         // --- MODIFICAÇÃO: Usar o isLoading do hook ---

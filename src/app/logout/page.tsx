@@ -3,8 +3,8 @@
 "use client";
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigation } from '@/hooks/useNavigation'; // MODIFICAÇÃO: Importa o hook centralizado (R1)
 
 /**
  * @component LogoutPage
@@ -13,16 +13,20 @@ import { useAuth } from '@/contexts/AuthContext';
  * e o usuário seja redirecionado para a tela de login.
  */
 export default function LogoutPage() {
+    // MODIFICAÇÃO: Usamos o hook useNavigation para redirecionamento
+    const { toLogin } = useNavigation();
+    
+    // O router do AuthContext.tsx agora tem a lógica de toLogin
     const { logout } = useAuth();
-    const router = useRouter();
-
+    
     useEffect(() => {
         // Limpa o estado e o localStorage
         logout(); 
         
         // Redireciona para a tela de Login
-        router.push('/login');
-    }, [logout, router]);
+        // MODIFICAÇÃO: Chamada explícita ao método centralizado toLogin
+        toLogin(); 
+    }, [logout, toLogin]); // MODIFICAÇÃO: Dependência atualizada (toLogin)
 
     // Retorna um placeholder simples durante o redirecionamento
     return (

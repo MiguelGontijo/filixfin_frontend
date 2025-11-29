@@ -1,12 +1,11 @@
-// src/contexts/AuthContext.tsx (VERSÃO FINAL E CORRIGIDA PARA LOGOUT AUTOMÁTICO)
+// src/contexts/AuthContext.tsx
 
 "use client";
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation'; // <-- NOVO: Para redirecionamento
 import { LoginDto, LoginResponse } from '@/types/auth'; 
-import { UserRole } from '@/types/user'; 
-import { api } from '@/utils/api'; // <-- NOVO: Cliente de API para uso no login real
+import { UserRole } from '@/types/user';
+import { api } from '@/utils/api'; 
+import { useNavigation } from '@/hooks/useNavigation'; 
 
 // --- 1. Definição de Tipos e Variável Global ---
 
@@ -23,6 +22,8 @@ interface AuthContextData {
     user: AuthUser | null;
     token: string | null;
     isLoggedIn: boolean;
+    // MODIFICAÇÃO: Nova sentinela para indicar se a leitura do localStorage terminou.
+    isReady: boolean; 
     
     // Funções de interação
     login: (credentials: LoginDto) => Promise<void>;
@@ -35,7 +36,6 @@ let globalLogoutAndRedirect: (() => void) | null = null;
 // --- 2. Criação do Contexto ---
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
-
 // --- 3. Criação do Provider ---
 
 interface AuthProviderProps {
@@ -43,15 +43,18 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    const router = useRouter(); // <-- NOVO: Hook de roteamento
+    // MODIFICAÇÃO: Usamos o hook centralizado, incluindo o novo método de decisão.
+    const { toLogin, toPostLoginDestination } = useNavigation();
+    
     const [user, setUser] = useState<AuthUser | null>(null);
-    const [token, setToken] = useState<string | null>(null);
+    const [token, setToken] = useState<string | null>(null); 
+    const [isReady, setIsReady] = useState(false); // MODIFICAÇÃO: Estado inicial 'false'
     const isLoggedIn = !!user;
 
     // Função de limpeza de sessão (memória e localStorage)
     const cleanSession = () => {
         setUser(null);
-        setToken(null);
+        setToken(null); 
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
     };
@@ -59,9 +62,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Função principal de logout e redirecionamento (expõe o redirecionamento)
     const logoutAndRedirect = useCallback(() => {
         cleanSession();
-        router.push('/login');
-    }, [router]);
-    
+        // MODIFICAÇÃO: Usa o método centralizado para o login.
+        toLogin(); 
+    }, [toLogin]); 
+
     // Efeito para carregar estado do localStorage na inicialização (persistência)
     useEffect(() => {
         const storedToken = localStorage.getItem('auth_token');
@@ -70,64 +74,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (storedToken && storedUser) {
             setToken(storedToken);
             setUser(JSON.parse(storedUser));
+        } else {
+             // Caso não haja token, garante que o estado inicial seja null.
+             setToken(null);
         }
-    }, []);
-
+        
+        // MODIFICAÇÃO CHAVE: A leitura foi concluída, independentemente do resultado.
+        setIsReady(true);
+        
+    }, []); 
+    
     // Efeito para injetar a função de logout no mecanismo global (Axios)
     useEffect(() => {
         globalLogoutAndRedirect = logoutAndRedirect;
         return () => {
             globalLogoutAndRedirect = null;
         };
-    }, [logoutAndRedirect]); // Depende da função de redirecionamento
-
-    // --- NOVO: Função para obter a rota de destino (SRP) ---
-    const getTargetRoute = (role: UserRole): string => {
-        console.log("Determinando rota de destino para o papel:", role);
-        switch (role) {
-            case UserRole.GLOBAL_ADMIN:
-                // Leva para a tela de gestão principal de ACL
-                return '/admin/plans'; 
-            case UserRole.TENANT_ADMIN:
-            case UserRole.MEMBER:
-                // Leva para a tela de negócio principal
-                return '/clients'; 
-            default:
-                return '/dashboard';
-        }
-    };
+    }, [logoutAndRedirect]); 
 
     const login = async (credentials: LoginDto) => {
         try {
             // 1. CHAMADA REAL À API DE LOGIN
-            // POST para a rota que implementamos no Backend
             const response = await api.post('/user/login', credentials);
-            
             // 2. Extrair Token e Dados
-            const result = response.data as LoginResponse; 
-            
-            const { token, user } = result; // <-- Desestruturação agora é segura
+            const result = response.data as LoginResponse;
+            const { token, user: userData } = result; 
             
             // Mapeamento de Tipos para o Contexto
             const authUser: AuthUser = {
-                id: user.id,
-                email: user.email,
-                role: user.role as UserRole,
-                tenantId: user.tenantId,
+                id: userData.id,
+                email: userData.email,
+                role: userData.role as UserRole,
+                tenantId: userData.tenantId,
             };
-
             // 3. Salvar estado no Contexto e no localStorage
             setToken(token);
             setUser(authUser);
             localStorage.setItem('auth_token', token);
             localStorage.setItem('auth_user', JSON.stringify(authUser));
 
-            const targetRoute = getTargetRoute(authUser.role);
-            router.push(targetRoute);
+            // Chamamos o novo método do hook que DECIDE e EXECUTA o push.
+            toPostLoginDestination(authUser.role);
 
         } catch (error) {
-            cleanSession(); // Limpa a sessão em caso de erro
-            throw error; // Propaga o erro (para o componente Login exibir a mensagem)
+            cleanSession();
+            throw error;
         }
     };
 
@@ -135,8 +126,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         user,
         token,
         isLoggedIn,
+        // MODIFICAÇÃO: Exporta o novo estado isReady
+        isReady,
         login,
-        logout: logoutAndRedirect, // Expõe o logout que também redireciona
+        logout: logoutAndRedirect, 
     };
 
     return (

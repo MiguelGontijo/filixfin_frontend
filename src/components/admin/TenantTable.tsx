@@ -2,16 +2,20 @@
 
 "use client";
 
-import React, { useState } from 'react'; 
+import React, { useState } from 'react';
 import { FaEdit, FaCheckCircle, FaTimesCircle, FaLink, FaBuilding, FaUserTie, FaPlus } from 'react-icons/fa';
-import { useTenants } from '@/hooks/useTenants'; 
+import { useTenants } from '@/hooks/useTenants';
 import { UserRole } from '@/types/user'; 
-import { Tenant, TenantWithPlan } from '@/types/tenant'; // Importar o tipo Tenant
+import { Tenant, TenantWithPlan } from '@/types/tenant';
+// Importar o tipo Tenant
 // --- NOVAS IMPORTAÇÕES ---
-import { TenantModal } from './TenantModal'; // Importar o Modal de Edição
-import { useTenantAdminMutation } from '@/hooks/useTenantAdminMutation'; // Hook para Soft Delete/Edição
-import { useRouter } from 'next/navigation';
-
+import { TenantModal } from './TenantModal';
+// Importar o Modal de Edição
+import { useTenantAdminMutation } from '@/hooks/useTenantAdminMutation';
+// Hook para Soft Delete/Edição
+// MODIFICAÇÃO: Substituímos o useRouter pelo hook centralizado.
+// import { useRouter } from 'next/navigation';
+import { useNavigation } from '@/hooks/useNavigation'; // MODIFICAÇÃO: Importa o useNavigation (R1)
 // -------------------------
 
 
@@ -27,32 +31,31 @@ export const TenantTable: React.FC = () => {
     const [tenantToEdit, setTenantToEdit] = useState<TenantWithPlan | undefined>(undefined);
 
     // Hooks de Dados e Mutação
-    const { tenants, isLoading: loadingTenants, error, refreshData } = useTenants(); // Assumindo refreshData para recarregar
+    const { tenants, isLoading: loadingTenants, error, refreshData } = useTenants();
+    // Assumindo refreshData para recarregar
     const { toggleActiveStatus, isLoading: isToggling } = useTenantAdminMutation();
-
     // --- NOVO: Hook de Roteamento ---
-    const router = useRouter();
-    
+    // MODIFICAÇÃO: Usamos o hook useNavigation.
+    const { toRegister } = useNavigation();
     // Recarrega os dados após sucesso na mutação
     const handleSuccess = () => {
         console.log("Tenant alterado. Recarregando dados.");
-        // FUTURO: Chamar refreshData()
+    // FUTURO: Chamar refreshData()
         setIsModalOpen(false);
         setTenantToEdit(undefined);
     };
-
     // --- Funções de Ação ---
-    
     const handleCreateNewTenant = () => {
         // Redireciona o Admin Global para a tela de Registro/Criação de Conta.
-        router.push('/register');
+        // MODIFICAÇÃO: Usa o método centralizado toRegister.
+        toRegister();
     };
 
     const handleEdit = (tenant: TenantWithPlan) => {
-        setTenantToEdit(tenant); // Define o tenant a ser editado
+        setTenantToEdit(tenant);
+        // Define o tenant a ser editado
         setIsModalOpen(true);
     };
-
     const handleSoftDelete = async (tenant: TenantWithPlan) => {
         const action = tenant.isActive ? 'desativar' : 'ativar';
         if (confirm(`Tem certeza que deseja ${action} o Tenant "${tenant.razaoSocial}"?`)) {
@@ -66,12 +69,10 @@ export const TenantTable: React.FC = () => {
             }
         }
     };
-
     // --- Helpers de Visualização ---
     const renderStatusBadge = (isActive: boolean) => {
-        const colorClass = isActive ? 'text-success bg-green-900/40' : 'text-danger bg-red-900/40';
+        const colorClass = isActive ?'text-success bg-green-900/40' : 'text-danger bg-red-900/40';
         const icon = isActive ? <FaCheckCircle className="w-3 h-3" /> : <FaTimesCircle className="w-3 h-3" />;
-
         return (
             <span className={`inline-flex items-center space-x-1 px-3 py-1 text-xs font-medium rounded-full ${colorClass}`}>
                 {icon}
@@ -94,7 +95,6 @@ export const TenantTable: React.FC = () => {
     };
 
     // --- Tratamento de Estado ---
-
     if (loadingTenants || isToggling) {
         return (
             <div className="text-center py-12 text-accent-secondary">
@@ -134,7 +134,7 @@ export const TenantTable: React.FC = () => {
                                 Razão Social / Documento
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                Plano Atual
+                               Plano Atual
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                                 Contato
@@ -155,8 +155,8 @@ export const TenantTable: React.FC = () => {
                                     <div className="text-sm font-medium text-white">{tenant.razaoSocial}</div>
                                     <div className="text-xs text-gray-400 font-mono">CNPJ/CPF: {tenant.cnpjCpf}</div>
                                 </td>
-                                
-                                {/* Plano Atual */}
+                           
+                                  {/* Plano Atual */}
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-accent-secondary">
                                     {tenant.plan ? tenant.plan.name : 'N/A'}
                                 </td>
@@ -170,7 +170,7 @@ export const TenantTable: React.FC = () => {
                                 <td className="px-6 py-4 whitespace-nowrap text-center">
                                     {renderStatusBadge(tenant.isActive)}
                                 </td>
-                                
+        
                                 {/* Ações (CRUD) */}
                                 <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-3">
                                     <button 
@@ -178,7 +178,7 @@ export const TenantTable: React.FC = () => {
                                         className="text-accent-primary hover:text-orange-500"
                                         title="Editar Plano e Dados"
                                     >
-                                        <FaEdit className="w-4 h-4" />
+                                    <FaEdit className="w-4 h-4" />
                                     </button>
                                     <button 
                                         onClick={() => handleSoftDelete(tenant)}
