@@ -81,6 +81,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
     }, [logoutAndRedirect]); // Depende da função de redirecionamento
 
+    // --- NOVO: Função para obter a rota de destino (SRP) ---
+    const getTargetRoute = (role: UserRole): string => {
+        console.log("Determinando rota de destino para o papel:", role);
+        switch (role) {
+            case UserRole.GLOBAL_ADMIN:
+                // Leva para a tela de gestão principal de ACL
+                return '/admin/plans'; 
+            case UserRole.TENANT_ADMIN:
+            case UserRole.MEMBER:
+                // Leva para a tela de negócio principal
+                return '/clients'; 
+            default:
+                return '/dashboard';
+        }
+    };
+
     const login = async (credentials: LoginDto) => {
         try {
             // 1. CHAMADA REAL À API DE LOGIN
@@ -105,6 +121,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(authUser);
             localStorage.setItem('auth_token', token);
             localStorage.setItem('auth_user', JSON.stringify(authUser));
+
+            const targetRoute = getTargetRoute(authUser.role);
+            router.push(targetRoute);
 
         } catch (error) {
             cleanSession(); // Limpa a sessão em caso de erro

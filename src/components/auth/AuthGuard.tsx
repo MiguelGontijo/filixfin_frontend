@@ -26,11 +26,14 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles }) 
     useEffect(() => {
         if (isReady && !isLoggedIn) {
             // Se o contexto carregou, mas o usuário não está logado, redireciona para o login
+            console.log("DIAGNÓSTICO: Usuário não autenticado. Redirecionando para /login.");
             router.push('/login');
         } else if (isLoggedIn && allowedRoles && !allowedRoles.includes(user!.role)) {
             // Se logado, mas sem a permissão correta (Ex: Membro tentando acessar Admin Global)
+            const userRoleString = user!.role;
+            console.log(`DIAGNÓSTICO: Permissão Negada. Usuário ${userRoleString} tentou acessar rota restrita.`);
             alert("Acesso negado. Você não tem permissão para esta área.");
-            router.push('/dashboard'); // Redireciona para um local seguro
+            // router.push('/dashboard'); // Redireciona para um local seguro
         }
     }, [isLoggedIn, isReady, user, allowedRoles, router]);
 

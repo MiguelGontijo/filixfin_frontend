@@ -30,7 +30,7 @@ export default function LandingPage() {
             <a 
               className="w-full sm:w-auto px-12 py-4 text-lg font-bold rounded-xl text-base-dark bg-accent-primary hover:bg-orange-500 transition duration-150 shadow-lg transform hover:scale-105"
             >
-              Acesso Admin / Login
+              Acesso / Login
             </a>
           </Link>
           

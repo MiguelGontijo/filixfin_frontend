@@ -5,7 +5,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginDto } from '@/types/auth';
 import { useRouter } from 'next/navigation';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 /**
  * @component LoginPage
@@ -45,7 +45,7 @@ export default function LoginPage() {
             
             // 2. REDIRECIONAMENTO DE SUCESSO
             // Porquê: Após o sucesso, o usuário deve ser levado para a área restrita.
-            router.push('/dashboard');
+            // router.push('/dashboard');
 
         } catch (err) {
             setError("Falha na autenticação. Verifique suas credenciais.");
@@ -56,10 +56,22 @@ export default function LoginPage() {
     };
 
     // Se o usuário já estiver logado, redireciona imediatamente
-    if (auth.isLoggedIn) {
-        router.push('/dashboard');
-        return null;
-    }
+    // useEffect(() => {
+    //     if (auth.isLoggedIn) {
+    //         router.push('/dashboard');
+    //     }
+    // }, [auth.isLoggedIn, router]);
+
+
+    // Se o usuário está logado, retornamos um componente de carregamento breve
+    // (A lógica de redirecionamento está agora no useEffect)
+    // if (auth.isLoggedIn) {
+    //     return (
+    //         <div className="flex items-center justify-center min-h-screen bg-base-dark text-accent-secondary">
+    //             Redirecionando...
+    //         </div>
+    //     );
+    // }
 
     return (
         // Centraliza o conteúdo na tela
