@@ -1,37 +1,54 @@
+// src/core/hooks/useNavigation.ts
 
-import { useRouter } from 'next/navigation';
-import { UserRole } from '@/core/types/user'; // Importamos o tipo Role para a decisão
+import { useRouter, useParams } from 'next/navigation';
+import { UserRole } from '@/core/types/user';
 
 /**
  * @function useNavigation
  * @description Hook customizado para centralizar a lógica de roteamento e navegação da aplicação.
- * PORQUÊ: Abstrai o useRouter, fornecendo métodos semânticos e agora, centraliza a lógica de decisão pós-login.
+ * PORQUÊ: Abstrai o useRouter e gerencia a construção de rotas dinâmicas por Tenant (/[tenantId]/...).
  */
 export function useNavigation() {
     
-    // Obter o roteador do Next.js
+    // Obter o roteador e os parâmetros da URL (para saber o contexto atual)
     const router = useRouter();
+    const params = useParams();
 
-    // --- LÓGICA DE DECISÃO DE DESTINO (TRANSFERIDA DO AUTHCONTEXT) ---
+    /**
+     * @private
+     * @function resolveTenantId
+     * @description Resolve o ID do Tenant a ser usado na navegação.
+     * Prioridade: 1. ID passado explicitamente (troca de contexto) -> 2. ID da URL atual.
+     */
+    const resolveTenantId = (overrideTenantId?: string): string | null => {
+        if (overrideTenantId) return overrideTenantId;
+        if (params?.tenantId) return params.tenantId as string;
+        return null;
+    };
+
+    // --- LÓGICA DE DECISÃO DE DESTINO PÓS-LOGIN ---
 
     /**
      * @private
      * @function getTargetRoute
-     * @description Determina o destino final e correto baseado na Role do usuário.
-     * PORQUÊ: Garante que o usuário vá DIRETAMENTE para sua área de trabalho,
-     * eliminando o flash do Dashboard Mestre (instrução crítica).
-     * @param role A role do usuário logado.
-     * @returns A string da rota de destino final.
+     * @description Determina o destino final baseado na Role e no Tenant do usuário.
      */
-    const getTargetRoute = (role: UserRole): string => {
+    const getTargetRoute = (role: UserRole, tenantId?: string | null): string => {
         switch (role) {
             case UserRole.GLOBAL_ADMIN:
-                // Destino FINAL para Admin Global
+                // Global Admin continua na rota raiz /admin (sem contexto de tenant por enquanto)
                 return '/admin/tenants'; 
+            
             case UserRole.TENANT_ADMIN:
             case UserRole.MEMBER:
-                // MODIFICAÇÃO: Redireciona para o Hub Orquestrador /dashboard (G.1)
-                return '/dashboard'; 
+                // MODIFICAÇÃO: Redireciona para a rota dinâmica do Tenant
+                if (tenantId) {
+                    return `/${tenantId}/dashboard`;
+                }
+                // Fallback de segurança se não houver tenantId (não deveria acontecer para estes roles)
+                console.error("Erro Crítico: Usuário de Tenant sem tenantId tentando navegar.");
+                return '/login'; 
+            
             default:
                 return '/login';
         }
@@ -39,37 +56,42 @@ export function useNavigation() {
 
     // --- Métodos de Navegação Pública ---
 
-    /**
-     * @method toLogin
-     * @description Redireciona o usuário para a tela de login.
-     * Usado no Logout e no AuthGuard (acesso negado).
-     */
     const toLogin = () => {
         router.push('/login');
     };
 
+    const toRegister = () => {
+        router.push('/register');
+    };
+
     /**
      * @method toPostLoginDestination
-     * @description Executa a navegação para o destino final determinado pela Role.
-     * É o ponto de entrada chamado pelo AuthContext após login bem-sucedido.
+     * @description Executa a navegação inicial pós-login.
      * @param role A role do usuário.
+     * @param tenantId O ID do tenant do usuário (necessário para montar a URL).
      */
-    const toPostLoginDestination = (role: UserRole) => {
-        const targetRoute = getTargetRoute(role);
+    const toPostLoginDestination = (role: UserRole, tenantId?: string | null) => {
+        const targetRoute = getTargetRoute(role, tenantId);
         router.push(targetRoute);
     };
 
     /**
      * @method toDashboard
-     * @description Redireciona o usuário para o hub central (usado para navegação interna).
+     * @description Vai para o Dashboard Principal do Tenant atual (ou especificado).
      */
-    const toDashboard = () => {
-        router.push('/dashboard');
+    const toDashboard = (overrideTenantId?: string) => {
+        const tenantId = resolveTenantId(overrideTenantId);
+        if (tenantId) {
+            router.push(`/${tenantId}/dashboard`);
+        } else {
+            // Se não temos contexto, voltamos para o login ou home
+            router.push('/login');
+        }
     };
 
     /**
      * @method toAdminPlans
-     * @description Redireciona para a tela de Gerenciamento de Planos (Rota principal do Admin).
+     * @description Rotas de Admin Global permanecem estáticas/raiz.
      */
     const toAdminPlans = () => {
         router.push('/admin/plans');
@@ -77,29 +99,22 @@ export function useNavigation() {
 
     /**
      * @method toTenantClients
-     * @description Redireciona para a tela de Clientes (Rota principal de negócio do Tenant).
+     * @description Navega para o módulo de Clientes dentro do contexto do Tenant.
      */
-    const toTenantClients = () => {
-        router.push('/clients');
+    const toTenantClients = (overrideTenantId?: string) => {
+        const tenantId = resolveTenantId(overrideTenantId);
+        if (tenantId) {
+            router.push(`/${tenantId}/dashboard/clients`);
+        }
     };
-    
-    const toRegister = () => {
-        router.push('/register');
-    };
-
 
     return {
-        // Métodos de navegação semânticos
         toLogin,
+        toRegister,
         toDashboard,
         toAdminPlans,
         toTenantClients,
-        toRegister,
-        
-        // NOVO: Método de execução da decisão pós-login
         toPostLoginDestination,
-        
-        // Expor o push cru (raw push) para casos específicos
         rawPush: router.push,
     };
 }
