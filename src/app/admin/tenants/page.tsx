@@ -1,9 +1,9 @@
 // src/app/admin/tenants/page.tsx
 
 import React from 'react';
-import { AuthGuard } from '@/components/auth/AuthGuard';
-import { UserRole } from '@/types/user'; // Importar a Role correta
-import { TenantTable } from '@/components/admin/TenantTable'; // Importar o componente tabela
+import { AuthGuard } from '@/core/components/auth/AuthGuard';
+import { UserRole } from '@/core/types/user';
+import { TenantTable } from '@/features/admin/components/TenantTable';
 
 /**
  * @component AdminTenantsPage

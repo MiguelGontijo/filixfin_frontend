@@ -1,8 +1,8 @@
 // src/app/admin/layout.tsx
 
-import { AuthGuard } from '@/components/auth/AuthGuard';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { UserRole } from '@/types/user';
+import { AuthGuard } from '@/core/components/auth/AuthGuard';
+import { AdminSidebar } from '@/core/ui/layout/AdminSidebar';
+import { UserRole } from '@/core/types/user';
 
 /**
  * @component AdminRootLayout

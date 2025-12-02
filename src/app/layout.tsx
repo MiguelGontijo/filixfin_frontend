@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 // CORREÇÃO: Importar Geist e Geist_Mono diretamente do next/font/google
 import { Inter } from "next/font/google"; 
 import "./globals.css";
-import { AppContainer } from "@/components/layout/AppContainer"; // Importação via alias
+import { AppContainer } from "@/core/ui/layout/AppContainer"; // Importação via alias
 import { AuthProvider } from "@/contexts/AuthContext";
 
 // Usaremos Inter como fonte padrão para simplificar a correção

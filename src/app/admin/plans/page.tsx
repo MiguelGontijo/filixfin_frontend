@@ -1,7 +1,7 @@
 // src/app/admin/plans/page.tsx (INTEGRAÇÃO DA TABELA)
 
 import React from 'react';
-import { PlanTable } from '@/components/admin/PlanTable'; // Importar o componente tabela
+import { PlanTable } from '@/features/admin/components/PlanTable'; // Importar o componente tabela
 
 /**
  * @component AdminPlansPage

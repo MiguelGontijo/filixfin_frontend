@@ -7085,7 +7085,7 @@ export default config;
 // src/app/admin/features/page.tsx (INTEGRAÇÃO DA TABELA)
 
 import React from 'react';
-import { FeatureTable } from '@/components/admin/FeatureTable'; // Importar o componente tabela
+import { FeatureTable } from '@/features/admin/components/FeatureTable';
 
 /**
  * @component AdminFeaturesPage
@@ -7116,9 +7116,9 @@ export default function AdminFeaturesPage() {
 
 // src/app/admin/layout.tsx
 
-import { AuthGuard } from '@/components/auth/AuthGuard';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { UserRole } from '@/types/user';
+import { AuthGuard } from '@/core/components/auth/AuthGuard';
+import { AdminSidebar } from '@/core/ui/layout/AdminSidebar';
+import { UserRole } from '@/core/types/user';
 
 /**
  * @component AdminRootLayout
@@ -7156,7 +7156,7 @@ export default function AdminRootLayout({
 // src/app/admin/plans/page.tsx (INTEGRAÇÃO DA TABELA)
 
 import React from 'react';
-import { PlanTable } from '@/components/admin/PlanTable'; // Importar o componente tabela
+import { PlanTable } from '@/features/admin/components/PlanTable'; // Importar o componente tabela
 
 /**
  * @component AdminPlansPage
@@ -7188,9 +7188,9 @@ export default function AdminPlansPage() {
 // src/app/admin/tenants/page.tsx
 
 import React from 'react';
-import { AuthGuard } from '@/components/auth/AuthGuard';
-import { UserRole } from '@/types/user'; // Importar a Role correta
-import { TenantTable } from '@/components/admin/TenantTable'; // Importar o componente tabela
+import { AuthGuard } from '@/core/components/auth/AuthGuard';
+import { UserRole } from '@/core/types/user';
+import { TenantTable } from '@/features/admin/components/TenantTable';
 
 /**
  * @component AdminTenantsPage
@@ -7225,84 +7225,69 @@ export default function AdminTenantsPage() {
 }
 
 
-// ===== FILE: src/app/clients/layout.tsx =====
+// ===== FILE: src/app/dashboard/clients/layout.tsx =====
 
-// src/app/clients/layout.tsx
+// src/app/dashboard/clients/layout.tsx (Agora na nova rota)
 
-import { AuthGuard } from '@/components/auth/AuthGuard';
-import { UserRole } from '@/types/user';
-// MODIFICAÇÃO: Importa o novo componente ClientSidebar (R3).
-import { ClientSidebar } from '@/components/layout/ClientSidebar'; 
+import React from 'react';
+import { AuthGuard } from '@/core/components/auth/AuthGuard';
+import { UserRole } from '@/core/types/user';
+import { ClientSidebar } from '@/core/ui/layout/ClientSidebar'; 
+
+// Esta é a lista de roles permitidas para ACESSAR qualquer rota sob /dashboard/clients
+// Porquê: Garante que apenas usuários de Tenant possam ver o módulo de Clientes.
+const allowedRoles: UserRole[] = ['TENANT_ADMIN', 'MEMBER'];
 
 /**
- * @component ClientRootLayout
- * @description Layout principal para todas as rotas sob /clients (Área de Negócio do Tenant).
- * Porquê: Aplica o AuthGuard, verifica as roles e configura o layout com a sidebar de navegação.
+ * @component ClientsLayout
+ * @description Layout específico para as rotinas de negócio do Tenant (Ex: Clientes, Produtos, Agendamento).
+ * PORQUÊ: Envolve o conteúdo com o AuthGuard e o layout com a ClientSidebar.
  */
-export default function ClientRootLayout({
+export default function ClientsLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  
-  // O GLOBAL_ADMIN NÃO deve acessar rotinas de Tenant por aqui, apenas por /admin.
-  const allowedRoles: UserRole[] = [UserRole.TENANT_ADMIN, UserRole.MEMBER];
-
-  return (
-    // O AuthGuard protege toda esta seção do aplicativo
-    <AuthGuard allowedRoles={allowedRoles}>
-      <div className="flex min-h-screen bg-base-dark">
-        
-        {/* MODIFICAÇÃO: Renderiza o ClientSidebar. */}
-        <ClientSidebar /> 
-        
-        {/* Conteúdo Principal */}
-        <main className="flex-1 p-8 overflow-y-auto">
-          {children}
-        </main>
-      </div>
-    </AuthGuard>
-  );
+}: {
+  children: React.ReactNode
+}) {
+    
+    // O layout se concentra em garantir a autenticação e o layout visual
+    
+    return (
+        <AuthGuard allowedRoles={allowedRoles}>
+            <div className="flex min-h-screen bg-base-dark text-white">
+                
+                {/* 1. Sidebar do Cliente */}
+                <ClientSidebar />
+                
+                {/* 2. Conteúdo Principal */}
+                <main className="flex-1 p-8">
+                    {children}
+                </main>
+            </div>
+        </AuthGuard>
+    )
 }
 
 
-// ===== FILE: src/app/clients/page.tsx =====
+// ===== FILE: src/app/dashboard/clients/page.tsx =====
 
 // src/app/clients/page.tsx
+"use client";
 
 import React from 'react';
-import { AuthGuard } from '@/components/auth/AuthGuard';
-import { UserRole } from '@/types/user';
-import { ClientTable } from '@/components/client/ClientTable'; // Tabela de Clientes
+// Importação do novo componente modularizado
+import { ClientTablePage } from '@/core/components/client/ClientTablePage'; 
 
 /**
  * @component ClientsPage
- * @description Página de Gerenciamento de Clientes (acessível por Tenant Admin e Members).
- * Porquê: É a primeira rota de negócio que valida todo o sistema de ACL e Isolamento.
+ * @description Rota de entrada para a Tabela de Clientes.
+ * PORQUÊ: Simplifica a rota e usa o componente Page modularizado.
  */
 export default function ClientsPage() {
     
-    // Lista de roles que podem acessar esta página de negócio.
-    // O GLOBAL_ADMIN NÃO deve acessar rotinas de Tenant por aqui, apenas por /admin
-    const allowedRoles: UserRole[] = [UserRole.TENANT_ADMIN, UserRole.MEMBER];
-
+    // NOTE: O AuthGuard é aplicado no clients/layout.tsx
+    
     return (
-        <AuthGuard allowedRoles={allowedRoles}>
-            <div className="space-y-6">
-                
-                <h1 className="text-3xl font-extrabold text-white">
-                    Gerenciamento de Clientes
-                </h1>
-                
-                <p className="text-gray-400">
-                    Cadastre e visualize todos os clientes vinculados à sua conta (Tenant).
-                </p>
-                
-                {/* Renderiza o componente que busca e exibe os dados (Listagem e Criação) */}
-                <ClientTable />
-                
-            </div>
-        </AuthGuard>
+        <ClientTablePage />
     );
 }
 
@@ -7311,81 +7296,70 @@ export default function ClientsPage() {
 
 // src/app/dashboard/page.tsx
 
-"use client"; // Necessário para usar hooks como useEffect
+"use client";
 
-import { AuthGuard } from '@/components/auth/AuthGuard';
-import { UserRole } from '@/types/user';
-import Link from 'next/link';
-import React, { useEffect } from 'react'; // MODIFICAÇÃO: Importa useEffect e React
-import { useAuth } from '@/contexts/AuthContext'; // MODIFICAÇÃO: Importa useAuth
-import { useNavigation } from '@/hooks/useNavigation'; // MODIFICAÇÃO: Importa useNavigation
+import { AuthGuard } from '@/core/components/auth/AuthGuard';
+import { UserRole } from '@/core/types/user';
+import React from 'react'; 
+import { useAuth } from '@/contexts/AuthContext'; 
+
+// --- FUTURO: Importar os Orquestradores de Perfil de Negócio ---
+// import { ServiceProviderDashboard } from '@/modules/dashboard/ServiceProviderDashboard';
+// import { StoreDashboard } from '@/modules/dashboard/StoreDashboard';
+// ---------------------------------------------------------------
+
 
 /**
  * @component DashboardPage
- * @description Página inicial da aplicação após o Login (Painel de Controle do Admin Global).
- * Porquê: Agora funciona como um "router de entrada" para segmentar GLOBAL_ADMIN de TENANT_ADMIN.
+ * @description Rota principal para usuários logados (Hub Central do Cliente/Tenant).
+ * PORQUÊ: Serve como o ponto de orquestração para os diferentes perfis de negócio (Prestador vs. Loja).
  */
 export default function DashboardPage() {
     
-    // Hooks para lógica de redirecionamento
-    const { user, isLoggedIn } = useAuth(); // MODIFICAÇÃO: Acesso ao contexto
-    const { toAdminPlans, rawPush } = useNavigation(); // MODIFICAÇÃO: Acesso ao roteador
+    const { user, isLoggedIn, isReady } = useAuth();
     
-    // Lógica de Redirecionamento Pós-Login
-    useEffect(() => {
-        if (isLoggedIn && user) {
-            // Regra: Se for GLOBAL_ADMIN, redireciona imediatamente para a tela de gestão de Tenants/Planos.
-            if (user.role === UserRole.GLOBAL_ADMIN) {
-                // Rota sugerida de entrada para o Global Admin: Lista de Tenants
-                rawPush('/admin/tenants'); // Usar rawPush para rota específica
-            }
-            // Se for TENANT_ADMIN ou MEMBER, permanece no Dashboard.
-        }
-    }, [isLoggedIn, user, rawPush]); // MODIFICAÇÃO: Dependências de navegação e autenticação
-
     // Lista de roles que podem acessar esta página
-    const allowedRoles: UserRole[] = ['GLOBAL_ADMIN', 'TENANT_ADMIN'];
+    // O GLOBAL_ADMIN é redirecionado pelo AuthContext para /admin/tenants
+    const allowedRoles: UserRole[] = ['TENANT_ADMIN', 'MEMBER'];
     
-    // Se o GLOBAL_ADMIN for redirecionado, esta tela piscará brevemente.
-    if (isLoggedIn && user?.role === UserRole.GLOBAL_ADMIN) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-base-dark text-accent-secondary">
-                Redirecionando para a Área de Administração...
-            </div>
-        );
+    // NOTE: Se o AuthGuard não nos redirecionou, estamos logados (isReady=true, isLoggedIn=true).
+
+    // --- LÓGICA DE ORQUESTRAÇÃO FUTURA (A ser expandida) ---
+    /*
+    const tenantProfile = determineProfile(user.planoId);
+    
+    if (tenantProfile === 'PRESTADOR_SERVICO') {
+        return <ServiceProviderDashboard user={user} />;
     }
     
+    if (tenantProfile === 'LOJA_VAREJO') {
+        return <StoreDashboard user={user} />;
+    }
+    */
+    // --------------------------------------------------------
+
     return (
-        // Envolve o conteúdo com o AuthGuard
         <AuthGuard allowedRoles={allowedRoles}>
-            <div className="p-8 space-y-8 min-h-screen bg-base-metallic">
+            <div className="p-8 space-y-8 min-h-screen">
                 
                 <h1 className="text-4xl font-extrabold text-white border-l-4 border-accent-secondary pl-4">
-                    Painel de 
-                    Controle Mestre
+                    Bem-vindo, {user?.email}
                 </h1>
                 
-                <p className="text-gray-400">
-                    Sua plataforma de gestão full-stack está ativa. O próximo passo é criar os módulos de negócio.
-               
-                </p>
-                
-                {/* Futuras Ações Rápidas */}
-                <div className="flex space-x-4">
-                    <Link href="/admin/plans" legacyBehavior>
-                       
-                        <a className="px-4 py-2 bg-accent-primary rounded-lg text-base-dark font-medium hover:bg-orange-500 transition">
-                            Gerenciar Planos (ACL)
-                        </a>
-                    </Link>
-                 
-                    <Link href="/logout" legacyBehavior>
-                        <a className="px-4 py-2 border border-gray-600 rounded-lg text-gray-400 hover:text-white transition">
-                            Sair
-                        </a>
-           
-                    </Link>
+                <div className="bg-base-metallic p-6 rounded-lg shadow-xl">
+                    <h2 className="text-xl font-bold text-base-text mb-4">Visão Geral</h2>
+                    <p className="text-gray-400">
+                        {user?.role === 'TENANT_ADMIN' 
+                            ? 'Você é o administrador do Tenant. Use o menu lateral para gerenciar Clientes, Produtos e Agendamentos.'
+                            : 'Você é um membro. Use o menu lateral para acessar suas rotinas.'
+                        }
+                    </p>
+                    
+                    <p className="mt-4 text-sm text-gray-500">
+                        * O conteúdo deste dashboard será dinâmico e configurável com base no seu Plano de Assinatura.
+                    </p>
                 </div>
+
             </div>
         </AuthGuard>
     );
@@ -7466,7 +7440,7 @@ import type { Metadata } from "next";
 // CORREÇÃO: Importar Geist e Geist_Mono diretamente do next/font/google
 import { Inter } from "next/font/google"; 
 import "./globals.css";
-import { AppContainer } from "@/components/layout/AppContainer"; // Importação via alias
+import { AppContainer } from "@/core/ui/layout/AppContainer"; // Importação via alias
 import { AuthProvider } from "@/contexts/AuthContext";
 
 // Usaremos Inter como fonte padrão para simplificar a correção
@@ -7515,9 +7489,9 @@ export default function RootLayout({
 "use client"; // Necessário para usar hooks como useState
 
 import { useAuth } from '@/contexts/AuthContext';
-import { LoginDto } from '@/types/auth';
+import { LoginDto } from '@/core/types/auth';
 import React, { useEffect, useState } from 'react';
-import { useNavigation } from '@/hooks/useNavigation';
+import { useNavigation } from '@/core/hooks/useNavigation';
 
 /**
  * @component LoginPage
@@ -7639,7 +7613,7 @@ export default function LoginPage() {
 
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigation } from '@/hooks/useNavigation'; // MODIFICAÇÃO: Importa o hook centralizado (R1)
+import { useNavigation } from '@/core/hooks/useNavigation'; // MODIFICAÇÃO: Importa o hook centralizado (R1)
 
 /**
  * @component LogoutPage
@@ -7735,8 +7709,8 @@ export default function LandingPage() {
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRegister } from '@/hooks/useRegister';
-import { useNavigation } from '@/hooks/useNavigation';
+import { useRegister } from '@/core/hooks/useRegister';
+import { useNavigation } from '@/core/hooks/useNavigation';
 
 /**
  * @component RegisterPage
@@ -7959,14 +7933,1777 @@ try {
 }
 
 
-// ===== FILE: src/components/admin/FeatureModal.tsx =====
+// ===== FILE: src/contexts/AuthContext.tsx =====
 
-// src/components/admin/FeatureModal.tsx
+// src/contexts/AuthContext.tsx
+
+"use client";
+
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { LoginDto, LoginResponse } from '@/core/types/auth'; 
+import { UserRole } from '@/core/types/user';
+import { api } from '@/core/services/api'; 
+import { useNavigation } from '@/core/hooks/useNavigation'; 
+import { User } from '@/core/types/user';
+
+// --- 1. Definição de Tipos e Variável Global ---
+
+// O que o nosso JWT Claims carrega
+interface AuthUser extends User { // Estende o tipo User para incluir os dados do token/claims
+    id: string;
+    email: string;
+    role: UserRole;
+    tenantId: string | null;
+}
+
+// O estado do Contexto
+interface AuthContextData {
+    user: AuthUser | null;
+    token: string | null;
+    isLoggedIn: boolean;
+    isReady: boolean; 
+    
+    // Funções de interação
+    login: (credentials: LoginDto) => Promise<void>;
+    logout: () => void; // Funções de interação
+}
+
+// Variável global que armazena a função de logout do Provider (para ser acessada pelo Axios)
+let globalLogoutAndRedirect: (() => void) | null = null; 
+
+// --- 2. Criação do Contexto ---
+
+const AuthContext = createContext<AuthContextData | undefined>(undefined);
+// --- 3. Criação do Provider ---
+
+interface AuthProviderProps {
+    children: React.ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+    
+    const { toLogin, toPostLoginDestination } = useNavigation();
+    
+    const [user, setUser] = useState<AuthUser | null>(null);
+    const [token, setToken] = useState<string | null>(null); 
+    const [isReady, setIsReady] = useState(false); 
+    const isLoggedIn = !!user;
+
+    // Função de limpeza de sessão (memória e cookies)
+    const cleanSession = () => {
+        setUser(null);
+        setToken(null); 
+        // NOTE: A limpeza do Cookie HttpOnly deve ser feita pelo Backend (rota de logout)
+        // ou pela expiração forçada do Cookie, o que não faz parte do escopo atual.
+        // Por hora, apenas limpamos o estado do Frontend.
+    };
+
+    // Função principal de logout e redirecionamento (expõe o redirecionamento)
+    const logoutAndRedirect = useCallback(() => {
+        
+        // --- MODIFICAÇÃO CHAVE (D.3): Chamada Assíncrona para Logout no Backend ---
+        // PORQUÊ: Garante que o Cookie HttpOnly seja destruído antes de limpar o estado.
+        api.post('/user/logout')
+            .catch(error => {
+                // Erros aqui (ex: rede offline) não devem impedir o logout no FE.
+                console.error("Erro no logout do Backend (Cookie):", error);
+            })
+            .then(() => {
+                // A limpeza do estado e o redirecionamento devem sempre ocorrer,
+                // mesmo que a chamada de rede falhe.
+                cleanSession();
+                toLogin(); 
+            });
+    }, [toLogin]); 
+
+    // --- NOVO: Função Assíncrona para Verificar a Sessão (Pilar da Correção) ---
+    /**
+     * @method verifySession
+     * @description Tenta buscar o perfil do Backend usando o Cookie HttpOnly.
+     * PORQUÊ: Hidrata o estado do AuthContext após o refresh.
+     */
+    const verifySession = useCallback(async () => {
+        try {
+            // Se o user já estiver no estado (ex: logo após o login ou hidratação anterior), não refazemos a chamada.
+            if (user) {
+                setIsReady(true);
+                return;
+            }
+
+            // Tenta acessar a rota protegida. O browser envia o Cookie.
+            const response = await api.get('/user/profile'); 
+            const authUser = response.data as AuthUser;
+            
+            // Se o Backend responde 200 OK: O Cookie é válido, autentica o usuário.
+            setUser(authUser);
+            setToken('VALID_SESSION'); // Marcador de sessão válida
+            
+        } catch (error: any) {
+            // Se falhar (401/403): O token expirou ou está faltando.
+            // O interceptor já chamou forceGlobalLogout, mas garantimos a limpeza.
+            if (error.response?.status === 401 || error.response?.status === 403) {
+                 console.warn("Sessão Expirada/Inválida. Limpeza do estado local.");
+            }
+            cleanSession();
+        } finally {
+            // INDEPENDENTE do resultado, a verificação terminou. Libera o AuthGuard.
+            setIsReady(true);
+        }
+    }, [user]);
+
+    // Efeito para carregar estado assíncrono (Verificação de Sessão)
+    useEffect(() => {
+        verifySession();
+    }, [verifySession]); 
+    
+    // Efeito para injetar a função de logout no mecanismo global (Axios)
+    useEffect(() => {
+        globalLogoutAndRedirect = logoutAndRedirect;
+        return () => {
+            globalLogoutAndRedirect = null;
+        };
+    }, [logoutAndRedirect]); 
+
+    const login = async (credentials: LoginDto) => {
+        try {
+            // 1. CHAMADA REAL À API DE LOGIN (Backend setará o Cookie)
+            const response = await api.post('/user/login', credentials);
+            // 2. Extrair Token e Dados
+            const result = response.data as LoginResponse;
+            const { user: userData } = result; 
+            
+            // Mapeamento de Tipos para o Contexto
+            const authUser: AuthUser = {
+                id: userData.id,
+                email: userData.email,
+                role: userData.role as UserRole,
+                tenantId: userData.tenantId,
+            };
+            // 3. Salvar estado no Contexto (user) e marcar sessão como válida
+            setToken('VALID_SESSION'); // Marcador
+            setUser(authUser);
+            // Redirecionamento
+            toPostLoginDestination(authUser.role);
+
+        } catch (error) {
+            cleanSession();
+            throw error;
+        }
+    };
+
+    const contextValue: AuthContextData = {
+        user,
+        token,
+        isLoggedIn,
+        isReady,
+        login,
+        logout: logoutAndRedirect, 
+    };
+
+    return (
+        <AuthContext.Provider value={contextValue}>
+            {children}
+        </AuthContext.Provider>
+    );
+};
+
+// --- 4. Criação do Hook e Função Global ---
+
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth deve ser usado dentro de um AuthProvider');
+    }
+    return context;
+};
+
+/**
+ * @function forceGlobalLogout
+ * @description Chamado pelo Interceptor de API (api.ts) quando detecta 401/403.
+ */
+export const forceGlobalLogout = () => {
+    if (globalLogoutAndRedirect) {
+        console.warn("Token expirado ou inválido. Executando logout automático...");
+        globalLogoutAndRedirect();
+    }
+};
+
+
+// ===== FILE: src/core/components/auth/AuthGuard.tsx =====
+
+
+"use client";
+
+import React, { useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserRole } from '@/core/types/user';
+import { useNavigation } from '@/core/hooks/useNavigation';
+
+interface AuthGuardProps {
+    children: React.ReactNode;
+    allowedRoles?: UserRole[]; // Quais roles têm permissão de acesso
+}
+
+/**
+ * @component AuthGuard
+ * @description Componente de HOC (High-Order Component) para proteger rotas.
+ * Porquê: Centraliza a lógica de ACL e autenticação no Frontend, garantindo que o usuário
+ * seja redirecionado se não estiver logado ou não tiver a role correta.
+ */
+export const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles }) => {
+    // MODIFICAÇÃO: Consome o novo estado 'isReady' do contexto.
+    const { isLoggedIn, user, isReady } = useAuth();
+    // REMOÇÃO: A definição de isReady baseada no token foi removida,
+    // pois o AuthContext agora fornece o estado de leitura explícito.
+    // const isReady = token !== undefined; 
+    
+    // MODIFICAÇÃO: Usamos o hook useNavigation.
+    const { toLogin, toDashboard } = useNavigation();
+
+    useEffect(() => {
+        // A checagem de isReady garante que o redirecionamento só ocorra APÓS
+        // a leitura do localStorage ter sido concluída no AuthContext.
+        if (isReady && !isLoggedIn) {
+            // Se o contexto carregou (isReady) mas o usuário não está logado, redireciona para o login
+            console.log("DIAGNÓSTICO: Usuário não autenticado. Redirecionando para /login.");
+            toLogin();
+        } else if (isLoggedIn && allowedRoles && !allowedRoles.includes(user!.role)) {
+     
+            // Se logado, mas sem a permissão correta
+            const userRoleString = user!.role;
+            console.log(`DIAGNÓSTICO: Permissão Negada. Usuário ${userRoleString} tentou acessar rota restrita.`);
+            alert("Acesso negado. Você não tem permissão para esta área.");
+      
+        }
+        // MODIFICAÇÃO: Dependência 'token' removida, 'isReady' (novo) usado.
+    }, [isLoggedIn, isReady, user, allowedRoles, toLogin]); 
+
+    // MODIFICAÇÃO: A renderização do placeholder agora é controlada estritamente por !isReady.
+    if (!isReady) {
+        // Renderiza um placeholder enquanto verifica o estado
+        return <div className="flex items-center justify-center min-h-screen bg-base-dark">Carregando Sessão...</div>;
+    }
+
+    // Se a sessão foi carregada (isReady) e não houve redirecionamento (isLoggedIn é true), 
+    // ou se o usuário estiver logado, mas com a role errada, 
+    // o useEffect cuidará do redirecionamento, e este if final só garante que 
+    // não renderizamos conteúdo se o usuário não estiver logado (evitando a renderização)
+    if (!isLoggedIn) {
+        // Se isReady é true e isLoggedIn é false, estamos esperando o push para /login.
+        // Retornamos null ou o placeholder padrão para evitar renderização duplicada.
+        return <div className="flex items-center justify-center min-h-screen bg-base-dark">Carregando Sessão...</div>;
+    }
+
+
+    return <>{children}</>;
+};
+
+
+// ===== FILE: src/core/components/client/ClientModal.tsx =====
+
+
+import React, { useState } from 'react';
+import { FaTimes } from 'react-icons/fa';
+import { useClientMutation } from '@/core/hooks/useClientMutation';
+
+// DTO e Propriedades do Modal
+interface ClientModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: () => void; // Callback para recarregar a lista
+    // FUTURO: currentClient?: Client para edição
+}
+
+/**
+ * @component ClientModal
+ * @description Modal de Criação de Cliente (Formulário).
+ * Porquê: Interage com a ACL e a lógica de isolamento no Backend.
+ */
+export const ClientModal: React.FC<ClientModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    onSuccess 
+}) => {
+    
+    // 1. ESTADO E HOOKS
+    const { createClient, isLoading, error: mutationError } = useClientMutation();
+    const [formData, setFormData] = useState({
+        name: '',
+        document: '',
+        email: '',
+    });
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
+    // Lida com a mudança nos campos
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    // 2. LÓGICA DE SUBMISSÃO
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmitError(null);
+
+        try {
+            // Chamada de Criação
+            await createClient(formData);
+            
+            onSuccess(); // Chama recarga da lista
+            onClose();   // Fecha o modal
+            
+        } catch (err: any) {
+            // O erro pode ser do Backend (limite excedido 422, conflito 409)
+            setSubmitError(mutationError || err.response?.data?.message || 'Falha ao cadastrar cliente.');
+        }
+    };
+    
+    if (!isOpen) return null;
+
+    // 3. RENDERIZAÇÃO
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div className="bg-base-metallic p-6 rounded-lg shadow-2xl w-full max-w-md">
+                
+                {/* Cabeçalho do Modal */}
+                <div className="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
+                    <h2 className="text-xl font-bold text-white">
+                        Novo Cliente
+                    </h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white">
+                        <FaTimes className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Mensagens de Erro */}
+                {submitError && (
+                    <div className="p-3 mb-4 text-sm font-medium text-danger bg-red-900/50 rounded-md">
+                        {submitError}
+                    </div>
+                )}
+
+                {/* Formulário */}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    
+                    {/* Nome */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300">Nome Completo *</label>
+                        <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            required
+                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
+                        />
+                    </div>
+                    
+                    {/* Documento (CPF/CNPJ) */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300">CPF/CNPJ *</label>
+                        <input
+                            type="text"
+                            name="document"
+                            value={formData.document}
+                            onChange={handleChange}
+                            required
+                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
+                        />
+                    </div>
+
+                    {/* Email (Opcional) */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300">E-mail</label>
+                        <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
+                        />
+                    </div>
+
+                    {/* Botão de Ação */}
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-base-dark bg-accent-secondary hover:bg-violet-600 transition disabled:bg-gray-500"
+                    >
+                        {isLoading ? 'Cadastrando...' : 'Cadastrar Cliente'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+
+// ===== FILE: src/core/components/client/ClientTable.tsx =====
+
+
+"use client";
+
+import React, { useState } from 'react';
+import { FaEdit, FaTrash, FaPlus, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { useClients } from '@/core/hooks/useClients';
+import { ClientModal } from '@/core/components/client/ClientModal'; 
+
+/**
+ * @component ClientTable
+ * @description Tabela de visualização e gerenciamento de Clientes (Entidade de Negócio).
+ * Porquê: Implementa a interface principal para o usuário do Tenant.
+ */
+export const ClientTable: React.FC = () => {
+    
+    const { clients, isLoading, error, refreshData } = useClients();
+    
+    // --- ESTADO PARA MODAL ---
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    // Para futura edição, definiríamos: const [clientToEdit, setClientToEdit] = useState<Client | undefined>(undefined);
+    // -------------------------
+
+    // --- Funções de Ação ---
+    
+    const handleNewClient = () => {
+        // setClientToEdit(undefined); // Criação
+        setIsModalOpen(true);
+    };
+
+    const handleSuccess = () => {
+        refreshData(); // Recarrega os dados após sucesso na criação
+        setIsModalOpen(false);
+    };
+    
+    // FUTURO: handleEdit e handleDelete (requerem useClientMutation.deleteClient)
+
+    // --- Tratamento de Estado ---
+
+    if (isLoading) {
+        return (
+            <div className="text-center py-12 text-accent-secondary">
+                <span className="animate-spin text-xl">⏳</span> Carregando Clientes...
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-4 bg-danger/20 border border-danger rounded-lg text-danger">
+                {error}
+            </div>
+        );
+    }
+    
+    return (
+        <div className="space-y-4">
+            
+            {/* Botão de Criação */}
+            <div className="flex justify-end">
+                <button 
+                    onClick={handleNewClient} 
+                    className="flex items-center space-x-2 px-4 py-2 bg-accent-secondary text-white font-bold rounded-lg hover:bg-violet-600 transition duration-150 shadow-lg"
+                >
+                    <FaPlus />
+                    <span>Novo Cliente</span>
+                </button>
+            </div>
+
+            {/* Tabela Responsiva */}
+            <div className="overflow-x-auto bg-base-metallic rounded-lg shadow-xl">
+                <table className="min-w-full divide-y divide-gray-700">
+                    <thead className="bg-gray-700">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                Nome / E-mail
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                Documento
+                            </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                Status
+                            </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                Ações
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-700">
+                        {clients.map((client) => (
+                            <tr key={client.id} className="hover:bg-gray-700 transition duration-100">
+                                {/* Nome / Email */}
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm font-medium text-white">{client.name}</div>
+                                    <div className="text-xs text-gray-400">{client.email || 'Não fornecido'}</div>
+                                </td>
+                                
+                                {/* Documento */}
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200 font-mono">
+                                    {client.document}
+                                </td>
+                                
+                                {/* Status */}
+                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
+                                    {client.isActive ? (
+                                        <span className="inline-flex items-center space-x-1 px-3 py-1 bg-success/20 text-success rounded-full">
+                                            <FaCheckCircle className="w-3 h-3" />
+                                            <span>Ativo</span>
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center space-x-1 px-3 py-1 bg-danger/20 text-danger rounded-full">
+                                            <FaTimesCircle className="w-3 h-3" />
+                                            <span>Inativo</span>
+                                        </span>
+                                    )}
+                                </td>
+                                
+                                {/* Ações (FUTURO: Edição/Deleção) */}
+                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-3">
+                                    <button 
+                                        // onClick={() => handleEdit(client)}
+                                        className="text-accent-secondary/50 cursor-not-allowed"
+                                        title="Editar (Não Implementado)"
+                                    >
+                                        <FaEdit className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                        // onClick={() => handleDelete(client)}
+                                        className="text-danger/50 cursor-not-allowed"
+                                        title="Deletar (Não Implementado)"
+                                    >
+                                        <FaTrash className="w-4 h-4" />
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            
+            {clients.length === 0 && !isLoading && !error && (
+                <div className="text-center py-8 text-gray-500">
+                    Nenhum cliente cadastrado. Clique em Novo Cliente para começar!
+                </div>
+            )}
+
+            {/* --- MODAL DE CRIAÇÃO --- */}
+            <ClientModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={handleSuccess}
+            />
+            {/* ------------------------ */}
+        </div>
+    );
+};
+
+
+// ===== FILE: src/core/components/client/ClientTablePage.tsx =====
+
+// src/modules/client/pages/ClientTablePage.tsx
+"use client";
+
+import React from 'react';
+import { ClientTable } from '@/core/components/client/ClientTable';
+// Tabela de Clientes
+
+/**
+ * @component ClientTablePage
+ * @description Página que renderiza o Gerenciamento e a Tabela de Clientes.
+ * PORQUÊ: Antigo conteúdo da rota /clients, movido para ser um módulo de página puro.
+ */
+export const ClientTablePage: React.FC = () => {
+    
+    // NOTE: O AuthGuard e a verificação de roles agora estão no clients/layout.tsx
+    
+    return (
+        <div className="space-y-6">
+            
+            <h1 className="text-3xl font-extrabold text-white">
+                Gerenciamento de Clientes
+            </h1>
+            
+            <p className="text-gray-400">
+                Cadastre e visualize todos os clientes vinculados à sua conta (Tenant).
+            </p>
+            
+            {/* Renderiza o componente que busca e exibe os dados (Listagem e Criação) */}
+            <ClientTable />
+            
+        </div>
+    );
+}
+
+
+// ===== FILE: src/core/hooks/useClientMutation.ts =====
+
+
+import { useState } from 'react';
+import { api } from '@/core/services/api';
+import { Client, CreateClientDto } from '@/core/types/client';
+
+/**
+ * @function useClientMutation
+ * @description Hook de mutação para gerenciar as operações de escrita (C/U/D) sobre Clientes.
+ * Porquê: Centraliza o tratamento de loading e erros de API.
+ */
+export function useClientMutation() {
+    
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    /**
+     * @method createClient
+     * @description Envia uma requisição POST para criar um novo Cliente.
+     * Inclui a checagem de ACL (limite de clientes).
+     */
+    const createClient = async (data: CreateClientDto): Promise<Client> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            // Rota POST /client implementada no Backend
+            const response = await api.post('/client', data);
+            return response.data as Client;
+        } catch (err: any) {
+            // Captura erros de ACL (403/422) ou Conflito (409) do Backend.
+            const errorMessage = err.response?.data?.message || 'Falha ao criar o Cliente.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // FUTURO: updateClient (PATCH)
+    // FUTURO: deleteClient (DELETE)
+
+    return { createClient, isLoading, error };
+}
+
+
+// ===== FILE: src/core/hooks/useClients.ts =====
+
+
+import { useState, useEffect, useCallback } from 'react';
+import { api } from '@/core/services/api';
+import { Client } from '@/core/types/client';
+
+/**
+ * @function useClients
+ * @description Hook customizado para buscar e gerenciar o estado da lista de Clientes.
+ * Porquê: A rota /client no Backend retorna APENAS os clientes do Tenant logado (isolamento).
+ */
+export function useClients() {
+    const [clients, setClients] = useState<Client[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Função para buscar e recarregar dados
+    const fetchClients = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            
+            // FUTURO: Rota GET /client deve ser implementada no Backend para esta chamada.
+            const response = await api.get('/client'); 
+            
+            setClients(response.data as Client[]);
+            
+        } catch (err: any) {
+            console.error("Erro ao buscar clientes:", err);
+            const errorMessage = err.response?.data?.message || "Falha ao carregar lista de Clientes.";
+            setError(errorMessage);
+            
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchClients();
+    }, [fetchClients]); 
+
+    // Retorna a função de busca para ser usada no onSuccess do formulário (revalidação)
+    return { clients, isLoading, error, refreshData: fetchClients };
+}
+
+
+// ===== FILE: src/core/hooks/useFeatureMutation.ts =====
+
+
+import { useState } from 'react';
+import { api } from '@/core/services/api';
+import { CreateFeatureDto, Feature, UpdateFeatureDto } from '@/core/types/acl';
+
+/**
+ * @function useFeatureMutation
+ * @description Hook de mutação para gerenciar as operações de escrita (C/U/D) sobre Features.
+ * Porquê: Centraliza o tratamento de loading, erros de API e lógica de envio.
+ */
+export function useFeatureMutation() {
+    
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // --- MÉTODOS DE MUTATION ---
+
+    /**
+     * @method createFeature
+     * @description Envia uma requisição POST para criar uma nova Feature.
+     */
+    const createFeature = async (data: CreateFeatureDto): Promise<Feature> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.post('/admin/features', data);
+            return response.data as Feature;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao criar a Feature.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    /**
+     * @method updateFeature
+     * @description Envia uma requisição PATCH para atualizar uma Feature existente.
+     */
+    const updateFeature = async (id: string, data: UpdateFeatureDto): Promise<Feature> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.patch(`/admin/features/${id}`, data);
+            return response.data as Feature;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao atualizar a Feature.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    /**
+     * @method deleteFeature
+     * @description Envia uma requisição DELETE para remover uma Feature.
+     */
+    const deleteFeature = async (id: string): Promise<void> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            // Requisição DELETE para o endpoint
+            await api.delete(`/admin/features/${id}`);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao deletar a Feature.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return { createFeature, updateFeature, deleteFeature, isLoading, error };
+}
+
+
+// ===== FILE: src/core/hooks/useFeatures.ts =====
+
+
+import { useState, useEffect } from 'react';
+import { api } from '@/core/services/api';
+import { Feature } from '@/core/types/acl';
+
+/**
+ * @function useFeatures
+ * @description Hook customizado para buscar e gerenciar o estado da lista de Features (Permissões).
+ * Porquê: Abstrai a lógica de fetching assíncrono e tratamento de loading/error dos componentes.
+ */
+export function useFeatures() {
+    const [features, setFeatures] = useState<Feature[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchFeatures = async () => {
+            try {
+                setIsLoading(true);
+                
+                // GET para a rota protegida de Features
+                const response = await api.get('/admin/features'); 
+                
+                // Sucesso: Tipamos explicitamente a resposta
+                setFeatures(response.data as Feature[]);
+                
+            } catch (err) {
+                console.error("Erro ao buscar features:", err);
+                // Erro: pode ser 401, 403, ou 500
+                setError("Falha ao carregar catálogo de Features. Verifique a autenticação e o Backend.");
+                
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchFeatures();
+    }, []); // Roda apenas uma vez na montagem
+
+    return { features, isLoading, error };
+}
+
+
+// ===== FILE: src/core/hooks/useNavigation.ts =====
+
+
+import { useRouter } from 'next/navigation';
+import { UserRole } from '@/core/types/user'; // Importamos o tipo Role para a decisão
+
+/**
+ * @function useNavigation
+ * @description Hook customizado para centralizar a lógica de roteamento e navegação da aplicação.
+ * PORQUÊ: Abstrai o useRouter, fornecendo métodos semânticos e agora, centraliza a lógica de decisão pós-login.
+ */
+export function useNavigation() {
+    
+    // Obter o roteador do Next.js
+    const router = useRouter();
+
+    // --- LÓGICA DE DECISÃO DE DESTINO (TRANSFERIDA DO AUTHCONTEXT) ---
+
+    /**
+     * @private
+     * @function getTargetRoute
+     * @description Determina o destino final e correto baseado na Role do usuário.
+     * PORQUÊ: Garante que o usuário vá DIRETAMENTE para sua área de trabalho,
+     * eliminando o flash do Dashboard Mestre (instrução crítica).
+     * @param role A role do usuário logado.
+     * @returns A string da rota de destino final.
+     */
+    const getTargetRoute = (role: UserRole): string => {
+        switch (role) {
+            case UserRole.GLOBAL_ADMIN:
+                // Destino FINAL para Admin Global
+                return '/admin/tenants'; 
+            case UserRole.TENANT_ADMIN:
+            case UserRole.MEMBER:
+                // MODIFICAÇÃO: Redireciona para o Hub Orquestrador /dashboard (G.1)
+                return '/dashboard'; 
+            default:
+                return '/login';
+        }
+    };
+
+    // --- Métodos de Navegação Pública ---
+
+    /**
+     * @method toLogin
+     * @description Redireciona o usuário para a tela de login.
+     * Usado no Logout e no AuthGuard (acesso negado).
+     */
+    const toLogin = () => {
+        router.push('/login');
+    };
+
+    /**
+     * @method toPostLoginDestination
+     * @description Executa a navegação para o destino final determinado pela Role.
+     * É o ponto de entrada chamado pelo AuthContext após login bem-sucedido.
+     * @param role A role do usuário.
+     */
+    const toPostLoginDestination = (role: UserRole) => {
+        const targetRoute = getTargetRoute(role);
+        router.push(targetRoute);
+    };
+
+    /**
+     * @method toDashboard
+     * @description Redireciona o usuário para o hub central (usado para navegação interna).
+     */
+    const toDashboard = () => {
+        router.push('/dashboard');
+    };
+
+    /**
+     * @method toAdminPlans
+     * @description Redireciona para a tela de Gerenciamento de Planos (Rota principal do Admin).
+     */
+    const toAdminPlans = () => {
+        router.push('/admin/plans');
+    };
+
+    /**
+     * @method toTenantClients
+     * @description Redireciona para a tela de Clientes (Rota principal de negócio do Tenant).
+     */
+    const toTenantClients = () => {
+        router.push('/clients');
+    };
+    
+    const toRegister = () => {
+        router.push('/register');
+    };
+
+
+    return {
+        // Métodos de navegação semânticos
+        toLogin,
+        toDashboard,
+        toAdminPlans,
+        toTenantClients,
+        toRegister,
+        
+        // NOVO: Método de execução da decisão pós-login
+        toPostLoginDestination,
+        
+        // Expor o push cru (raw push) para casos específicos
+        rawPush: router.push,
+    };
+}
+
+
+// ===== FILE: src/core/hooks/usePlanMutation.ts =====
+
+
+import { useState } from 'react';
+import { api } from '@/core/services/api';
+import { Plan } from '@/core/types/acl';
+import { PlanFeatureRule } from '@/core/types/acl';
+
+// DTO para Criação (Baseado em CreatePlan.dto.ts do Backend)
+interface CreatePlanDto {
+    name: string;
+    description?: string;
+    price: number;
+    isActive?: boolean;
+}
+
+// DTO para Atualização (Baseado em UpdatePlan.dto.ts do Backend)
+interface UpdatePlanDto {
+    name?: string;
+    description?: string;
+    price?: number;
+    isActive?: boolean;
+}
+
+/**
+ * @function usePlanMutation
+ * @description Hook de mutação para gerenciar as operações de escrita (C/U/D) sobre Planos.
+ * Porquê: Centraliza o tratamento de loading, erros de API e lógica de envio para o módulo ACL.
+ */
+export function usePlanMutation() {
+    
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // --- MÉTODOS DE MUTATION ---
+
+    /**
+     * @method createPlan
+     * @description Envia uma requisição POST para criar um novo Plano.
+     */
+    const createPlan = async (data: CreatePlanDto): Promise<Plan> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.post('/admin/plans', data);
+            return response.data as Plan;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao criar o Plano.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    /**
+     * @method updatePlan
+     * @description Envia uma requisição PATCH para atualizar um Plano existente.
+     */
+    const updatePlan = async (id: string, data: UpdatePlanDto): Promise<Plan> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.patch(`/admin/plans/${id}`, data);
+            return response.data as Plan;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao atualizar o Plano.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    /**
+     * @method syncPlanRules
+     * @description Envia uma requisição PATCH para sincronizar as regras de Features do Plano.
+     * (Implementação para P4)
+     */
+    const syncPlanRules = async (id: string, rules: PlanFeatureRule[]): Promise<void> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            // Chamada para o novo endpoint transacional do Backend
+            await api.patch(`/admin/plans/${id}/rules`, rules);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao sincronizar as regras do Plano.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    /**
+     * @method deletePlan
+     * @description Envia uma requisição DELETE para remover um Plano.
+     */
+    const deletePlan = async (id: string): Promise<void> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            // Requisição DELETE para o endpoint
+            await api.delete(`/admin/plans/${id}`);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao deletar o Plano.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return { 
+        createPlan, 
+        updatePlan, 
+        syncPlanRules,
+        deletePlan, 
+        isLoading, 
+        error 
+    };
+}
+
+
+// ===== FILE: src/core/hooks/usePlanRules.ts =====
+
+
+import { useState, useEffect } from 'react';
+import { api } from '@/core/services/api';
+
+// Tipagem da resposta do Backend para PlanFeature
+interface PlanRuleResponse {
+    id: string;
+    planoId: string;
+    featureId: string;
+    limitValue: number;
+    // Adicionamos a feature aqui se a API retornar a relação,
+    // mas por enquanto, buscaremos a FeatureKey separadamente para simplificar o backend.
+}
+
+/**
+ * @function usePlanRules
+ * @description Hook customizado para buscar e gerenciar o estado das regras (PlanFeature) de um Plano.
+ * Porquê: Isolamos a chamada de leitura de regras para o Modal de Edição de Planos (P4).
+ */
+export function usePlanRules(planoId?: string) {
+    
+    const [rules, setRules] = useState<PlanRuleResponse[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // O useCallback é ideal aqui, mas usaremos uma função interna para simplicidade no escopo atual.
+    const fetchRules = async () => {
+        if (!planoId) return;
+
+        setIsLoading(true);
+        setError(null);
+        try {
+            // GET para a nova rota de leitura de regras do Plano
+            const response = await api.get(`/admin/plans/${planoId}/rules`);
+            
+            // Sucesso
+            setRules(response.data as PlanRuleResponse[]);
+            
+        } catch (err: any) {
+            console.error(`Erro ao buscar regras para o Plano ${planoId}:`, err);
+            const errorMessage = err.response?.data?.message || "Falha ao carregar regras de Feature.";
+            setError(errorMessage);
+            
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        // Recarrega as regras sempre que o planoId mudar
+        fetchRules();
+    }, [planoId]); 
+
+    // Retorna a função de busca para ser usada no onSuccess do formulário (revalidação)
+    return { rules, isLoading, error, fetchRules };
+}
+
+
+// ===== FILE: src/core/hooks/usePlans.ts =====
+
+
+import { useState, useEffect, useCallback } from 'react';
+import { api } from '@/core/services/api';
+import { Plan } from '@/core/types/acl';
+// Usamos o tipo da entidade Plan do Backend (simplificado para o Frontend)
+
+/**
+ * @function usePlans
+ * @description Hook customizado para buscar e gerenciar o estado da lista de Planos (ACL).
+ * Porquê: Abstrai a lógica de fetching assíncrono e tratamento de loading/error dos componentes.
+ */
+export function usePlans() {
+    const [plans, setPlans] = useState<Plan[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+
+    const fetchPlans = useCallback( async () => {
+        try {
+            setIsLoading(true);
+            // GET para a rota protegida que criamos no Backend
+            const response = await api.get('/admin/plans'); 
+            
+            // Sucesso: a resposta deve ser um array de Planos
+            setPlans(response.data as Plan[]);
+            
+        } catch (err) {
+            console.error("Erro ao buscar planos:", err);
+            // Erro: pode ser 401, 403, ou 500
+            setError("Falha ao carregar planos. Verifique a autenticação e o Backend.");
+            
+        } finally {
+            setIsLoading(false);
+        }
+    },[]);
+
+    useEffect(() => {
+        fetchPlans();
+    },[fetchPlans]); // Roda apenas uma vez na montagem
+
+    return { plans, isLoading, error, refreshData: fetchPlans };
+}
+
+
+// ===== FILE: src/core/hooks/useRegister.ts =====
+
+
+import { useState } from 'react';
+import { api } from '@/core/services/api';
+// Usamos o tipo do formulário de registro que está na página /register
+interface RegisterFormData {
+    cnpjCpf: string;
+    razaoSocial: string;
+    nomeFantasia: string;
+    emailContato: string;
+    password: string; 
+    planoId: string;
+}
+
+/**
+ * @function useRegister
+ * @description Hook customizado para gerenciar a lógica de envio do formulário de registro (Tenant).
+ * Porquê: Centraliza o POST para a API de Registro, tratamento de loading e erros.
+ */
+export function useRegister() {
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    
+    const registerTenant = async (formData: RegisterFormData) => {
+        setIsLoading(true);
+        setError(null);
+        // Os campos do DTO de Tenant (Backend) são: cnpjCpf, razaoSocial, nomeFantasia, emailContato, planoId.
+        // O campo 'password' não existe no DTO de Tenant, mas será usado no Backend para criar o User.
+        // O Backend precisa de um payload unificado. Vamos enviar todos os campos do formulário.
+        try {
+            // --- MODIFICAÇÃO: Chamada REAL à API de Registro ---
+            // POST para o endpoint de Registro de Tenant (que agora cria o User Admin Global)
+            const response = await api.post('/tenant/register', formData);
+            
+            if (response.status === 201) {
+                // Sucesso na criação do Tenant e do User
+                // PORQUÊ: O hook retorna os dados de sucesso para o componente de UI tratar o redirecionamento.
+                return response.data;
+            }
+        } catch (err: any) {
+            // Captura erros específicos do Backend (409 Conflito, 404 Plano não encontrado, etc.)
+            if (err.response && err.response.data && err.response.data.message) {
+                // Se o erro vier do AppError do Backend, exibimos a mensagem de negócio
+                setError(err.response.data.message);
+            } else {
+                setError("Erro desconhecido ao tentar registrar. Verifique o console.");
+            }
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return { registerTenant, isLoading, error };
+}
+
+
+// ===== FILE: src/core/hooks/useTenantAdminMutation.ts =====
+
+
+import { useState } from 'react';
+import { api } from '@/core/services/api';
+import { UpdateTenantAdminDto, TenantResponse } from '@/core/types/tenant';
+
+
+/**
+ * @function useTenantAdminMutation
+ * @description Hook de mutação para gerenciar as operações de escrita (Update/Soft Delete)
+ * sobre Tenants, usado exclusivamente pelo Admin Global.
+ * Porquê: Centraliza o tratamento de loading, erros de API e lógica de envio para o módulo Tenant.
+ */
+export function useTenantAdminMutation() {
+    
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    /**
+     * @method updateTenant
+     * @description Envia uma requisição PATCH para atualizar um Tenant existente.
+     */
+    const updateTenant = async (id: string, data: UpdateTenantAdminDto): Promise<TenantResponse> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.patch(`/admin/tenants/${id}`, data);
+            return response.data as TenantResponse;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao atualizar o Tenant.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    /**
+     * @method toggleActiveStatus
+     * @description Alterna o status isActive de um Tenant (Soft Delete).
+     */
+    const toggleActiveStatus = async (id: string, currentStatus: boolean): Promise<TenantResponse> => {
+        // Envia apenas a propriedade isActive com o valor invertido.
+        const newStatus = !currentStatus;
+        
+        return updateTenant(id, { isActive: newStatus });
+    };
+
+    return { 
+        updateTenant, 
+        toggleActiveStatus,
+        isLoading, 
+        error 
+    };
+}
+
+
+// ===== FILE: src/core/hooks/useTenants.ts =====
+
+
+import { useState, useEffect, useCallback } from 'react';
+import { api } from '@/core/services/api';
+import { Plan } from '@/core/types/acl';
+import { Tenant } from '@/core/types/tenant';
+// Importamos os tipos necessários
+
+// Tipagem completa do Tenant para uso no Frontend (inclui a relação 'plan')
+interface TenantWithPlan extends Tenant {
+    plan: Plan; // O repository retorna o objeto plan completo
+}
+
+/**
+ * @function useTenants
+ * @description Hook customizado para buscar e gerenciar o estado da lista de Tenants.
+ * Porquê: Abstrai a lógica de fetching assíncrono, loading e tratamento de erros do Admin Global.
+ */
+export function useTenants() {
+    // Usamos a tipagem estendida para garantir acesso a tenant.plan.name na UI
+    const [tenants, setTenants] = useState<TenantWithPlan[]>([]); 
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+        const fetchTenants = useCallback(async () => {
+            try {
+                setIsLoading(true);
+                setError(null);
+                
+                // GET para a rota protegida de listagem de Tenants
+                const response = await api.get('/admin/tenants'); 
+                
+                // Sucesso: Tipamos explicitamente a resposta
+                setTenants(response.data as TenantWithPlan[]);
+                
+            } catch (err: any) {
+                console.error("Erro ao buscar Tenants:", err);
+                // Erro: pode ser 403 (Permissão negada) ou 500
+                const errorMessage = err.response?.data?.message || 
+                                     "Falha ao carregar lista de Tenants. Verifique o Backend.";
+                setError(errorMessage);
+                
+            } finally {
+                setIsLoading(false);
+            }
+        },[]);
+
+    useEffect(() => {
+        fetchTenants();
+    }, [fetchTenants]); // Roda apenas uma vez na montagem
+
+    return { tenants, isLoading, error, refreshData: fetchTenants };
+}
+
+
+// ===== FILE: src/core/services/api.ts =====
+
+
+import axios from 'axios';
+import { forceGlobalLogout } from '@/contexts/AuthContext'; // Para obter o token JWT
+
+// Porquê: A URL base deve ser lida do ambiente para facilitar a transição para produção.
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+
+/**
+ * @const api
+ * @description Instância do Axios centralizada e configurada com interceptors.
+ */
+export const api = axios.create({
+    baseURL: API_BASE_URL,
+    withCredentials: true, // Necessário para enviar cookies (HttpOnly)
+});
+
+
+// --- Interceptor de Resposta (Tratamento Global de Erros de Auth) ---
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        // Porquê: Captura o 401 (Unauthorized) ou 403 (Forbidden) e força o logout/redirecionamento.
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            forceGlobalLogout();
+        }
+        return Promise.reject(error);
+    }
+);
+
+
+// ===== FILE: src/core/types/acl.ts =====
+
+
+// Definições de Entidades de ACL (Administração)
+
+// --- Novo tipo para as opções de controle ---
+export const FeatureType = {
+    BOOLEAN: 'boolean', // Permissão simples (sim/não)
+    QUANTITY: 'quantity', // Permissão com limite numérico
+} as const;
+
+export type FeatureType = 'boolean' | 'quantity';
+
+// Tipagem da FeatureKey (Importado do Backend, mas definido aqui para tipagem Frontend)
+export type FeatureKey = 
+    'PLANO_GERENCIAR' | 'DASHBOARD_USO_VIEW' | 
+    'CLIENTE_ADD' | 'CLIENTE_VIEW' | 'CLIENTE_EDIT' | 
+    'CLIENTE_DELETE' | 'PRODUTO_ADD' | 'PRODUTO_VIEW' |
+    'ESTOQUE_MOVIMENTAR' | 'FATURAMENTO_MAX_NF_E' | 
+    'ACESSO_SISTEMA_LOGIN';
+
+// Tipagem do Plano
+export interface Plan {
+    id: string;
+    name: string;
+    description: string | null;
+    price: number; // Agora é garantido como number pelo TypeormNumericTransformer
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Tipagem da Feature
+export interface Feature {
+    id: string;
+    key: string;
+    name: string;
+    description: string | null;
+    type: 'boolean' | 'quantity';
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Tipagem da Regra de Atrelamento Plan <-> Feature
+export interface PlanFeatureRule {
+    featureId: string;
+    limitValue: number;
+}
+
+// DTO para Criação (corpo do POST)
+export interface CreateFeatureDto {
+    key: FeatureKey;
+    name: string;
+    description?: string;
+    type: 'boolean' | 'quantity';
+}
+
+// DTO para Atualização (corpo do PATCH)
+export interface UpdateFeatureDto {
+    name?: string;
+    description?: string;
+    type?: 'boolean' | 'quantity';
+}
+
+
+
+// ===== FILE: src/core/types/auth.ts =====
+
+
+import { UserRole } from "./user";
+
+// Reúsa o DTO do Backend
+export interface LoginDto {
+    email: string;
+    password: string;
+}
+
+// --- NOVO: Tipagem da Resposta do Backend de Login ---
+// Porquê: Garante que o TypeScript saiba que o objeto retornado contém 'token' e 'user'.
+export interface LoginResponse {
+    token: string;
+    // O objeto user retornado pela API (simplificado)
+    user: {
+        id: string;
+        email: string;
+        role: UserRole;
+        tenantId: string | null;
+    };
+    message: string; // Mensagem de sucesso
+}
+
+
+// ===== FILE: src/core/types/client.ts =====
+
+
+// Definições de Tipagem para a Entidade Cliente
+
+/**
+ * @interface Client
+ * @description Tipagem para a Entidade Cliente (que pertence a um Tenant).
+ */
+export interface Client {
+    id: string;
+    tenantId: string;
+    name: string;
+    document: string;
+    email: string | null;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+/**
+ * @interface CreateClientDto
+ * @description Tipagem para o payload de criação de Cliente.
+ */
+export interface CreateClientDto {
+    name: string;
+    document: string;
+    email?: string;
+}
+
+
+// ===== FILE: src/core/types/tenant.ts =====
+
+
+import { Plan } from "./acl"; // Importa o tipo Plan do novo módulo
+
+/**
+ * @interface Tenant
+ * @description Tipagem para a Entidade Tenant.
+ */
+export interface Tenant {
+    id: string;
+    cnpjCpf: string;
+    razaoSocial: string;
+    nomeFantasia: string | null;
+    emailContato: string;
+    planoId: string;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+    
+    // Relação (opcional no FindBy/FindAll do Admin)
+    plan?: Plan;
+}
+
+// DTO para Atualização (Baseado em UpdateTenantAdmin.dto.ts do Backend)
+export interface UpdateTenantAdminDto {
+    razaoSocial?: string;
+    nomeFantasia?: string;
+    planoId?: string;
+    isActive?: boolean;
+}
+
+// Tipagem completa do Tenant retornado
+export interface TenantResponse extends Tenant {
+    plan?: Plan; // O Backend retorna a relação Plan no find/update
+}
+
+// Propriedades do Modal
+export interface TenantModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    // Dados do Tenant a ser editado
+    currentTenant: Tenant; 
+    onSuccess: () => void; // Callback para recarregar a tabela
+}
+
+// DTO de Edição (Usado no formulário)
+// Repetindo a tipagem para clareza, mas idealmente viria do types/tenant.ts
+export interface UpdateTenantAdminDto {
+    razaoSocial?: string;
+    nomeFantasia?: string;
+    planoId?: string;
+    isActive?: boolean;
+}
+
+// Tipagem local para o componente (usa o tipo Tenant)
+export interface TenantWithPlan extends Tenant {
+    plan: Plan
+}
+
+
+
+// ===== FILE: src/core/types/user.ts =====
+
+
+// Usar um objeto const para garantir valores em runtime ---
+export const UserRole = {
+    GLOBAL_ADMIN: 'GLOBAL_ADMIN',
+    TENANT_ADMIN: 'TENANT_ADMIN',
+    MEMBER: 'MEMBER',
+} as const;
+
+// Reúsa o ENUM de Role do Backend (simplificado aqui)
+export type UserRole = 'GLOBAL_ADMIN' | 'TENANT_ADMIN' | 'MEMBER';
+
+// Tipagem da Feature e Plan foram movidas para src/types/acl.ts
+
+export interface User {
+    id: string;
+    email: string;
+    role: UserRole;
+    tenantId: string | null;
+    // Removido o Plan, Feature, etc.
+}
+
+
+// ===== FILE: src/core/ui/layout/AdminSidebar.tsx =====
+
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+
+
+// Definição dos links da área de administração de ACL
+const navItems = [
+  // --- NOVO: Adicionar Gerenciamento de Tenants ---
+  { name: 'Gerenciar Tenants', href: '/admin/tenants', icon: '🏢' }, // Novo link para a nova página
+  // ------------------------------------------------
+  { name: 'Gerenciar Planos', href: '/admin/plans', icon: '💎' },
+  { name: 'Gerenciar Features', href: '/admin/features', icon: '🔑' },
+  { name: 'Dashboard Mestre', href: '/dashboard', icon: '🏠' },
+];
+
+/**
+ * @component AdminSidebar
+ * @description Barra de navegação lateral para as rotinas administrativas.
+ * Porquê: Oferece navegação estruturada e mantém a coerência visual na área de admin.
+ */
+export const AdminSidebar: React.FC = () => {
+  return (
+    <div className="flex flex-col w-64 min-h-screen bg-base-metallic p-4 space-y-6 border-r border-gray-700">
+      
+      {/* Título */}
+      <div className="text-xl font-bold text-accent-primary uppercase tracking-wider">
+        Configurações Admin
+      </div>
+
+      {/* Navegação */}
+      <nav className="flex-1 space-y-2">
+        {navItems.map((item) => (
+          // MODIFICAÇÃO: legacyBehavior e <a> tag removidos. Classes aplicadas diretamente no Link.
+          <Link 
+            key={item.name} 
+            href={item.href} 
+            className="flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150"
+          >
+            <span className="text-lg">{item.icon}</span>
+            <span>{item.name}</span>
+          </Link>
+        ))}
+      </nav>
+      
+      {/* Logout Simples (LegacyBehavior Removido) */}
+      <Link href="/logout" className="text-sm text-red-400 hover:text-red-500 transition border-t border-gray-700 pt-4">
+        Sair / Logout
+      </Link>
+    </div>
+  );
+};
+
+
+// ===== FILE: src/core/ui/layout/AppContainer.tsx =====
+
+'use client';
+
+import React from 'react';
+
+interface AppContainerProps {
+  children: React.ReactNode;
+}
+
+/**
+ * @component AppContainer
+ * @description Contêiner principal que define o layout visual e o tema da aplicação.
+ * Porquê: Centraliza o design system (cores, fontes, tamanhos) para manter a coerência visual.
+ */
+export const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
+  return (
+    // Define a tela cheia, fundo escuro (tailor-made para o seu projeto) e o texto em branco
+    <div className="min-h-screen bg-gray-900 text-white font-sans">
+      {/* Ocupa 100% da largura, centralizando o conteúdo se necessário */}
+      <main className="mx-auto h-full w-full max-w-full">
+        {children}
+      </main>
+    </div>
+  );
+};
+
+
+// ===== FILE: src/core/ui/layout/ClientSidebar.tsx =====
+
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { FaUsers, FaHome, FaSignOutAlt, FaBook, FaBox } from 'react-icons/fa';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserRole } from '@/core/types/user'; 
+
+// Definição das funcionalidades/módulos e suas chaves (Mock do Backend Features)
+// PORQUÊ: Usamos FeatureKeys como a fonte de verdade para decidir a visibilidade.
+const featureModules = [
+    // FeatureKey: CLIENTE_VIEW, Tipo: quantity
+    { 
+        key: 'CLIENTE_VIEW', 
+        name: 'Gerenciar Clientes', 
+        href: '/dashboard/clients', // CORREÇÃO: Atualizamos o caminho para a nova rota aninhada
+        icon: FaUsers 
+    }, 
+    // MOCK: CRM (Assumindo que CRM_VIEW seria uma feature)
+    { 
+        key: 'CRM_VIEW', 
+        name: 'CRM - Leads e Tarefas', 
+        href: '/dashboard/crm', // Rota aninhada
+        icon: FaBook 
+    },
+    // MOCK: Produtos/Estoque (Assumindo que PRODUTO_VIEW seria uma feature)
+    { 
+        key: 'PRODUTO_VIEW', 
+        name: 'Produtos e Estoque', 
+        href: '/dashboard/products', // Rota aninhada
+        icon: FaBox 
+    },
+    // FUTURO: FATURAMENTO_MAX_NF_E (Pode ter um link para Relatórios)
+];
+
+/**
+ * @component ClientSidebar
+ * @description Barra de navegação lateral para as rotinas de negócio do Tenant.
+ * PORQUÊ: Renderiza links dinamicamente com base na Role e no Plano (via FeatureKeys MOCK).
+ */
+export const ClientSidebar: React.FC = () => {
+    
+    const { user } = useAuth();
+    
+    // MOCK: Função para simular a checagem de ACL (Simplificação para esta etapa)
+    // Em produção, usaríamos um hook para buscar as Features do Plano logado.
+    const hasFeatureAccess = (featureKey: string) => {
+        // Lógica de MOCK: Permite acesso se for TENANT_ADMIN ou se a Feature for conhecida.
+        
+        if (user?.role === UserRole.TENANT_ADMIN) return true;
+        
+        // Simulação de Feature Keys ativas (MOCK) para o Member/Guest
+        return ['CLIENTE_VIEW', 'CRM_VIEW'].includes(featureKey); 
+    }
+
+    return (
+        <div className="flex flex-col w-64 min-h-screen bg-base-metallic p-4 space-y-6 border-r border-gray-700">
+            
+            {/* Título */}
+            <div className="text-xl font-bold text-accent-secondary uppercase tracking-wider">
+                FilixFin Workspace
+            </div>
+
+            {/* Navegação Principal */}
+            <nav className="flex-1 space-y-2">
+                
+                {/* Link Estático: Dashboard Principal (LegacyBehavior Removido) */}
+                <Link href="/dashboard" className="flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150">
+                    <FaHome className="w-4 h-4 text-accent-primary" />
+                    <span>Dashboard Principal</span>
+                </Link>
+
+                {/* LINKS DINÂMICOS (Baseados nas Features/Planos) */}
+                {featureModules.map((item) => (
+                    hasFeatureAccess(item.key) && (
+                        // MODIFICAÇÃO: legacyBehavior e <a> tag removidos. Classes aplicadas diretamente no Link.
+                        <Link 
+                            key={item.name} 
+                            href={item.href} 
+                            className="flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150"
+                        >
+                            <item.icon className="w-4 h-4 text-accent-primary" />
+                            <span>{item.name}</span>
+                        </Link>
+                    )
+                ))}
+                
+                {/* Link para área de Admin Global (LegacyBehavior Removido) */}
+                {(user?.role === UserRole.TENANT_ADMIN) && (
+                    <Link href="/admin/tenants" className="flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-700 hover:text-white transition duration-150">
+                        <FaSignOutAlt className="w-4 h-4 transform rotate-180 text-violet-400" />
+                        <span>Configurações Admin</span>
+                    </Link>
+                )}
+            </nav>
+            
+            {/* Logout Simples (LegacyBehavior Removido) */}
+            <Link href="/logout" className="text-sm text-red-400 hover:text-red-500 transition border-t border-gray-700 pt-4 flex items-center space-x-2">
+                <FaSignOutAlt className="w-4 h-4" />
+                <span>Sair / Logout</span>
+            </Link>
+        </div>
+    );
+};
+
+
+// ===== FILE: src/features/admin/components/FeatureModal.tsx =====
+
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { FaTimes } from 'react-icons/fa';
-import { useFeatureMutation } from '@/hooks/useFeatureMutation';
-import { Feature, FeatureKey, FeatureType } from '@/types/acl'; // Entidades e Tipos ACL
+import { useFeatureMutation } from '@/core/hooks/useFeatureMutation';
+import { Feature, FeatureKey, FeatureType } from '@/core/types/acl';
 
 // Propriedades do Modal
 interface FeatureModalProps {
@@ -8158,19 +9895,18 @@ export const FeatureModal: React.FC<FeatureModalProps> = ({
 };
 
 
-// ===== FILE: src/components/admin/FeatureTable.tsx =====
+// ===== FILE: src/features/admin/components/FeatureTable.tsx =====
 
-// src/components/admin/FeatureTable.tsx
 
 "use client";
 
-import React, { useState } from 'react'; // Importar useState
-import { useFeatures } from '@/hooks/useFeatures';
+import React, { useState } from 'react';
+import { useFeatures } from '@/core/hooks/useFeatures';
 import { FaEdit, FaTrash, FaPlus, FaTag, FaCalculator } from 'react-icons/fa';
-import { Feature } from '@/types/acl'; // Tipagem correta (de acl)
-import { FeatureModal } from './FeatureModal'; // Importar o Modal
-import { useFeatureMutation } from '@/hooks/useFeatureMutation'; // Hook de C/U/D
-import { FeatureType } from '@/types/acl'; // Tipagem do Tipo (BOOLEAN/QUANTITY)
+import { Feature } from '@/core/types/acl';
+import { FeatureModal } from '@/features/admin/components/FeatureModal';
+import { useFeatureMutation } from '@/core/hooks/useFeatureMutation';
+import { FeatureType } from '@/core/types/acl';
 
 
 /**
@@ -8357,17 +10093,16 @@ export const FeatureTable: React.FC = () => {
 };
 
 
-// ===== FILE: src/components/admin/PlanModal.tsx =====
+// ===== FILE: src/features/admin/components/PlanModal.tsx =====
 
-// src/components/admin/PlanModal.tsx
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaDollarSign, FaListUl } from 'react-icons/fa'; // Adicionamos FaListUl
-import { usePlanMutation } from '@/hooks/usePlanMutation';
-import { Plan } from '@/types/acl'; 
-// --- NOVA IMPORTAÇÃO ---
-import { PlanRuleManager } from './PlanRuleManager'; // Importamos o Gerenciador de Regras
-// ------------------------
+import { FaTimes, FaDollarSign, FaListUl } from 'react-icons/fa';
+import { usePlanMutation } from '@/core/hooks/usePlanMutation';
+import { PlanRuleManager } from './PlanRuleManager';
+import { Plan } from '@/core/types/acl'; 
+
 
 // Propriedades do Modal (inalterado)
 interface PlanModalProps {
@@ -8614,18 +10349,16 @@ export const PlanModal: React.FC<PlanModalProps> = ({
 };
 
 
-// ===== FILE: src/components/admin/PlanRuleManager.tsx =====
-
-// src/components/admin/PlanRuleManager.tsx
+// ===== FILE: src/features/admin/components/PlanRuleManager.tsx =====
 
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { FaSave, FaTag, FaCalculator } from 'react-icons/fa';
-import { useFeatures } from '@/hooks/useFeatures'; // Traz a lista de todas as Features
-import { usePlanRules } from '@/hooks/usePlanRules'; // Traz as regras atuais do Plano
-import { usePlanMutation } from '@/hooks/usePlanMutation'; // Hook para syncPlanRules
-import { Feature, FeatureType, PlanFeatureRule } from '@/types/acl';
+import { useFeatures } from '@/core/hooks/useFeatures';
+import { usePlanRules } from '@/core/hooks/usePlanRules';
+import { usePlanMutation } from '@/core/hooks/usePlanMutation';
+import { Feature, FeatureType, PlanFeatureRule } from '@/core/types/acl';
 
 // Propriedades do Manager
 interface PlanRuleManagerProps {
@@ -8837,20 +10570,15 @@ export const PlanRuleManager: React.FC<PlanRuleManagerProps> = ({ planoId, onSyn
 };
 
 
-// ===== FILE: src/components/admin/PlanTable.tsx =====
-
-// src/components/admin/PlanTable.tsx
+// ===== FILE: src/features/admin/components/PlanTable.tsx =====
 
 "use client";
 
-import React, { useState } from 'react'; // <--- CORREÇÃO 1: Importar useState
-import { usePlans } from '@/hooks/usePlans';
+import React, { useState } from 'react';
+import { usePlans } from '@/core/hooks/usePlans';
 import { FaEdit, FaTrash, FaCheckCircle, FaTimesCircle, FaDollarSign, FaPlus } from 'react-icons/fa';
-// --- CORREÇÃO 2: Remover a interface Plan local e usar a importada ---
-import { Plan } from '@/types/acl'; 
-import { PlanModal } from './PlanModal'; // Assumindo que o PlanModal foi importado
-import { usePlanMutation } from '@/hooks/usePlanMutation'; // Assumindo que o usePlanMutation foi importado
-// ----------------------------------------------------------------------
+import { Plan } from '@/core/types/acl'; 
+import { PlanModal } from '@/features/admin/components/PlanModal';
 
 /**
  * @component PlanTable
@@ -9022,18 +10750,16 @@ export const PlanTable: React.FC = () => {
 };
 
 
-// ===== FILE: src/components/admin/TenantModal.tsx =====
+// ===== FILE: src/features/admin/components/TenantModal.tsx =====
 
-// src/components/admin/TenantModal.tsx
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaLink } from 'react-icons/fa';
-import { Tenant, TenantModalProps, UpdateTenantAdminDto } from '@/types/tenant'; // Assumindo Tenant e UpdateTenantAdminDto estão aqui
-import { Plan } from '@/types/acl'; // Lista de Planos para o select
-import { useTenantAdminMutation } from '@/hooks/useTenantAdminMutation';
-import { usePlans } from '@/hooks/usePlans'; // Para popular o SELECT de Planos
-
-
+import { Tenant, TenantModalProps, UpdateTenantAdminDto } from '@/core/types/tenant';
+import { Plan } from '@/core/types/acl';
+import { useTenantAdminMutation } from '@/core/hooks/useTenantAdminMutation';
+import { usePlans } from '@/core/hooks/usePlans';
 
 // --- NOVO: Função de Auxílio para Renderizar as Opções de Plano ---
 const renderPlanOptions = (plans: Plan[]) => {
@@ -9233,28 +10959,18 @@ export const TenantModal: React.FC<TenantModalProps> = ({
 };
 
 
-// ===== FILE: src/components/admin/TenantTable.tsx =====
-
-// src/components/admin/TenantTable.tsx
+// ===== FILE: src/features/admin/components/TenantTable.tsx =====
 
 "use client";
 
 import React, { useState } from 'react';
 import { FaEdit, FaCheckCircle, FaTimesCircle, FaLink, FaBuilding, FaUserTie, FaPlus } from 'react-icons/fa';
-import { useTenants } from '@/hooks/useTenants';
-import { UserRole } from '@/types/user'; 
-import { Tenant, TenantWithPlan } from '@/types/tenant';
-// Importar o tipo Tenant
-// --- NOVAS IMPORTAÇÕES ---
+import { useTenants } from '@/core/hooks/useTenants';
+import { UserRole } from '@/core/types/user'; 
+import { TenantWithPlan } from '@/core/types/tenant';
 import { TenantModal } from './TenantModal';
-// Importar o Modal de Edição
-import { useTenantAdminMutation } from '@/hooks/useTenantAdminMutation';
-// Hook para Soft Delete/Edição
-// MODIFICAÇÃO: Substituímos o useRouter pelo hook centralizado.
-// import { useRouter } from 'next/navigation';
-import { useNavigation } from '@/hooks/useNavigation'; // MODIFICAÇÃO: Importa o useNavigation (R1)
-// -------------------------
-
+import { useTenantAdminMutation } from '@/core/hooks/useTenantAdminMutation';
+import { useNavigation } from '@/core/hooks/useNavigation';
 
 /**
  * @component TenantTable
@@ -9451,1651 +11167,5 @@ export const TenantTable: React.FC = () => {
         </div>
     );
 };
-
-
-// ===== FILE: src/components/auth/AuthGuard.tsx =====
-
-// src/components/auth/AuthGuard.tsx
-
-"use client";
-
-import React, { useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/types/user'; // Tipos de permissão
-import { useNavigation } from '@/hooks/useNavigation'; // MODIFICAÇÃO: Importa o hook centralizado (R1)
-
-interface AuthGuardProps {
-    children: React.ReactNode;
-    allowedRoles?: UserRole[]; // Quais roles têm permissão de acesso
-}
-
-/**
- * @component AuthGuard
- * @description Componente de HOC (High-Order Component) para proteger rotas.
- * Porquê: Centraliza a lógica de ACL e autenticação no Frontend, garantindo que o usuário
- * seja redirecionado se não estiver logado ou não tiver a role correta.
- */
-export const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles }) => {
-    const { isLoggedIn, user, token } = useAuth();
-    // MODIFICAÇÃO: Usamos o hook useNavigation.
-    const { toLogin, toDashboard } = useNavigation();
-    const isReady = token !== undefined;
-    // Verifica se o contexto carregou
-
-    useEffect(() => {
-        if (isReady && !isLoggedIn) {
-            // Se o contexto carregou, mas o usuário não está logado, redireciona para o login
-            console.log("DIAGNÓSTICO: Usuário não autenticado. Redirecionando para /login.");
-            // MODIFICAÇÃO: Usa o método centralizado toLogin().
-            toLogin();
-        } else if (isLoggedIn && allowedRoles && !allowedRoles.includes(user!.role)) {
-     
-            // Se logado, mas sem a permissão correta (Ex: Membro tentando acessar Admin Global)
-            const userRoleString = user!.role;
-            console.log(`DIAGNÓSTICO: Permissão Negada. Usuário ${userRoleString} tentou acessar rota restrita.`);
-            alert("Acesso negado. Você não tem permissão para esta área.");
-      
-        }
-    }, [isLoggedIn, isReady, user, allowedRoles, toLogin]); 
-    
-    // Renderiza a página se o usuário estiver logado e tiver a permissão correta
-    if (!isReady || !isLoggedIn) {
-        // Renderiza um placeholder enquanto verifica o estado (evita o flash de conteúdo)
-        return <div className="flex items-center justify-center min-h-screen bg-base-dark">Carregando Sessão...</div>;
-    }
-
-    return <>{children}</>;
-};
-
-
-// ===== FILE: src/components/client/ClientModal.tsx =====
-
-// src/components/client/ClientModal.tsx
-
-import React, { useState } from 'react';
-import { FaTimes } from 'react-icons/fa';
-import { useClientMutation } from '@/hooks/useClientMutation';
-
-// DTO e Propriedades do Modal
-interface ClientModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSuccess: () => void; // Callback para recarregar a lista
-    // FUTURO: currentClient?: Client para edição
-}
-
-/**
- * @component ClientModal
- * @description Modal de Criação de Cliente (Formulário).
- * Porquê: Interage com a ACL e a lógica de isolamento no Backend.
- */
-export const ClientModal: React.FC<ClientModalProps> = ({ 
-    isOpen, 
-    onClose, 
-    onSuccess 
-}) => {
-    
-    // 1. ESTADO E HOOKS
-    const { createClient, isLoading, error: mutationError } = useClientMutation();
-    const [formData, setFormData] = useState({
-        name: '',
-        document: '',
-        email: '',
-    });
-    const [submitError, setSubmitError] = useState<string | null>(null);
-
-    // Lida com a mudança nos campos
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    // 2. LÓGICA DE SUBMISSÃO
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSubmitError(null);
-
-        try {
-            // Chamada de Criação
-            await createClient(formData);
-            
-            onSuccess(); // Chama recarga da lista
-            onClose();   // Fecha o modal
-            
-        } catch (err: any) {
-            // O erro pode ser do Backend (limite excedido 422, conflito 409)
-            setSubmitError(mutationError || err.response?.data?.message || 'Falha ao cadastrar cliente.');
-        }
-    };
-    
-    if (!isOpen) return null;
-
-    // 3. RENDERIZAÇÃO
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-            <div className="bg-base-metallic p-6 rounded-lg shadow-2xl w-full max-w-md">
-                
-                {/* Cabeçalho do Modal */}
-                <div className="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
-                    <h2 className="text-xl font-bold text-white">
-                        Novo Cliente
-                    </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white">
-                        <FaTimes className="w-5 h-5" />
-                    </button>
-                </div>
-
-                {/* Mensagens de Erro */}
-                {submitError && (
-                    <div className="p-3 mb-4 text-sm font-medium text-danger bg-red-900/50 rounded-md">
-                        {submitError}
-                    </div>
-                )}
-
-                {/* Formulário */}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    
-                    {/* Nome */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300">Nome Completo *</label>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            required
-                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
-                        />
-                    </div>
-                    
-                    {/* Documento (CPF/CNPJ) */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300">CPF/CNPJ *</label>
-                        <input
-                            type="text"
-                            name="document"
-                            value={formData.document}
-                            onChange={handleChange}
-                            required
-                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
-                        />
-                    </div>
-
-                    {/* Email (Opcional) */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300">E-mail</label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
-                        />
-                    </div>
-
-                    {/* Botão de Ação */}
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-base-dark bg-accent-secondary hover:bg-violet-600 transition disabled:bg-gray-500"
-                    >
-                        {isLoading ? 'Cadastrando...' : 'Cadastrar Cliente'}
-                    </button>
-                </form>
-            </div>
-        </div>
-    );
-};
-
-
-// ===== FILE: src/components/client/ClientTable.tsx =====
-
-// src/components/client/ClientTable.tsx
-
-"use client";
-
-import React, { useState } from 'react';
-import { FaEdit, FaTrash, FaPlus, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
-import { useClients } from '@/hooks/useClients';
-import { Client } from '@/types/client';
-import { ClientModal } from './ClientModal'; // Modal de Criação/Edição
-
-/**
- * @component ClientTable
- * @description Tabela de visualização e gerenciamento de Clientes (Entidade de Negócio).
- * Porquê: Implementa a interface principal para o usuário do Tenant.
- */
-export const ClientTable: React.FC = () => {
-    
-    const { clients, isLoading, error, refreshData } = useClients();
-    
-    // --- ESTADO PARA MODAL ---
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    // Para futura edição, definiríamos: const [clientToEdit, setClientToEdit] = useState<Client | undefined>(undefined);
-    // -------------------------
-
-    // --- Funções de Ação ---
-    
-    const handleNewClient = () => {
-        // setClientToEdit(undefined); // Criação
-        setIsModalOpen(true);
-    };
-
-    const handleSuccess = () => {
-        refreshData(); // Recarrega os dados após sucesso na criação
-        setIsModalOpen(false);
-    };
-    
-    // FUTURO: handleEdit e handleDelete (requerem useClientMutation.deleteClient)
-
-    // --- Tratamento de Estado ---
-
-    if (isLoading) {
-        return (
-            <div className="text-center py-12 text-accent-secondary">
-                <span className="animate-spin text-xl">⏳</span> Carregando Clientes...
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="p-4 bg-danger/20 border border-danger rounded-lg text-danger">
-                {error}
-            </div>
-        );
-    }
-    
-    return (
-        <div className="space-y-4">
-            
-            {/* Botão de Criação */}
-            <div className="flex justify-end">
-                <button 
-                    onClick={handleNewClient} 
-                    className="flex items-center space-x-2 px-4 py-2 bg-accent-secondary text-white font-bold rounded-lg hover:bg-violet-600 transition duration-150 shadow-lg"
-                >
-                    <FaPlus />
-                    <span>Novo Cliente</span>
-                </button>
-            </div>
-
-            {/* Tabela Responsiva */}
-            <div className="overflow-x-auto bg-base-metallic rounded-lg shadow-xl">
-                <table className="min-w-full divide-y divide-gray-700">
-                    <thead className="bg-gray-700">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                Nome / E-mail
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                Documento
-                            </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                Status
-                            </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                Ações
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-700">
-                        {clients.map((client) => (
-                            <tr key={client.id} className="hover:bg-gray-700 transition duration-100">
-                                {/* Nome / Email */}
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm font-medium text-white">{client.name}</div>
-                                    <div className="text-xs text-gray-400">{client.email || 'Não fornecido'}</div>
-                                </td>
-                                
-                                {/* Documento */}
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200 font-mono">
-                                    {client.document}
-                                </td>
-                                
-                                {/* Status */}
-                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
-                                    {client.isActive ? (
-                                        <span className="inline-flex items-center space-x-1 px-3 py-1 bg-success/20 text-success rounded-full">
-                                            <FaCheckCircle className="w-3 h-3" />
-                                            <span>Ativo</span>
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center space-x-1 px-3 py-1 bg-danger/20 text-danger rounded-full">
-                                            <FaTimesCircle className="w-3 h-3" />
-                                            <span>Inativo</span>
-                                        </span>
-                                    )}
-                                </td>
-                                
-                                {/* Ações (FUTURO: Edição/Deleção) */}
-                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-3">
-                                    <button 
-                                        // onClick={() => handleEdit(client)}
-                                        className="text-accent-secondary/50 cursor-not-allowed"
-                                        title="Editar (Não Implementado)"
-                                    >
-                                        <FaEdit className="w-4 h-4" />
-                                    </button>
-                                    <button 
-                                        // onClick={() => handleDelete(client)}
-                                        className="text-danger/50 cursor-not-allowed"
-                                        title="Deletar (Não Implementado)"
-                                    >
-                                        <FaTrash className="w-4 h-4" />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-            
-            {clients.length === 0 && !isLoading && !error && (
-                <div className="text-center py-8 text-gray-500">
-                    Nenhum cliente cadastrado. Clique em Novo Cliente para começar!
-                </div>
-            )}
-
-            {/* --- MODAL DE CRIAÇÃO --- */}
-            <ClientModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSuccess={handleSuccess}
-            />
-            {/* ------------------------ */}
-        </div>
-    );
-};
-
-
-// ===== FILE: src/components/layout/AdminSidebar.tsx =====
-
-// src/components/layout/AdminSidebar.tsx
-
-import React from 'react';
-import Link from 'next/link';
-// Definição dos links da área de administração de ACL
-const navItems = [
-  // --- NOVO: Adicionar Gerenciamento de Tenants ---
-  { name: 'Gerenciar Tenants', href: '/admin/tenants', icon: '🏢' }, // Novo link para a nova página
-  // ------------------------------------------------
-  { name: 'Gerenciar Planos', href: '/admin/plans', icon: '💎' },
-  { name: 'Gerenciar Features', href: '/admin/features', icon: '🔑' },
-  { name: 'Dashboard Mestre', href: '/dashboard', icon: '🏠' },
-];
-/**
- * @component AdminSidebar
- * @description Barra de navegação lateral para as rotinas administrativas.
- * Porquê: Oferece navegação estruturada e mantém a coerência visual na área de admin.
- */
-export const AdminSidebar: React.FC = () => {
-  return (
-    <div className="flex flex-col w-64 min-h-screen bg-base-metallic p-4 space-y-6 border-r border-gray-700">
-      
-      {/* Título */}
-      <div className="text-xl font-bold text-accent-primary uppercase tracking-wider">
-        Configurações Admin
-      </div>
-
-      {/* Navegação */}
-      <nav className="flex-1 space-y-2">
-        {navItems.map((item) => (
-          <Link 
-            key={item.name} href={item.href} legacyBehavior>
-            <a 
-              className="flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150"
-            >
-              <span className="text-lg">{item.icon}</span>
-              <span>{item.name}</span>
-            </a>
-          </Link>
-        ))}
-      </nav>
-      
-      {/* Logout Simples */}
-      <Link href="/logout" legacyBehavior>
-        <a className="text-sm text-red-400 hover:text-red-500 transition border-t border-gray-700 pt-4">
-          Sair / Logout
-        </a>
-      </Link>
-    </div>
-  );
-};
-
-
-// ===== FILE: src/components/layout/AppContainer.tsx =====
-
-// src/components/layout/AppContainer.tsx
-
-import React from 'react';
-
-interface AppContainerProps {
-  children: React.ReactNode;
-}
-
-/**
- * @component AppContainer
- * @description Contêiner principal que define o layout visual e o tema da aplicação.
- * Porquê: Centraliza o design system (cores, fontes, tamanhos) para manter a coerência visual.
- */
-export const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
-  return (
-    // Define a tela cheia, fundo escuro (tailor-made para o seu projeto) e o texto em branco
-    <div className="min-h-screen bg-gray-900 text-white font-sans">
-      {/* Ocupa 100% da largura, centralizando o conteúdo se necessário */}
-      <main className="mx-auto h-full w-full max-w-full">
-        {children}
-      </main>
-    </div>
-  );
-};
-
-
-// ===== FILE: src/components/layout/ClientSidebar.tsx =====
-
-// src/components/layout/ClientSidebar.tsx
-
-import React from 'react';
-import Link from 'next/link';
-import { FaUsers, FaHome, FaSignOutAlt } from 'react-icons/fa';
-
-// Definição dos links da área de negócio do Cliente/Tenant
-// PORQUÊ: Manteremos links estáticos por enquanto, mas esta lista será
-// o ponto onde a lógica de ACL e Plans será aplicada no futuro (ACL Dinâmica).
-const navItems = [
-  { name: 'Dashboard Principal', href: '/dashboard', icon: FaHome },
-  // Rotina de Negócio principal implementada
-  { name: 'Gerenciar Clientes', href: '/clients', icon: FaUsers }, 
-  // FUTURO: { name: 'Gerenciar Produtos', href: '/clients/products', icon: FaBox },
-];
-
-/**
- * @component ClientSidebar
- * @description Barra de navegação lateral para as rotinas de negócio do Tenant.
- * Porquê: Oferece navegação estruturada e coerente na área de trabalho do cliente (R3).
- */
-export const ClientSidebar: React.FC = () => {
-  return (
-    <div className="flex flex-col w-64 min-h-screen bg-base-metallic p-4 space-y-6 border-r border-gray-700">
-      
-      {/* Título */}
-      <div className="text-xl font-bold text-accent-secondary uppercase tracking-wider">
-        FilixFin Workspace
-      </div>
-
-      {/* Navegação Principal */}
-      <nav className="flex-1 space-y-2">
-        {navItems.map((item) => (
-          <Link 
-            key={item.name} 
-            href={item.href} 
-            legacyBehavior
-          >
-            <a 
-              className="flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150"
-            >
-              <item.icon className="w-4 h-4 text-accent-primary" />
-              <span>{item.name}</span>
-            </a>
-          </Link>
-        ))}
-        
-        {/* Link para área de Admin Global (Apenas se for Admin) */}
-        {/* LÓGICA FUTURA: if (user.role === 'TENANT_ADMIN') ... */}
-        <Link href="/admin/tenants" legacyBehavior>
-            <a className="flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-700 hover:text-white transition duration-150">
-                <FaSignOutAlt className="w-4 h-4 transform rotate-180 text-violet-400" />
-                <span>Configurações Admin</span>
-            </a>
-        </Link>
-        
-      </nav>
-      
-      {/* Logout Simples */}
-      <Link href="/logout" legacyBehavior>
-        <a className="text-sm text-red-400 hover:text-red-500 transition border-t border-gray-700 pt-4 flex items-center space-x-2">
-            <FaSignOutAlt className="w-4 h-4" />
-            <span>Sair / Logout</span>
-        </a>
-      </Link>
-    </div>
-  );
-};
-
-
-// ===== FILE: src/contexts/AuthContext.tsx =====
-
-// src/contexts/AuthContext.tsx (VERSÃO FINAL E CORRIGIDA PARA LOGOUT AUTOMÁTICO)
-
-"use client";
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { LoginDto, LoginResponse } from '@/types/auth'; 
-import { UserRole } from '@/types/user';
-import { api } from '@/utils/api'; 
-import { useNavigation } from '@/hooks/useNavigation';
-
-// --- 1. Definição de Tipos e Variável Global ---
-
-// O que o nosso JWT Claims carrega
-interface AuthUser {
-    id: string;
-    email: string;
-    role: UserRole;
-    tenantId: string | null;
-}
-
-// O estado do Contexto
-interface AuthContextData {
-    user: AuthUser | null;
-    token: string | null;
-    isLoggedIn: boolean;
-    
-    // Funções de interação
-    login: (credentials: LoginDto) => Promise<void>;
-    logout: () => void; // Funções de interação
-}
-
-// Variável global que armazena a função de logout do Provider (para ser acessada pelo Axios)
-let globalLogoutAndRedirect: (() => void) | null = null; 
-
-// --- 2. Criação do Contexto ---
-
-const AuthContext = createContext<AuthContextData | undefined>(undefined);
-// --- 3. Criação do Provider ---
-
-interface AuthProviderProps {
-    children: React.ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    // MODIFICAÇÃO: Usamos o hook useNavigation.
-    const { toLogin, rawPush } = useNavigation();
-    
-    const [user, setUser] = useState<AuthUser | null>(null);
-    const [token, setToken] = useState<string | null>(null);
-    const isLoggedIn = !!user;
-
-    // Função de limpeza de sessão (memória e localStorage)
-    const cleanSession = () => {
-        setUser(null);
-        setToken(null);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_user');
-    };
-
-    // Função principal de logout e redirecionamento (expõe o redirecionamento)
-    const logoutAndRedirect = useCallback(() => {
-        cleanSession();
-        toLogin(); 
-    }, [toLogin]);
-
-    // Efeito para carregar estado do localStorage na inicialização (persistência)
-    useEffect(() => {
-        const storedToken = localStorage.getItem('auth_token');
-        const storedUser = localStorage.getItem('auth_user');
-
-        if (storedToken && storedUser) {
-            setToken(storedToken);
-            setUser(JSON.parse(storedUser));
-        } else {
-             // Caso não haja token, garante que o estado inicial seja null.
-             setToken(null);
-        }
-    }, []); 
-    
-    // Efeito para injetar a função de logout no mecanismo global (Axios)
-    useEffect(() => {
-        globalLogoutAndRedirect = logoutAndRedirect;
-        return () => {
-            globalLogoutAndRedirect = null;
-        };
-    }, [logoutAndRedirect]); 
-
-    // --- NOVO: Função para obter a rota de destino (SRP) ---
-    const getTargetRoute = (role: UserRole): string => {
-        console.log("Determinando rota de destino para o papel:", role);
-        // MODIFICAÇÃO: Todos são direcionados para o dashboard central (R4).
-        return '/dashboard';
-    };
-
-    const login = async (credentials: LoginDto) => {
-        try {
-            // 1. CHAMADA REAL À API DE LOGIN
-            const response = await api.post('/user/login', credentials);
-            // 2. Extrair Token e Dados
-            const result = response.data as LoginResponse;
-            const { token, user } = result;
-            
-            // Mapeamento de Tipos para o Contexto
-            const authUser: AuthUser = {
-                id: user.id,
-                email: user.email,
-                role: user.role as UserRole,
-                tenantId: user.tenantId,
-            };
-            // 3. Salvar estado no Contexto e no localStorage
-            setToken(token);
-            setUser(authUser);
-            localStorage.setItem('auth_token', token);
-            localStorage.setItem('auth_user', JSON.stringify(authUser));
-
-            const targetRoute = getTargetRoute(authUser.role);
-            rawPush(targetRoute); // Usar rawPush para redirecionamento dinâmico
-        } catch (error) {
-            cleanSession();
-            throw error;
-        }
-    };
-
-    const contextValue: AuthContextData = {
-        user,
-        token,
-        isLoggedIn,
-        login,
-        logout: logoutAndRedirect, 
-    };
-
-    return (
-        <AuthContext.Provider value={contextValue}>
-            {children}
-        </AuthContext.Provider>
-    );
-};
-
-// --- 4. Criação do Hook e Função Global ---
-
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth deve ser usado dentro de um AuthProvider');
-    }
-    return context;
-};
-
-/**
- * @function forceGlobalLogout
- * @description Chamado pelo Interceptor de API (api.ts) quando detecta 401/403.
- */
-export const forceGlobalLogout = () => {
-    if (globalLogoutAndRedirect) {
-        console.warn("Token expirado ou inválido. Executando logout automático...");
-        globalLogoutAndRedirect();
-    }
-};
-
-
-// ===== FILE: src/hooks/useClientMutation.ts =====
-
-// src/hooks/useClientMutation.ts
-
-import { useState } from 'react';
-import { api } from '@/utils/api';
-import { Client, CreateClientDto } from '@/types/client'; // Importa os tipos de Cliente
-
-/**
- * @function useClientMutation
- * @description Hook de mutação para gerenciar as operações de escrita (C/U/D) sobre Clientes.
- * Porquê: Centraliza o tratamento de loading e erros de API.
- */
-export function useClientMutation() {
-    
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    /**
-     * @method createClient
-     * @description Envia uma requisição POST para criar um novo Cliente.
-     * Inclui a checagem de ACL (limite de clientes).
-     */
-    const createClient = async (data: CreateClientDto): Promise<Client> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            // Rota POST /client implementada no Backend
-            const response = await api.post('/client', data);
-            return response.data as Client;
-        } catch (err: any) {
-            // Captura erros de ACL (403/422) ou Conflito (409) do Backend.
-            const errorMessage = err.response?.data?.message || 'Falha ao criar o Cliente.';
-            setError(errorMessage);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // FUTURO: updateClient (PATCH)
-    // FUTURO: deleteClient (DELETE)
-
-    return { createClient, isLoading, error };
-}
-
-
-// ===== FILE: src/hooks/useClients.ts =====
-
-// src/hooks/useClients.ts
-
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '@/utils/api';
-import { Client } from '@/types/client'; // Importa a tipagem do cliente
-
-/**
- * @function useClients
- * @description Hook customizado para buscar e gerenciar o estado da lista de Clientes.
- * Porquê: A rota /client no Backend retorna APENAS os clientes do Tenant logado (isolamento).
- */
-export function useClients() {
-    const [clients, setClients] = useState<Client[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    // Função para buscar e recarregar dados
-    const fetchClients = useCallback(async () => {
-        try {
-            setIsLoading(true);
-            setError(null);
-            
-            // FUTURO: Rota GET /client deve ser implementada no Backend para esta chamada.
-            const response = await api.get('/client'); 
-            
-            setClients(response.data as Client[]);
-            
-        } catch (err: any) {
-            console.error("Erro ao buscar clientes:", err);
-            const errorMessage = err.response?.data?.message || "Falha ao carregar lista de Clientes.";
-            setError(errorMessage);
-            
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchClients();
-    }, [fetchClients]); 
-
-    // Retorna a função de busca para ser usada no onSuccess do formulário (revalidação)
-    return { clients, isLoading, error, refreshData: fetchClients };
-}
-
-
-// ===== FILE: src/hooks/useFeatureMutation.ts =====
-
-// src/hooks/useFeatureMutation.ts
-
-import { useState } from 'react';
-import { api } from '@/utils/api';
-import { CreateFeatureDto, Feature, UpdateFeatureDto } from '@/types/acl'; // Entidade Feature (usada no PATCH)
-
-/**
- * @function useFeatureMutation
- * @description Hook de mutação para gerenciar as operações de escrita (C/U/D) sobre Features.
- * Porquê: Centraliza o tratamento de loading, erros de API e lógica de envio.
- */
-export function useFeatureMutation() {
-    
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    // --- MÉTODOS DE MUTATION ---
-
-    /**
-     * @method createFeature
-     * @description Envia uma requisição POST para criar uma nova Feature.
-     */
-    const createFeature = async (data: CreateFeatureDto): Promise<Feature> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const response = await api.post('/admin/features', data);
-            return response.data as Feature;
-        } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Falha ao criar a Feature.';
-            setError(errorMessage);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    /**
-     * @method updateFeature
-     * @description Envia uma requisição PATCH para atualizar uma Feature existente.
-     */
-    const updateFeature = async (id: string, data: UpdateFeatureDto): Promise<Feature> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const response = await api.patch(`/admin/features/${id}`, data);
-            return response.data as Feature;
-        } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Falha ao atualizar a Feature.';
-            setError(errorMessage);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    /**
-     * @method deleteFeature
-     * @description Envia uma requisição DELETE para remover uma Feature.
-     */
-    const deleteFeature = async (id: string): Promise<void> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            // Requisição DELETE para o endpoint
-            await api.delete(`/admin/features/${id}`);
-        } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Falha ao deletar a Feature.';
-            setError(errorMessage);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return { createFeature, updateFeature, deleteFeature, isLoading, error };
-}
-
-
-// ===== FILE: src/hooks/useFeatures.ts =====
-
-// src/hooks/useFeatures.ts
-
-import { useState, useEffect } from 'react';
-import { api } from '@/utils/api';
-import { Feature } from '@/types/acl'; // Tipagem correta (assumindo que o src/types/user.ts está corrigido)
-
-/**
- * @function useFeatures
- * @description Hook customizado para buscar e gerenciar o estado da lista de Features (Permissões).
- * Porquê: Abstrai a lógica de fetching assíncrono e tratamento de loading/error dos componentes.
- */
-export function useFeatures() {
-    const [features, setFeatures] = useState<Feature[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchFeatures = async () => {
-            try {
-                setIsLoading(true);
-                
-                // GET para a rota protegida de Features
-                const response = await api.get('/admin/features'); 
-                
-                // Sucesso: Tipamos explicitamente a resposta
-                setFeatures(response.data as Feature[]);
-                
-            } catch (err) {
-                console.error("Erro ao buscar features:", err);
-                // Erro: pode ser 401, 403, ou 500
-                setError("Falha ao carregar catálogo de Features. Verifique a autenticação e o Backend.");
-                
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchFeatures();
-    }, []); // Roda apenas uma vez na montagem
-
-    return { features, isLoading, error };
-}
-
-
-// ===== FILE: src/hooks/useNavigation.ts =====
-
-// src/hooks/useNavigation.ts
-
-import { useRouter } from 'next/navigation';
-
-/**
- * @function useNavigation
- * @description Hook customizado para centralizar a lógica de roteamento e navegação da aplicação.
- * PORQUÊ: Abstrai o useRouter, permitindo que todas as chamadas de redirecionamento sejam 
- * feitas de forma semântica e em um ponto único, facilitando a manutenção e a expansão (R1).
- */
-export function useNavigation() {
-    
-    // Obter o roteador do Next.js
-    const router = useRouter();
-
-    // --- Métodos de Navegação Pública ---
-
-    /**
-     * @method toLogin
-     * @description Redireciona o usuário para a tela de login.
-     * Usado no Logout e no AuthGuard (acesso negado).
-     */
-    const toLogin = () => {
-        router.push('/login');
-    };
-
-    /**
-     * @method toDashboard
-     * @description Redireciona o usuário para o hub central após o login.
-     * É a rota inicial para todos os usuários autenticados (R4).
-     */
-    const toDashboard = () => {
-        router.push('/dashboard');
-    };
-
-    /**
-     * @method toAdminPlans
-     * @description Redireciona para a tela de Gerenciamento de Planos (Rota principal do Admin).
-     */
-    const toAdminPlans = () => {
-        router.push('/admin/plans');
-    };
-
-    /**
-     * @method toTenantClients
-     * @description Redireciona para a tela de Clientes (Rota principal de negócio do Tenant).
-     */
-    const toTenantClients = () => {
-        router.push('/clients');
-    };
-    
-    // Futuras rotas de expansão (Ex: toRegister, toAdminTenants, toAdminFeatures, toProduto, etc.)
-    const toRegister = () => {
-        router.push('/register');
-    };
-
-
-    return {
-        // Métodos de navegação semânticos
-        toLogin,
-        toDashboard,
-        toAdminPlans,
-        toTenantClients,
-        toRegister,
-        
-        // Expor o push cru (raw push) para casos específicos que precisem de rotas dinâmicas
-        rawPush: router.push,
-    };
-}
-
-
-// ===== FILE: src/hooks/usePlanMutation.ts =====
-
-// src/hooks/usePlanMutation.ts
-
-import { useState } from 'react';
-import { api } from '@/utils/api';
-import { Plan } from '@/types/acl'; // Entidade Plan
-import { PlanFeatureRule } from '@/types/acl'; // Para a mutação de regras (P4)
-
-// DTO para Criação (Baseado em CreatePlan.dto.ts do Backend)
-interface CreatePlanDto {
-    name: string;
-    description?: string;
-    price: number;
-    isActive?: boolean;
-}
-
-// DTO para Atualização (Baseado em UpdatePlan.dto.ts do Backend)
-interface UpdatePlanDto {
-    name?: string;
-    description?: string;
-    price?: number;
-    isActive?: boolean;
-}
-
-/**
- * @function usePlanMutation
- * @description Hook de mutação para gerenciar as operações de escrita (C/U/D) sobre Planos.
- * Porquê: Centraliza o tratamento de loading, erros de API e lógica de envio para o módulo ACL.
- */
-export function usePlanMutation() {
-    
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    // --- MÉTODOS DE MUTATION ---
-
-    /**
-     * @method createPlan
-     * @description Envia uma requisição POST para criar um novo Plano.
-     */
-    const createPlan = async (data: CreatePlanDto): Promise<Plan> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const response = await api.post('/admin/plans', data);
-            return response.data as Plan;
-        } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Falha ao criar o Plano.';
-            setError(errorMessage);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    /**
-     * @method updatePlan
-     * @description Envia uma requisição PATCH para atualizar um Plano existente.
-     */
-    const updatePlan = async (id: string, data: UpdatePlanDto): Promise<Plan> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const response = await api.patch(`/admin/plans/${id}`, data);
-            return response.data as Plan;
-        } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Falha ao atualizar o Plano.';
-            setError(errorMessage);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    
-    /**
-     * @method syncPlanRules
-     * @description Envia uma requisição PATCH para sincronizar as regras de Features do Plano.
-     * (Implementação para P4)
-     */
-    const syncPlanRules = async (id: string, rules: PlanFeatureRule[]): Promise<void> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            // Chamada para o novo endpoint transacional do Backend
-            await api.patch(`/admin/plans/${id}/rules`, rules);
-        } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Falha ao sincronizar as regras do Plano.';
-            setError(errorMessage);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    /**
-     * @method deletePlan
-     * @description Envia uma requisição DELETE para remover um Plano.
-     */
-    const deletePlan = async (id: string): Promise<void> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            // Requisição DELETE para o endpoint
-            await api.delete(`/admin/plans/${id}`);
-        } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Falha ao deletar o Plano.';
-            setError(errorMessage);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return { 
-        createPlan, 
-        updatePlan, 
-        syncPlanRules,
-        deletePlan, 
-        isLoading, 
-        error 
-    };
-}
-
-
-// ===== FILE: src/hooks/usePlanRules.ts =====
-
-// src/hooks/usePlanRules.ts
-
-import { useState, useEffect } from 'react';
-import { api } from '@/utils/api';
-import { PlanFeatureRule, FeatureKey } from '@/types/acl';
-
-// Tipagem da resposta do Backend para PlanFeature
-interface PlanRuleResponse {
-    id: string;
-    planoId: string;
-    featureId: string;
-    limitValue: number;
-    // Adicionamos a feature aqui se a API retornar a relação,
-    // mas por enquanto, buscaremos a FeatureKey separadamente para simplificar o backend.
-}
-
-/**
- * @function usePlanRules
- * @description Hook customizado para buscar e gerenciar o estado das regras (PlanFeature) de um Plano.
- * Porquê: Isolamos a chamada de leitura de regras para o Modal de Edição de Planos (P4).
- */
-export function usePlanRules(planoId?: string) {
-    
-    const [rules, setRules] = useState<PlanRuleResponse[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    // O useCallback é ideal aqui, mas usaremos uma função interna para simplicidade no escopo atual.
-    const fetchRules = async () => {
-        if (!planoId) return;
-
-        setIsLoading(true);
-        setError(null);
-        try {
-            // GET para a nova rota de leitura de regras do Plano
-            const response = await api.get(`/admin/plans/${planoId}/rules`);
-            
-            // Sucesso
-            setRules(response.data as PlanRuleResponse[]);
-            
-        } catch (err: any) {
-            console.error(`Erro ao buscar regras para o Plano ${planoId}:`, err);
-            const errorMessage = err.response?.data?.message || "Falha ao carregar regras de Feature.";
-            setError(errorMessage);
-            
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        // Recarrega as regras sempre que o planoId mudar
-        fetchRules();
-    }, [planoId]); 
-
-    // Retorna a função de busca para ser usada no onSuccess do formulário (revalidação)
-    return { rules, isLoading, error, fetchRules };
-}
-
-
-// ===== FILE: src/hooks/usePlans.ts =====
-
-// src/hooks/usePlans.ts
-
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '@/utils/api';
-import { Plan } from '@/types/acl';
-// Usamos o tipo da entidade Plan do Backend (simplificado para o Frontend)
-
-/**
- * @function usePlans
- * @description Hook customizado para buscar e gerenciar o estado da lista de Planos (ACL).
- * Porquê: Abstrai a lógica de fetching assíncrono e tratamento de loading/error dos componentes.
- */
-export function usePlans() {
-    const [plans, setPlans] = useState<Plan[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-
-    const fetchPlans = useCallback( async () => {
-        try {
-            setIsLoading(true);
-            // GET para a rota protegida que criamos no Backend
-            const response = await api.get('/admin/plans'); 
-            
-            // Sucesso: a resposta deve ser um array de Planos
-            setPlans(response.data as Plan[]);
-            
-        } catch (err) {
-            console.error("Erro ao buscar planos:", err);
-            // Erro: pode ser 401, 403, ou 500
-            setError("Falha ao carregar planos. Verifique a autenticação e o Backend.");
-            
-        } finally {
-            setIsLoading(false);
-        }
-    },[]);
-
-    useEffect(() => {
-        fetchPlans();
-    },[fetchPlans]); // Roda apenas uma vez na montagem
-
-    return { plans, isLoading, error, refreshData: fetchPlans };
-}
-
-
-// ===== FILE: src/hooks/useRegister.ts =====
-
-// src/hooks/useRegister.ts
-
-import { useState } from 'react';
-import { api } from '@/utils/api';
-// Usamos o tipo do formulário de registro que está na página /register
-interface RegisterFormData {
-    cnpjCpf: string;
-    razaoSocial: string;
-    nomeFantasia: string;
-    emailContato: string;
-    password: string; 
-    planoId: string;
-}
-
-/**
- * @function useRegister
- * @description Hook customizado para gerenciar a lógica de envio do formulário de registro (Tenant).
- * Porquê: Centraliza o POST para a API de Registro, tratamento de loading e erros.
- */
-export function useRegister() {
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    
-    const registerTenant = async (formData: RegisterFormData) => {
-        setIsLoading(true);
-        setError(null);
-        // Os campos do DTO de Tenant (Backend) são: cnpjCpf, razaoSocial, nomeFantasia, emailContato, planoId.
-        // O campo 'password' não existe no DTO de Tenant, mas será usado no Backend para criar o User.
-        // O Backend precisa de um payload unificado. Vamos enviar todos os campos do formulário.
-        try {
-            // --- MODIFICAÇÃO: Chamada REAL à API de Registro ---
-            // POST para o endpoint de Registro de Tenant (que agora cria o User Admin Global)
-            const response = await api.post('/tenant/register', formData);
-            
-            if (response.status === 201) {
-                // Sucesso na criação do Tenant e do User
-                // PORQUÊ: O hook retorna os dados de sucesso para o componente de UI tratar o redirecionamento.
-                return response.data;
-            }
-        } catch (err: any) {
-            // Captura erros específicos do Backend (409 Conflito, 404 Plano não encontrado, etc.)
-            if (err.response && err.response.data && err.response.data.message) {
-                // Se o erro vier do AppError do Backend, exibimos a mensagem de negócio
-                setError(err.response.data.message);
-            } else {
-                setError("Erro desconhecido ao tentar registrar. Verifique o console.");
-            }
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return { registerTenant, isLoading, error };
-}
-
-
-// ===== FILE: src/hooks/useTenantAdminMutation.ts =====
-
-// src/hooks/useTenantAdminMutation.ts
-
-import { useState } from 'react';
-import { api } from '@/utils/api';
-import { UpdateTenantAdminDto, TenantResponse } from '@/types/tenant'; // Entidade Tenant
-
-
-/**
- * @function useTenantAdminMutation
- * @description Hook de mutação para gerenciar as operações de escrita (Update/Soft Delete)
- * sobre Tenants, usado exclusivamente pelo Admin Global.
- * Porquê: Centraliza o tratamento de loading, erros de API e lógica de envio para o módulo Tenant.
- */
-export function useTenantAdminMutation() {
-    
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    /**
-     * @method updateTenant
-     * @description Envia uma requisição PATCH para atualizar um Tenant existente.
-     */
-    const updateTenant = async (id: string, data: UpdateTenantAdminDto): Promise<TenantResponse> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const response = await api.patch(`/admin/tenants/${id}`, data);
-            return response.data as TenantResponse;
-        } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Falha ao atualizar o Tenant.';
-            setError(errorMessage);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    
-    /**
-     * @method toggleActiveStatus
-     * @description Alterna o status isActive de um Tenant (Soft Delete).
-     */
-    const toggleActiveStatus = async (id: string, currentStatus: boolean): Promise<TenantResponse> => {
-        // Envia apenas a propriedade isActive com o valor invertido.
-        const newStatus = !currentStatus;
-        
-        return updateTenant(id, { isActive: newStatus });
-    };
-
-    return { 
-        updateTenant, 
-        toggleActiveStatus,
-        isLoading, 
-        error 
-    };
-}
-
-
-// ===== FILE: src/hooks/useTenants.ts =====
-
-// src/hooks/useTenants.ts
-
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '@/utils/api';
-import { Plan } from '@/types/acl';
-import { Tenant } from '@/types/tenant';
-// Importamos os tipos necessários
-
-// Tipagem completa do Tenant para uso no Frontend (inclui a relação 'plan')
-interface TenantWithPlan extends Tenant {
-    plan: Plan; // O repository retorna o objeto plan completo
-}
-
-/**
- * @function useTenants
- * @description Hook customizado para buscar e gerenciar o estado da lista de Tenants.
- * Porquê: Abstrai a lógica de fetching assíncrono, loading e tratamento de erros do Admin Global.
- */
-export function useTenants() {
-    // Usamos a tipagem estendida para garantir acesso a tenant.plan.name na UI
-    const [tenants, setTenants] = useState<TenantWithPlan[]>([]); 
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-        const fetchTenants = useCallback(async () => {
-            try {
-                setIsLoading(true);
-                setError(null);
-                
-                // GET para a rota protegida de listagem de Tenants
-                const response = await api.get('/admin/tenants'); 
-                
-                // Sucesso: Tipamos explicitamente a resposta
-                setTenants(response.data as TenantWithPlan[]);
-                
-            } catch (err: any) {
-                console.error("Erro ao buscar Tenants:", err);
-                // Erro: pode ser 403 (Permissão negada) ou 500
-                const errorMessage = err.response?.data?.message || 
-                                     "Falha ao carregar lista de Tenants. Verifique o Backend.";
-                setError(errorMessage);
-                
-            } finally {
-                setIsLoading(false);
-            }
-        },[]);
-
-    useEffect(() => {
-        fetchTenants();
-    }, [fetchTenants]); // Roda apenas uma vez na montagem
-
-    return { tenants, isLoading, error, refreshData: fetchTenants };
-}
-
-
-// ===== FILE: src/types/acl.ts =====
-
-// src/types/acl.ts
-
-// Definições de Entidades de ACL (Administração)
-
-// --- Novo tipo para as opções de controle ---
-export const FeatureType = {
-    BOOLEAN: 'boolean', // Permissão simples (sim/não)
-    QUANTITY: 'quantity', // Permissão com limite numérico
-} as const;
-
-export type FeatureType = 'boolean' | 'quantity';
-
-// Tipagem da FeatureKey (Importado do Backend, mas definido aqui para tipagem Frontend)
-export type FeatureKey = 
-    'PLANO_GERENCIAR' | 'DASHBOARD_USO_VIEW' | 
-    'CLIENTE_ADD' | 'CLIENTE_VIEW' | 'CLIENTE_EDIT' | 
-    'CLIENTE_DELETE' | 'PRODUTO_ADD' | 'PRODUTO_VIEW' |
-    'ESTOQUE_MOVIMENTAR' | 'FATURAMENTO_MAX_NF_E' | 
-    'ACESSO_SISTEMA_LOGIN';
-
-// Tipagem do Plano
-export interface Plan {
-    id: string;
-    name: string;
-    description: string | null;
-    price: number; // Agora é garantido como number pelo TypeormNumericTransformer
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
-}
-
-// Tipagem da Feature
-export interface Feature {
-    id: string;
-    key: string;
-    name: string;
-    description: string | null;
-    type: 'boolean' | 'quantity';
-    createdAt: string;
-    updatedAt: string;
-}
-
-// Tipagem da Regra de Atrelamento Plan <-> Feature
-export interface PlanFeatureRule {
-    featureId: string;
-    limitValue: number;
-}
-
-// DTO para Criação (corpo do POST)
-export interface CreateFeatureDto {
-    key: FeatureKey;
-    name: string;
-    description?: string;
-    type: 'boolean' | 'quantity';
-}
-
-// DTO para Atualização (corpo do PATCH)
-export interface UpdateFeatureDto {
-    name?: string;
-    description?: string;
-    type?: 'boolean' | 'quantity';
-}
-
-
-
-// ===== FILE: src/types/auth.ts =====
-
-// src/types/auth.ts (MODIFICAÇÃO)
-
-import { UserRole } from "./user";
-
-// Reúsa o DTO do Backend
-export interface LoginDto {
-    email: string;
-    password: string;
-}
-
-// --- NOVO: Tipagem da Resposta do Backend de Login ---
-// Porquê: Garante que o TypeScript saiba que o objeto retornado contém 'token' e 'user'.
-export interface LoginResponse {
-    token: string;
-    // O objeto user retornado pela API (simplificado)
-    user: {
-        id: string;
-        email: string;
-        role: UserRole;
-        tenantId: string | null;
-    };
-    message: string; // Mensagem de sucesso
-}
-
-
-// ===== FILE: src/types/client.ts =====
-
-// src/types/client.ts
-
-// Definições de Tipagem para a Entidade Cliente
-
-/**
- * @interface Client
- * @description Tipagem para a Entidade Cliente (que pertence a um Tenant).
- */
-export interface Client {
-    id: string;
-    tenantId: string;
-    name: string;
-    document: string;
-    email: string | null;
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
-}
-
-/**
- * @interface CreateClientDto
- * @description Tipagem para o payload de criação de Cliente.
- */
-export interface CreateClientDto {
-    name: string;
-    document: string;
-    email?: string;
-}
-
-
-// ===== FILE: src/types/tenant.ts =====
-
-// src/types/tenant.ts
-
-import { Plan } from "./acl"; // Importa o tipo Plan do novo módulo
-
-/**
- * @interface Tenant
- * @description Tipagem para a Entidade Tenant.
- */
-export interface Tenant {
-    id: string;
-    cnpjCpf: string;
-    razaoSocial: string;
-    nomeFantasia: string | null;
-    emailContato: string;
-    planoId: string;
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
-    
-    // Relação (opcional no FindBy/FindAll do Admin)
-    plan?: Plan;
-}
-
-// DTO para Atualização (Baseado em UpdateTenantAdmin.dto.ts do Backend)
-export interface UpdateTenantAdminDto {
-    razaoSocial?: string;
-    nomeFantasia?: string;
-    planoId?: string;
-    isActive?: boolean;
-}
-
-// Tipagem completa do Tenant retornado
-export interface TenantResponse extends Tenant {
-    plan?: Plan; // O Backend retorna a relação Plan no find/update
-}
-
-// Propriedades do Modal
-export interface TenantModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    // Dados do Tenant a ser editado
-    currentTenant: Tenant; 
-    onSuccess: () => void; // Callback para recarregar a tabela
-}
-
-// DTO de Edição (Usado no formulário)
-// Repetindo a tipagem para clareza, mas idealmente viria do types/tenant.ts
-export interface UpdateTenantAdminDto {
-    razaoSocial?: string;
-    nomeFantasia?: string;
-    planoId?: string;
-    isActive?: boolean;
-}
-
-// Tipagem local para o componente (usa o tipo Tenant)
-export interface TenantWithPlan extends Tenant {
-    plan: Plan
-}
-
-
-
-// ===== FILE: src/types/user.ts =====
-
-// src/types/user.ts
-
-// --- CORREÇÃO: Usar um objeto const para garantir valores em runtime ---
-export const UserRole = {
-    GLOBAL_ADMIN: 'GLOBAL_ADMIN',
-    TENANT_ADMIN: 'TENANT_ADMIN',
-    MEMBER: 'MEMBER',
-} as const;
-
-// Reúsa o ENUM de Role do Backend (simplificado aqui)
-export type UserRole = 'GLOBAL_ADMIN' | 'TENANT_ADMIN' | 'MEMBER';
-
-// Tipagem da Feature e Plan foram movidas para src/types/acl.ts
-
-export interface User {
-    id: string;
-    email: string;
-    role: UserRole;
-    tenantId: string | null;
-    // Removido o Plan, Feature, etc.
-}
-
-
-// ===== FILE: src/utils/api.ts =====
-
-// src/utils/api.ts
-
-import axios from 'axios';
-import { forceGlobalLogout, useAuth } from '@/contexts/AuthContext'; // Para obter o token JWT
-
-// Porquê: A URL base deve ser lida do ambiente para facilitar a transição para produção.
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
-
-/**
- * @const api
- * @description Instância do Axios centralizada e configurada com interceptors.
- */
-export const api = axios.create({
-    baseURL: API_BASE_URL,
-    withCredentials: true, // Necessário para enviar cookies (se usarmos)
-});
-
-// --- Interceptor de Requisição (Injeção do Token JWT) ---
-// Porquê: Garante que todas as requisições para o Backend (Backend) enviem o token de autenticação,
-// permitindo o acesso às rotas protegidas (AuthMiddleware).
-api.interceptors.request.use(
-    (config) => {
-        // NOTE: Como o hook useAuth só pode ser chamado em componentes React,
-        // usaremos o localStorage para obter o token para este interceptor,
-        // que é chamado fora do ciclo de vida do componente.
-
-        if (typeof window !== 'undefined') {
-            const token = localStorage.getItem('auth_token');
-            if (token) {
-                if (config.headers) {
-                    config.headers.Authorization = `Bearer ${token}`;
-                }
-            }
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
-
-// --- Interceptor de Resposta (Tratamento Global de Erros de Auth) ---
-api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        // Porquê: Captura o 401 (Unauthorized) ou 403 (Forbidden) e força o logout/redirecionamento.
-        if (error.response?.status === 401 || error.response?.status === 403) {
-            forceGlobalLogout();
-        }
-        return Promise.reject(error);
-    }
-);
 
 

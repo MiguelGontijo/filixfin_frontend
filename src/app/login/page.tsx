@@ -3,9 +3,9 @@
 "use client"; // Necessário para usar hooks como useState
 
 import { useAuth } from '@/contexts/AuthContext';
-import { LoginDto } from '@/types/auth';
+import { LoginDto } from '@/core/types/auth';
 import React, { useEffect, useState } from 'react';
-import { useNavigation } from '@/hooks/useNavigation';
+import { useNavigation } from '@/core/hooks/useNavigation';
 
 /**
  * @component LoginPage

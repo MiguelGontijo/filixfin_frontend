@@ -4,7 +4,7 @@
 
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigation } from '@/hooks/useNavigation'; // MODIFICAÇÃO: Importa o hook centralizado (R1)
+import { useNavigation } from '@/core/hooks/useNavigation'; // MODIFICAÇÃO: Importa o hook centralizado (R1)
 
 /**
  * @component LogoutPage

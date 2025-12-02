@@ -4,8 +4,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRegister } from '@/hooks/useRegister';
-import { useNavigation } from '@/hooks/useNavigation';
+import { useRegister } from '@/core/hooks/useRegister';
+import { useNavigation } from '@/core/hooks/useNavigation';
 
 /**
  * @component RegisterPage

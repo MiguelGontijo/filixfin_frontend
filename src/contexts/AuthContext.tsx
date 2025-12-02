@@ -1,12 +1,13 @@
 // src/contexts/AuthContext.tsx
 
 "use client";
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { LoginDto, LoginResponse } from '@/types/auth'; 
-import { UserRole } from '@/types/user';
-import { api } from '@/utils/api'; 
-import { useNavigation } from '@/hooks/useNavigation'; 
-import { User } from '@/types/user'; // Importamos o tipo User completo
+import { LoginDto, LoginResponse } from '@/core/types/auth'; 
+import { UserRole } from '@/core/types/user';
+import { api } from '@/core/services/api'; 
+import { useNavigation } from '@/core/hooks/useNavigation'; 
+import { User } from '@/core/types/user';
 
 // --- 1. Definição de Tipos e Variável Global ---
 
