@@ -7080,7 +7080,286 @@ export default config;
 
 
 
-// ===== FILE: src/app/[tenantId]/dashboard/clients/layout.tsx =====
+// ===== FILE: src/app/[tenantId]/dashboard/clients/page.tsx =====
+
+// src/app/clients/page.tsx
+"use client";
+
+import React from 'react';
+// Importação do novo componente modularizado
+import { ClientTablePage } from '@/core/components/client/ClientTablePage'; 
+
+/**
+ * @component ClientsPage
+ * @description Rota de entrada para a Tabela de Clientes.
+ * PORQUÊ: Simplifica a rota e usa o componente Page modularizado.
+ */
+export default function ClientsPage() {
+    
+    // NOTE: O AuthGuard é aplicado no clients/layout.tsx
+    
+    return (
+        <ClientTablePage />
+    );
+}
+
+
+// ===== FILE: src/app/[tenantId]/dashboard/crm/page.tsx =====
+
+// src/app/[tenantId]/dashboard/crm/page.tsx
+
+"use client";
+
+import React, { useState } from 'react';
+// MODIFICAÇÃO: Novos ícones importados
+import { FaMagic, FaRobot, FaCheckCircle, FaTag, FaChartLine, FaBrain, FaUser, FaBuilding, FaEnvelope, FaBullseye, FaSave } from 'react-icons/fa';
+import { useCRMIntelligence } from '@/features/crm/hooks/useCRMIntelligence';
+
+/**
+ * @component CRMPage
+ * @description Página de "Laboratório de IA" para o CRM.
+ * Porquê: Agora exibe a Identidade Extraída além da análise de sentimento.
+ */
+export default function CRMPage() {
+    
+    const { analyzeText, isAnalyzing, analysisResult, error } = useCRMIntelligence();
+    const [inputText, setInputText] = useState('');
+
+    const handleAnalyze = async () => {
+        if (!inputText.trim()) return;
+        await analyzeText(inputText);
+    };
+
+    // Helper para cor do Sentimento
+    const getSentimentColor = (sentiment: string) => {
+        switch (sentiment) {
+            case 'POSITIVE': return 'text-green-400 border-green-400 bg-green-900/20';
+            case 'NEGATIVE': return 'text-red-400 border-red-400 bg-red-900/20';
+            case 'TENSE': return 'text-orange-400 border-orange-400 bg-orange-900/20';
+            default: return 'text-gray-400 border-gray-400 bg-gray-800';
+        }
+    };
+    
+    // Helper para traduzir intenção
+    const translateIntent = (intent?: string) => {
+        const map: Record<string, string> = {
+            'NEW_BUSINESS': 'Novo Negócio / Venda',
+            'SUPPORT': 'Suporte / Dúvida',
+            'FOLLOW_UP': 'Acompanhamento',
+            'UNKNOWN': 'Desconhecido'
+        };
+        return map[intent || ''] || intent || 'N/A';
+    };
+
+    return (
+        <div className="space-y-8 max-w-6xl mx-auto pb-20">
+            
+            {/* Header */}
+            <div className="flex items-center space-x-3 border-b border-gray-700 pb-4">
+                <div className="p-3 bg-accent-primary/20 rounded-xl">
+                    <FaBrain className="w-8 h-8 text-accent-primary" />
+                </div>
+                <div>
+                    <h1 className="text-3xl font-extrabold text-white">
+                        CRM Intelligence Lab
+                    </h1>
+                    <p className="text-gray-400">
+                        Cole uma conversa, email ou anotação e deixe a IA extrair os insights.
+                    </p>
+                </div>
+            </div>
+
+            {/* Área de Input */}
+            <div className="bg-base-metallic p-6 rounded-xl shadow-lg space-y-4">
+                <label className="block text-sm font-bold text-gray-300 uppercase tracking-wider">
+                    Entrada de Dados (Texto Bruto)
+                </label>
+                <textarea
+                    className="w-full h-32 p-4 bg-gray-900 border border-gray-700 rounded-lg text-gray-200 focus:ring-2 focus:ring-accent-primary focus:outline-none transition resize-none"
+                    placeholder="Ex: O cliente João Silva da Acme Corp ligou pedindo um orçamento para 50 licenças..."
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                />
+                
+                <div className="flex justify-end">
+                    <button
+                        onClick={handleAnalyze}
+                        disabled={isAnalyzing || !inputText}
+                        className="flex items-center space-x-2 px-6 py-3 bg-accent-primary text-base-dark font-bold rounded-lg hover:bg-orange-500 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transform active:scale-95"
+                    >
+                        {isAnalyzing ? (
+                            <>
+                                <FaMagic className="animate-spin" />
+                                <span>Processando IA...</span>
+                            </>
+                        ) : (
+                            <>
+                                <FaRobot />
+                                <span>Analisar com IA</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+                
+                {error && (
+                    <div className="p-4 bg-red-900/30 border border-red-800 text-red-300 rounded-lg">
+                        <strong>Erro:</strong> {error}
+                    </div>
+                )}
+            </div>
+
+            {/* Área de Resultados (Widget de IA) */}
+            {analysisResult && (
+                <div className="space-y-6 animate-fade-in">
+                    
+                    {/* --- NOVO: CARD DE IDENTIDADE (QUEM É O CLIENTE?) --- */}
+                    {/* Mostra apenas se a IA detectou algo relevante */}
+                    {analysisResult.extractedIdentity && (
+                        <div className="bg-gray-800 border border-gray-600 p-6 rounded-xl shadow-2xl relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-accent-secondary"></div>
+                            
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                                <div>
+                                    <h3 className="text-lg font-bold text-white flex items-center">
+                                        <FaUser className="mr-2 text-accent-secondary" /> Identidade Detectada
+                                    </h3>
+                                    <p className="text-sm text-gray-400">
+                                        A IA identificou os seguintes dados cadastrais na conversa.
+                                    </p>
+                                </div>
+                                
+                                {/* Botões de Ação (Fase de Persistência) */}
+                                <div className="mt-4 md:mt-0 flex space-x-3">
+                                    <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition">
+                                        Vincular a Existente
+                                    </button>
+                                    <button className="flex items-center px-4 py-2 bg-accent-secondary hover:bg-violet-600 text-white rounded-lg text-sm font-bold transition shadow-lg">
+                                        <FaSave className="mr-2" /> Salvar Novo Cliente
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                {/* Nome */}
+                                <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
+                                    <label className="text-xs text-gray-500 uppercase font-bold">Nome</label>
+                                    <div className="text-white font-medium flex items-center mt-1">
+                                        {analysisResult.extractedIdentity.personName || <span className="text-gray-600 italic">Não identificado</span>}
+                                    </div>
+                                </div>
+                                {/* Empresa */}
+                                <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
+                                    <label className="text-xs text-gray-500 uppercase font-bold">Empresa</label>
+                                    <div className="text-white font-medium flex items-center mt-1">
+                                        <FaBuilding className="mr-2 text-gray-500" />
+                                        {analysisResult.extractedIdentity.companyName || <span className="text-gray-600 italic">Não identificado</span>}
+                                    </div>
+                                </div>
+                                {/* Contato */}
+                                <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
+                                    <label className="text-xs text-gray-500 uppercase font-bold">Contato</label>
+                                    <div className="text-white font-medium flex items-center mt-1 truncate">
+                                        <FaEnvelope className="mr-2 text-gray-500" />
+                                        {analysisResult.extractedIdentity.contactInfo || <span className="text-gray-600 italic">Não identificado</span>}
+                                    </div>
+                                </div>
+                                {/* Intenção */}
+                                <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
+                                    <label className="text-xs text-gray-500 uppercase font-bold">Intenção</label>
+                                    <div className="text-accent-primary font-bold flex items-center mt-1">
+                                        <FaBullseye className="mr-2" />
+                                        {translateIntent(analysisResult.extractedIdentity.intentType)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- GRID DE ANÁLISE (Existente) --- */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        
+                        <div className="md:col-span-2 space-y-6">
+                            {/* Resumo */}
+                            <div className="bg-base-metallic p-6 rounded-xl shadow-lg border-l-4 border-accent-primary">
+                                <h3 className="text-lg font-bold text-white mb-2 flex items-center">
+                                    <FaMagic className="mr-2 text-accent-primary" /> Resumo Executivo
+                                </h3>
+                                <p className="text-gray-300 leading-relaxed">
+                                    {analysisResult.summary}
+                                </p>
+                            </div>
+
+                            {/* Ações */}
+                            <div className="bg-base-metallic p-6 rounded-xl shadow-lg">
+                                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                                    <FaCheckCircle className="mr-2 text-success" /> Próximos Passos
+                                </h3>
+                                <ul className="space-y-3">
+                                    {analysisResult.actionItems.map((item, idx) => (
+                                        <li key={idx} className="flex items-start p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+                                            <input type="checkbox" className="mt-1 mr-3 text-accent-primary rounded focus:ring-0" />
+                                            <span className="text-gray-300">{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Sentimento */}
+                            <div className={`p-6 rounded-xl shadow-lg border-2 ${getSentimentColor(analysisResult.sentiment)}`}>
+                                <h3 className="text-sm font-bold uppercase tracking-widest opacity-80 mb-1">
+                                    Sentimento
+                                </h3>
+                                <div className="text-3xl font-extrabold">
+                                    {analysisResult.sentiment}
+                                </div>
+                            </div>
+
+                            {/* Probabilidade */}
+                            {analysisResult.dealProbability !== undefined && (
+                                <div className="bg-base-metallic p-6 rounded-xl shadow-lg">
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase mb-2">
+                                        Probabilidade de Negócio
+                                    </h3>
+                                    <div className="flex items-center space-x-3">
+                                        <FaChartLine className="text-accent-primary w-6 h-6" />
+                                        <div className="text-3xl font-bold text-white">
+                                            {analysisResult.dealProbability}%
+                                        </div>
+                                    </div>
+                                    <div className="w-full bg-gray-700 h-2 rounded-full mt-3">
+                                        <div 
+                                            className="bg-accent-primary h-2 rounded-full transition-all duration-1000" 
+                                            style={{ width: `${analysisResult.dealProbability}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Tags */}
+                            <div className="bg-base-metallic p-6 rounded-xl shadow-lg">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase mb-3 flex items-center">
+                                    <FaTag className="mr-2" /> Tags
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {analysisResult.tags.map((tag, idx) => (
+                                        <span key={idx} className="px-3 py-1 bg-gray-700 text-gray-300 text-sm rounded-full border border-gray-600">
+                                            #{tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+
+// ===== FILE: src/app/[tenantId]/dashboard/layout.tsx =====
 
 // src/app/[tenantId]/dashboard/layout.tsx
 
@@ -7126,30 +7405,6 @@ export default function DashboardLayout({
 
             </div>
         </AuthGuard>
-    );
-}
-
-
-// ===== FILE: src/app/[tenantId]/dashboard/clients/page.tsx =====
-
-// src/app/clients/page.tsx
-"use client";
-
-import React from 'react';
-// Importação do novo componente modularizado
-import { ClientTablePage } from '@/core/components/client/ClientTablePage'; 
-
-/**
- * @component ClientsPage
- * @description Rota de entrada para a Tabela de Clientes.
- * PORQUÊ: Simplifica a rota e usa o componente Page modularizado.
- */
-export default function ClientsPage() {
-    
-    // NOTE: O AuthGuard é aplicado no clients/layout.tsx
-    
-    return (
-        <ClientTablePage />
     );
 }
 
@@ -7519,27 +7774,22 @@ export default function RootLayout({
 
 // src/app/login/page.tsx
 
-"use client"; // Necessário para usar hooks como useState
+"use client";
 
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginDto } from '@/core/types/auth';
-import React, { useEffect, useState } from 'react';
-import { useNavigation } from '@/core/hooks/useNavigation';
+import React, { useState } from 'react';
+// CORREÇÃO: Adicionar Link para navegação
+import Link from 'next/link'; 
 
 /**
  * @component LoginPage
- * @description Interface de Login para o User Global Admin.
- * Porquê: A página deve ser simples, segura e focada na coleta de credenciais.
+ * @description Interface de Login.
+ * @update Adicionado link para cadastro de novos Tenants.
  */
 export default function LoginPage() {
     
-    // MODIFICAÇÃO: Obtemos a função de navegação, mas não precisamos dela aqui,
-    // pois o AuthContext agora lida com o redirecionamento pós-login.
-    // const router = useRouter();
-    const router = useNavigation(); // MODIFICAÇÃO: Mantemos a variável para evitar erro, mas usamos a função para isReady
-
     const auth = useAuth();
-    // Usar o contexto de autenticação
     
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -7550,7 +7800,7 @@ export default function LoginPage() {
         e.preventDefault();
         setError(null);
         setIsLoading(true);
-        // Lógica de Validação Front-end Básica
+
         if (!email || !password) {
             setError("Por favor, preencha todos os campos.");
             setIsLoading(false);
@@ -7558,14 +7808,8 @@ export default function LoginPage() {
         }
 
         try {
-            
             const credentials: LoginDto = { email, password };
-            // 1. CHAMADA AO CONTEXTO DE LOGIN
-            // O Contexto (AuthProvider) fará a chamada à API do Backend
-            // e atualizará o estado global (token, user).
             await auth.login(credentials); 
-            
-
         } catch (err) {
             setError("Falha na autenticação. Verifique suas credenciais.");
             console.error("Login API Error:", err);
@@ -7575,62 +7819,83 @@ export default function LoginPage() {
     };
 
     return (
-        // Centraliza o conteúdo na tela
-        <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-base-dark">
             
-            <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-xl shadow-2xl">
+            <div className="w-full max-w-md p-8 space-y-6 bg-base-metallic rounded-xl shadow-2xl border border-gray-700">
                 
-                <h1 className="text-3xl font-extrabold text-white text-center">
-                    Acesso Mestre
-                </h1>
+                <div className="text-center">
+                    <h1 className="text-3xl font-extrabold text-white">
+                        Acesso FilixFin
+                    </h1>
+                    <p className="mt-2 text-sm text-gray-400">
+                        Entre para gerenciar seu negócio
+                    </p>
+                </div>
                 
                 {error && (
-                    <div className="p-3 text-sm font-medium text-red-400 bg-red-900 rounded-md">
+                    <div className="p-3 text-sm font-medium text-red-400 bg-red-900/30 border border-red-800 rounded-md">
                         {error}
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-      
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-300">
-                            E-mail
-                        </label>
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-gray-700 text-white"
-                            placeholder="admin@dominio.com"
-                        />
-                    </div>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    
+                    <div className="space-y-4">
+                        <div>
+                            <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+                                E-mail
+                            </label>
+                            <input
+                                id="email"
+                                name="email"
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="mt-1 block w-full px-4 py-3 border border-gray-600 rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-transparent bg-gray-800 text-white transition-all"
+                                placeholder="seu@email.com"
+                            />
+                        </div>
 
-                    <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-300">
-                            Senha
-                        </label>
-                        <input
-                            id="password"
-                            name="password"
-                            type="password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-gray-700 text-white"
-                            placeholder="••••••••"
-                        />
+                        <div>
+                            <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+                                Senha
+                            </label>
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="mt-1 block w-full px-4 py-3 border border-gray-600 rounded-lg shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-transparent bg-gray-800 text-white transition-all"
+                                placeholder="••••••••"
+                            />
+                        </div>
                     </div>
                     
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-base-dark bg-accent-primary hover:bg-orange-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-primary disabled:bg-gray-500"                    >
-                        {isLoading ? 'Acessando...' : 'Acessar'}
+                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold text-white bg-accent-primary hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-95"
+                    >
+                        {isLoading ? 'Acessando...' : 'Entrar na Plataforma'}
                     </button>
                 </form>
+
+                {/* --- NOVO: Link de Registro --- */}
+                <div className="pt-4 border-t border-gray-700 text-center">
+                    <p className="text-sm text-gray-400">
+                        Ainda não tem uma conta?{' '}
+                        <Link 
+                            href="/register" 
+                            className="font-medium text-accent-secondary hover:text-violet-400 transition-colors"
+                        >
+                            Crie sua conta grátis
+                        </Link>
+                    </p>
+                </div>
+                {/* ----------------------------- */}
 
             </div>
         </div>
@@ -7687,43 +7952,53 @@ import Link from 'next/link';
 
 /**
  * @component LandingPage
- * @description Página inicial e hub de valor da aplicação.
- * Porquê: Deve ter alto impacto, comunicar a proposta de valor (ERP + IA) e guiar o usuário para o Login/Registro.
+ * @description Página inicial pública. Ponto de entrada para Login ou Registro.
+ * PORQUÊ: Deve ser acessível sem autenticação.
  */
 export default function LandingPage() {
   return (
-    // Usa a cor base do Design System (bg-base-dark) e garante tela cheia
-    <div className="flex flex-col items-center justify-center min-h-screen bg-base-dark text-base-text p-8">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-base-dark text-base-text p-8 relative overflow-hidden">
       
-      {/* Seção Principal (Hero) */}
-      <section className="text-center space-y-8 max-w-4xl">
-        
-        <h1 className="text-6xl font-extrabold tracking-tight sm:text-7xl lg:text-8xl text-transparent bg-clip-text bg-linear-to-r from-accent-primary to-accent-secondary">
-          Gestão de Excelência & Inteligência
-        </h1>
+      {/* Elemento Decorativo de Fundo */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent-primary/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent-secondary/10 rounded-full blur-[120px]" />
+      </div>
 
-        <p className="mt-4 text-xl text-gray-400">
-          O poder de um ERP completo, projetado com uma arquitetura sênior e modular, integrado a sistemas de IA/RAG para automação e análise estratégica.
+      {/* Conteúdo Principal */}
+      <section className="text-center space-y-8 max-w-5xl z-10">
+        
+        <div className="space-y-2">
+            <h2 className="text-accent-secondary font-bold tracking-wide uppercase text-sm">
+                Plataforma Enterprise
+            </h2>
+            <h1 className="text-6xl md:text-8xl font-extrabold tracking-tight text-white">
+              Filix<span className="text-accent-primary">Fin</span>
+            </h1>
+        </div>
+
+        <p className="mt-6 text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+          Gestão completa integrada com <strong>Inteligência Artificial</strong>. 
+          Transforme conversas em dados, automatize processos e escale seu negócio.
         </p>
 
-        {/* Chamada para Ação (CTA) */}
-        <div className="mt-10 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+        {/* Botões de Ação (CTAs) */}
+        <div className="mt-12 flex flex-col sm:flex-row justify-center items-center gap-6">
           
-          <Link href="/login" legacyBehavior>
-            <a 
-              className="w-full sm:w-auto px-12 py-4 text-lg font-bold rounded-xl text-base-dark bg-accent-primary hover:bg-orange-500 transition duration-150 shadow-lg transform hover:scale-105"
-            >
-              Acesso / Login
-            </a>
+          {/* Botão de Login */}
+          <Link 
+            href="/login" 
+            className="w-full sm:w-auto px-12 py-4 text-lg font-bold rounded-xl text-white bg-gray-800 border border-gray-600 hover:bg-gray-700 hover:border-gray-500 transition duration-200 shadow-lg"
+          >
+            Já tenho conta
           </Link>
           
-          {/* Futuro Link para Registro de Novo Tenant */}
-          <Link href="/register" legacyBehavior>
-            <a 
-              className="w-full sm:w-auto px-12 py-4 text-lg font-medium rounded-xl text-accent-primary border-2 border-accent-secondary hover:bg-accent-secondary hover:text-white transition duration-150"
-            >
-              Crie sua Conta (Tenant)
-            </a>
+          {/* Botão de Registro (Destaque) */}
+          <Link 
+            href="/register" 
+            className="w-full sm:w-auto px-12 py-4 text-lg font-bold rounded-xl text-base-dark bg-accent-primary hover:bg-orange-500 transition duration-200 shadow-xl transform hover:scale-105"
+          >
+            Começar Agora
           </Link>
           
         </div>
@@ -9342,31 +9617,34 @@ export function useTenants() {
 
 // ===== FILE: src/core/services/api.ts =====
 
+// src/core/services/api.ts
 
 import axios from 'axios';
-import { forceGlobalLogout } from '@/contexts/AuthContext'; // Para obter o token JWT
+import { forceGlobalLogout } from '@/contexts/AuthContext'; 
 
-// Porquê: A URL base deve ser lida do ambiente para facilitar a transição para produção.
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
-/**
- * @const api
- * @description Instância do Axios centralizada e configurada com interceptors.
- */
 export const api = axios.create({
     baseURL: API_BASE_URL,
-    withCredentials: true, // Necessário para enviar cookies (HttpOnly)
+    withCredentials: true, 
 });
 
-
-// --- Interceptor de Resposta (Tratamento Global de Erros de Auth) ---
+// --- Interceptor de Resposta ---
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Porquê: Captura o 401 (Unauthorized) ou 403 (Forbidden) e força o logout/redirecionamento.
-        if (error.response?.status === 401 || error.response?.status === 403) {
+        // Lógica de Exceção:
+        // Se o erro for na rota de verificação de perfil (/user/profile),
+        // NÃO executamos o logout forçado. Apenas rejeitamos a promessa.
+        // Isso permite que o AuthContext trate o "não logado" silenciosamente na Landing Page.
+        const isProfileCheck = error.config?.url?.includes('/user/profile');
+
+        if ((error.response?.status === 401 || error.response?.status === 403) && !isProfileCheck) {
+            // Se for qualquer outra rota (ex: salvar cliente) e der 401, aí sim desloga.
+            console.warn("Sessão expirada em operação protegida. Redirecionando...");
             forceGlobalLogout();
         }
+        
         return Promise.reject(error);
     }
 );
@@ -11319,5 +11597,139 @@ export const TenantTable: React.FC = () => {
         </div>
     );
 };
+
+
+// ===== FILE: src/features/crm/hooks/useCRMIntelligence.ts =====
+
+// src/features/crm/hooks/useCRMIntelligence.ts
+
+import { useState } from 'react';
+import { api } from '@/core/services/api';
+import { InteractionAnalysis } from '../types';
+
+/**
+ * @hook useCRMIntelligence
+ * @description Gerencia a comunicação com os serviços de IA do CRM.
+ * Porquê: Abstrai a complexidade da chamada de API, tipagem do retorno e estados de loading/erro.
+ */
+export function useCRMIntelligence() {
+    
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [analysisResult, setAnalysisResult] = useState<InteractionAnalysis | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    /**
+     * @method analyzeText
+     * @description Envia um texto bruto para análise de IA no Backend.
+     * @param text O conteúdo da interação (nota, transcrição, email).
+     */
+    const analyzeText = async (text: string) => {
+        setIsAnalyzing(true);
+        setError(null);
+        setAnalysisResult(null); // Limpa resultado anterior
+
+        try {
+            // POST para o endpoint que criamos na Fase 3 do Backend
+            const response = await api.post('/crm/analyze', { text });
+            
+            // O Backend (Zod) garante que o retorno bata com a interface InteractionAnalysis
+            setAnalysisResult(response.data as InteractionAnalysis);
+            
+        } catch (err: any) {
+            console.error("Erro na análise de IA:", err);
+            const msg = err.response?.data?.message || "Falha ao processar a inteligência da interação.";
+            setError(msg);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
+    return {
+        analyzeText,
+        isAnalyzing,
+        analysisResult,
+        error,
+        // Reset para limpar a tela se necessário
+        clearAnalysis: () => setAnalysisResult(null) 
+    };
+}
+
+
+// ===== FILE: src/features/crm/types.ts =====
+
+// src/features/crm/types.ts
+
+import { Client } from '@/core/types/client';
+
+// --- ENUMS (Espelhos do Backend) ---
+
+export enum DealStatus {
+    NEW = 'NEW',
+    QUALIFIED = 'QUALIFIED',
+    PROPOSAL = 'PROPOSAL',
+    NEGOTIATION = 'NEGOTIATION',
+    WON = 'WON',
+    LOST = 'LOST',
+}
+
+export enum InteractionType {
+    NOTE = 'NOTE',
+    AUDIO = 'AUDIO',
+    EMAIL = 'EMAIL',
+    MEETING = 'MEETING',
+}
+
+// --- INTELEGÊNCIA ARTIFICIAL (O Contrato com o LangChain) ---
+
+/**
+ * @interface InteractionAnalysis
+ * @description Estrutura exata do JSON retornado pelo endpoint /crm/analyze (Backend).
+ * Define os insights extraídos pela IA.
+ */
+export interface InteractionAnalysis {
+    summary: string;
+    sentiment: "POSITIVE" | "NEUTRAL" | "NEGATIVE" | "TENSE";
+    tags: string[];
+    actionItems: string[];
+    dealProbability?: number; // Opcional, pois o Zod definiu como optional
+    extractedIdentity?: {
+        personName: string | null;
+        companyName: string | null;
+        contactInfo: string | null;
+        intentType: "NEW_BUSINESS" | "SUPPORT" | "FOLLOW_UP" | "UNKNOWN";
+    };
+}
+
+// --- ENTIDADES DO CRM ---
+
+export interface CRMDeal {
+    id: string;
+    tenantId: string;
+    clientId: string;
+    title: string;
+    status: DealStatus;
+    value: number;
+    probability: number;
+    expectedCloseDate?: string; // Datas vêm como string do JSON
+    createdAt: string;
+    updatedAt: string;
+    
+    // Relação (Hidratada se necessário)
+    client?: Client;
+}
+
+export interface CRMInteraction {
+    id: string;
+    tenantId: string;
+    clientId: string;
+    type: InteractionType;
+    content: string; // Texto bruto ou transcrição
+    mediaUrl?: string;
+    
+    // A Inteligência Anexada
+    aiAnalysis?: InteractionAnalysis;
+    
+    createdAt: string;
+}
 
 

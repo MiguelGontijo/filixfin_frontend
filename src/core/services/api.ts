@@ -1,28 +1,31 @@
+// src/core/services/api.ts
 
 import axios from 'axios';
-import { forceGlobalLogout } from '@/contexts/AuthContext'; // Para obter o token JWT
+import { forceGlobalLogout } from '@/contexts/AuthContext'; 
 
-// Porquê: A URL base deve ser lida do ambiente para facilitar a transição para produção.
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
-/**
- * @const api
- * @description Instância do Axios centralizada e configurada com interceptors.
- */
 export const api = axios.create({
     baseURL: API_BASE_URL,
-    withCredentials: true, // Necessário para enviar cookies (HttpOnly)
+    withCredentials: true, 
 });
 
-
-// --- Interceptor de Resposta (Tratamento Global de Erros de Auth) ---
+// --- Interceptor de Resposta ---
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Porquê: Captura o 401 (Unauthorized) ou 403 (Forbidden) e força o logout/redirecionamento.
-        if (error.response?.status === 401 || error.response?.status === 403) {
+        // Lógica de Exceção:
+        // Se o erro for na rota de verificação de perfil (/user/profile),
+        // NÃO executamos o logout forçado. Apenas rejeitamos a promessa.
+        // Isso permite que o AuthContext trate o "não logado" silenciosamente na Landing Page.
+        const isProfileCheck = error.config?.url?.includes('/user/profile');
+
+        if ((error.response?.status === 401 || error.response?.status === 403) && !isProfileCheck) {
+            // Se for qualquer outra rota (ex: salvar cliente) e der 401, aí sim desloga.
+            console.warn("Sessão expirada em operação protegida. Redirecionando...");
             forceGlobalLogout();
         }
+        
         return Promise.reject(error);
     }
 );
