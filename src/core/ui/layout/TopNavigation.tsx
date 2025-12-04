@@ -4,42 +4,38 @@
 
 import React from 'react';
 import { useParams } from 'next/navigation';
-import { FaBuilding, FaUserCircle, FaBell } from 'react-icons/fa';
+import { FaUserCircle, FaBell } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
+// IMPORTAÇÃO DO NOVO COMPONENTE
+import { TenantSelector } from '@/core/components/tenant/TenantSelector';
 
 /**
  * @component TopNavigation
  * @description Cabeçalho global da área do Dashboard.
- * PORQUÊ: Exibe o contexto atual (Tenant) e perfil do usuário, preparando para o Seletor de Tenant.
+ * @update Integrado com TenantSelector para troca de contexto.
  */
 export const TopNavigation: React.FC = () => {
     
     const { user } = useAuth();
     const params = useParams();
     
-    // Captura o ID do tenant da URL para exibição visual
-    // FUTURO: Buscar o Nome Fantasia do Tenant via hook useTenant(id)
+    // Captura o ID do tenant da URL para o Seletor
     const currentTenantId = params?.tenantId as string;
 
     return (
         <header className="h-16 bg-base-metallic border-b border-gray-700 flex items-center justify-between px-6 shadow-md">
             
-            {/* Lado Esquerdo: Contexto do Tenant */}
-            <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gray-700 rounded-lg text-accent-primary">
-                    <FaBuilding className="w-5 h-5" />
-                </div>
-                <div>
-                    <h2 className="text-sm font-bold text-white leading-tight">
-                        Contexto da Empresa
-                    </h2>
-                    <p className="text-xs text-gray-400 font-mono">
-                        ID: {currentTenantId || 'Carregando...'}
-                    </p>
-                </div>
+            {/* Lado Esquerdo: Seletor de Contexto (Tenant) */}
+            <div className="flex items-center">
+                {/* Agora usamos o componente inteligente.
+                    Passamos o ID atual para que ele saiba qual opção pré-selecionar.
+                */}
+                {currentTenantId && (
+                    <TenantSelector currentTenantId={currentTenantId} />
+                )}
             </div>
 
-            {/* Lado Direito: Ações e Perfil */}
+            {/* Lado Direito: Ações e Perfil (Mantido) */}
             <div className="flex items-center space-x-6">
                 
                 {/* Notificações (Placeholder) */}

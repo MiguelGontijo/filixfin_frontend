@@ -1,3 +1,4 @@
+// src/core/hooks/useClients.ts
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/core/services/api';
@@ -5,22 +6,38 @@ import { Client } from '@/core/types/client';
 
 /**
  * @function useClients
- * @description Hook customizado para buscar e gerenciar o estado da lista de Clientes.
- * Porquê: A rota /client no Backend retorna APENAS os clientes do Tenant logado (isolamento).
+ * @description Hook inteligente para gerenciamento de Clientes.
+ * @update Adicionado 'externalTrigger' para permitir recarga forçada por componentes pais.
  */
-export function useClients() {
+export function useClients(externalTrigger: number = 0) {
     const [clients, setClients] = useState<Client[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Função para buscar e recarregar dados
+    // --- ESTADO DE BUSCA ---
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedTerm, setDebouncedTerm] = useState('');
+
+    // 1. EFEITO DE DEBOUNCE
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedTerm(searchTerm);
+        }, 500); 
+
+        return () => {
+            clearTimeout(timer); 
+        };
+    }, [searchTerm]);
+
+    // 2. FUNÇÃO DE BUSCA (Memoized)
     const fetchClients = useCallback(async () => {
         try {
             setIsLoading(true);
             setError(null);
             
-            // FUTURO: Rota GET /client deve ser implementada no Backend para esta chamada.
-            const response = await api.get('/client'); 
+            const params = debouncedTerm ? { q: debouncedTerm } : {};
+
+            const response = await api.get('/client', { params });
             
             setClients(response.data as Client[]);
             
@@ -32,12 +49,20 @@ export function useClients() {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [debouncedTerm]); 
 
+    // 3. DISPARO INICIAL E REATIVO
+    // IMPORTANTE: Adicionamos 'externalTrigger' aqui. Se ele mudar, o efeito roda novamente.
     useEffect(() => {
         fetchClients();
-    }, [fetchClients]); 
+    }, [fetchClients, externalTrigger]);
 
-    // Retorna a função de busca para ser usada no onSuccess do formulário (revalidação)
-    return { clients, isLoading, error, refreshData: fetchClients };
+    return { 
+        clients, 
+        isLoading, 
+        error, 
+        refreshData: fetchClients,
+        searchTerm,
+        setSearchTerm 
+    };
 }

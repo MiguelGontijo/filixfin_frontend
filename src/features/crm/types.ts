@@ -2,8 +2,6 @@
 
 import { Client } from '@/core/types/client';
 
-// --- ENUMS (Espelhos do Backend) ---
-
 export enum DealStatus {
     NEW = 'NEW',
     QUALIFIED = 'QUALIFIED',
@@ -20,23 +18,43 @@ export enum InteractionType {
     MEETING = 'MEETING',
 }
 
-// --- INTELEGÊNCIA ARTIFICIAL (O Contrato com o LangChain) ---
+// --- NOVO: Interface para o Endereço Extraído pela IA ---
+// Porquê: Define a estrutura que esperamos receber do backend (via Zod/LLM).
+// Todos os campos são anuláveis (nullable) pois a IA pode não encontrar todos os detalhes no texto.
+export interface ExtractedAddress {
+    street: string | null;
+    number: string | null;
+    complement: string | null;
+    district: string | null;
+    city: string | null;
+    state: string | null;
+    zipCode: string | null;
+    // Tipo literal compatível com o Enum do backend
+    type: "MAIN" | "BILLING" | "SHIPPING" | null;
+}
 
 /**
  * @interface InteractionAnalysis
  * @description Estrutura exata do JSON retornado pelo endpoint /crm/analyze (Backend).
- * Define os insights extraídos pela IA.
+ * @update Adicionado suporte a lista de endereços extraídos (extractedAddresses).
  */
 export interface InteractionAnalysis {
     summary: string;
     sentiment: "POSITIVE" | "NEUTRAL" | "NEGATIVE" | "TENSE";
     tags: string[];
     actionItems: string[];
-    dealProbability?: number; // Opcional, pois o Zod definiu como optional
+    dealProbability?: number;
+    
     extractedIdentity?: {
         personName: string | null;
         companyName: string | null;
-        contactInfo: string | null;
+        // Campos granulares de contato
+        email: string | null;
+        phone: string | null;
+        
+        // --- NOVO: Lista de Endereços identificados ---
+        extractedAddresses?: ExtractedAddress[];
+
         intentType: "NEW_BUSINESS" | "SUPPORT" | "FOLLOW_UP" | "UNKNOWN";
     };
 }
@@ -51,7 +69,7 @@ export interface CRMDeal {
     status: DealStatus;
     value: number;
     probability: number;
-    expectedCloseDate?: string; // Datas vêm como string do JSON
+    expectedCloseDate?: string; 
     createdAt: string;
     updatedAt: string;
     
@@ -64,11 +82,10 @@ export interface CRMInteraction {
     tenantId: string;
     clientId: string;
     type: InteractionType;
-    content: string; // Texto bruto ou transcrição
+    content: string;
     mediaUrl?: string;
     
     // A Inteligência Anexada
     aiAnalysis?: InteractionAnalysis;
-    
     createdAt: string;
 }
