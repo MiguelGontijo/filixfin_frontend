@@ -7,18 +7,23 @@ import { Client } from '@/core/types/client';
 import { ClientModal } from '@/core/components/client/ClientModal';
 import { ClientSearchInput } from './ClientSearchInput';
 import { ClientListItem } from './ClientListItem';
+// NOVO IMPORT: Hook de Mutação para o Delete
+import { useClientMutation } from '@/core/hooks/useClientMutation';
 
 interface ClientListWidgetProps {
-    onSelectClient?: (client: Client) => void;
-    refreshTrigger?: number; // <--- NOVO: Prop para receber o sinal de atualização
+    onSelectClient?: (client: Client | null) => void;
+    refreshTrigger?: number;
+    onNewClient: () => void;
+    onEditClient: (client: Client) => void;
 }
 
 export const ClientListWidget: React.FC<ClientListWidgetProps> = ({ 
     onSelectClient,
-    refreshTrigger = 0 // Default 0
+    refreshTrigger = 0,
+    onNewClient,
+    onEditClient
 }) => {
     
-    // Passamos o trigger para o hook. Se a prop mudar, o hook recarrega.
     const { 
         clients, 
         isLoading, 
@@ -28,19 +33,73 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
         refreshData 
     } = useClients(refreshTrigger);
 
-    const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    // Hook de Mutação para ações destrutivas/edição
+    const { deleteClient, updateClient, isLoading: isMutating } = useClientMutation();
 
+    const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+    
+    
+    // --- HANDLERS ---
+
+    /**
+     * @method handleSelect
+     * @description Gerencia a seleção e "deseleção" (Toggle) de um cliente.
+     * @update Agora verifica se o ID já está selecionado para limpar o estado (Toggle).
+     */
     const handleSelect = (client: Client) => {
-        setSelectedClientId(client.id);
-        if (onSelectClient) {
-            onSelectClient(client);
+        // Verifica se o cliente clicado JÁ É o que estava selecionado
+        if (selectedClientId === client.id) {
+            // CENÁRIO: Desmarcar (Limpar Seleção)
+            setSelectedClientId(null);
+            if (onSelectClient) {
+                onSelectClient(null); // Avisa ao pai que não tem mais contexto
+            }
+        } else {
+            // CENÁRIO: Marcar Novo
+            setSelectedClientId(client.id);
+            if (onSelectClient) {
+                onSelectClient(client);
+            }
         }
     };
 
-    const handleSuccessCreate = () => {
-        refreshData(); 
-        setIsModalOpen(false);
+    const handleSuccessCreateOrUpdate = () => {
+        refreshData(); // Atualiza a lista
+    };
+
+    const handleNewClient = () => {
+        onNewClient();
+    };
+
+    const handleEdit = (client: Client) => {
+        onEditClient(client);
+    };
+
+/**
+     * @method handleDelete
+     * @description Agora atua como um Toggle Inteligente (Ativar/Desativar).
+     */
+    const handleDelete = async (client: Client) => {
+        const isActive = client.isActive;
+        const actionText = isActive ? 'mover para a lixeira' : 'reativar';
+        const confirmText = `Tem certeza que deseja ${actionText} o cliente "${client.name}"?`;
+
+        if (confirm(confirmText)) {
+            try {
+                if (isActive) {
+                    // Se está ativo, desativa (Soft Delete)
+                    await deleteClient(client.id);
+                } else {
+                    // Se está inativo, reativa (Update simples)
+                    await updateClient(client.id, { isActive: true });
+                }
+                // Atualiza a lista visualmente
+                refreshData(); 
+            } catch (error) {
+                console.error("Falha ao alterar status:", error);
+                alert(`Erro ao ${actionText} cliente.`);
+            }
+        }
     };
 
     return (
@@ -52,7 +111,7 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
                     <FaUser className="mr-2 text-accent-secondary" /> Clientes
                 </h2>
                 <button 
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={handleNewClient}
                     className="text-xs bg-accent-secondary hover:bg-violet-600 text-white px-2 py-1 rounded flex items-center transition shadow-sm"
                     title="Adicionar Novo Cliente"
                 >
@@ -65,7 +124,7 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
                 <ClientSearchInput 
                     value={searchTerm} 
                     onChange={setSearchTerm} 
-                    isLoading={isLoading} 
+                    isLoading={isLoading || isMutating} 
                 />
             </div>
 
@@ -95,19 +154,17 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
                         client={client}
                         onClick={handleSelect}
                         isSelected={selectedClientId === client.id}
+                        // NOVAS PROPS CONECTADAS
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
                     />
                 ))}
             </div>
 
             <div className="p-2 border-t border-gray-700 bg-gray-800/50 text-[10px] text-gray-500 text-center flex-shrink-0">
-                {clients.length} registro(s)
+                {clients.length} registro(s) carregado(s)
             </div>
 
-            <ClientModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSuccess={handleSuccessCreate}
-            />
         </div>
     );
 };

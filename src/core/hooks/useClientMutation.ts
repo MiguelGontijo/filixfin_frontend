@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { api } from '@/core/services/api';
-import { Client, CreateClientDto } from '@/core/types/client';
+import { Client, CreateClientDto, UpdateClientDto } from '@/core/types/client';
 
 /**
  * @function useClientMutation
@@ -35,8 +35,52 @@ export function useClientMutation() {
         }
     };
 
-    // FUTURO: updateClient (PATCH)
-    // FUTURO: deleteClient (DELETE)
+    /**
+     * @method updateClient
+     * @description Envia requisição PATCH para atualizar dados parciais do cliente.
+     * @param id UUID do cliente.
+     * @param data Objeto com os campos a serem alterados.
+     */
+    const updateClient = async (id: string, data: UpdateClientDto): Promise<Client> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.patch(`/client/${id}`, data);
+            return response.data as Client;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao atualizar o Cliente.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-    return { createClient, isLoading, error };
+    /**
+     * @method deleteClient
+     * @description Executa um "Soft Delete" (Desativação) via PATCH.
+     * @param id UUID do cliente.
+     */
+    const deleteClient = async (id: string): Promise<void> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            // Porquê: O Backend espera um PATCH com isActive: false para desativar.
+            // Isso mantém o histórico (interações, vendas) intacto.
+            await api.patch(`/client/${id}`, { isActive: false });
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao desativar o Cliente.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return { createClient,
+                updateClient,
+                deleteClient,
+                isLoading,
+                error
+            };
 }

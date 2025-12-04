@@ -7111,249 +7111,227 @@ export default function ClientsPage() {
 "use client";
 
 import React, { useState } from 'react';
-// MODIFICAÇÃO: Novos ícones importados
-import { FaMagic, FaRobot, FaCheckCircle, FaTag, FaChartLine, FaBrain, FaUser, FaBuilding, FaEnvelope, FaBullseye, FaSave } from 'react-icons/fa';
+import { FaWhatsapp, FaTelegram, FaPaperPlane, FaUserSlash } from 'react-icons/fa';
+
+// --- HOOKS ---
 import { useCRMIntelligence } from '@/features/crm/hooks/useCRMIntelligence';
+
+// --- COMPONENTES (WIDGETS) ---
+import { ClientListWidget } from '@/features/crm/components/client-widget/ClientListWidget';
+import { AIInputWidget } from '@/features/crm/components/ai-widget/AIInputWidget';
+import { AnalysisActionCard } from '@/features/crm/components/AnalysisActionCard';
+import { ClientDashboard } from '@/features/crm/components/client-dashboard/ClientDashboard';
+
+// --- TIPOS ---
+import { Client } from '@/core/types/client';
+import { ClientModal } from '@/core/components/client/ClientModal';
 
 /**
  * @component CRMPage
- * @description Página de "Laboratório de IA" para o CRM.
- * Porquê: Agora exibe a Identidade Extraída além da análise de sentimento.
+ * @description Workstation CRM 2.0
+ * Layout de 3 Colunas: Gestão/Input (Esq) | Inteligência/Dashboard (Centro) | Comunicação (Dir)
  */
 export default function CRMPage() {
     
-    const { analyzeText, isAnalyzing, analysisResult, error } = useCRMIntelligence();
-    const [inputText, setInputText] = useState('');
-
-    const handleAnalyze = async () => {
-        if (!inputText.trim()) return;
-        await analyzeText(inputText);
-    };
-
-    // Helper para cor do Sentimento
-    const getSentimentColor = (sentiment: string) => {
-        switch (sentiment) {
-            case 'POSITIVE': return 'text-green-400 border-green-400 bg-green-900/20';
-            case 'NEGATIVE': return 'text-red-400 border-red-400 bg-red-900/20';
-            case 'TENSE': return 'text-orange-400 border-orange-400 bg-orange-900/20';
-            default: return 'text-gray-400 border-gray-400 bg-gray-800';
-        }
-    };
+    // 1. ESTADOS DE INTELIGÊNCIA
+    const { analyzeText, isAnalyzing, analysisResult, error: aiError, clearAnalysis } = useCRMIntelligence();
     
-    // Helper para traduzir intenção
-    const translateIntent = (intent?: string) => {
-        const map: Record<string, string> = {
-            'NEW_BUSINESS': 'Novo Negócio / Venda',
-            'SUPPORT': 'Suporte / Dúvida',
-            'FOLLOW_UP': 'Acompanhamento',
-            'UNKNOWN': 'Desconhecido'
-        };
-        return map[intent || ''] || intent || 'N/A';
+    // 2. ESTADOS DE CONTEXTO (CLIENTE)
+    const [contextClient, setContextClient] = useState<Client | null>(null);
+    const [refreshListTrigger, setRefreshListTrigger] = useState(0);
+
+    // 3. ESTADOS DE UI (CHAT)
+    const [activeChatTab, setActiveChatTab] = useState<'WA' | 'TG'>('WA');
+
+    const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+    const [clientToEdit, setClientToEdit] = useState<Client | undefined>(undefined);
+    
+    // --- NOVOS HANDLERS DE MODAL ---
+    
+    const handleOpenNewClient = () => {
+        setClientToEdit(undefined); // Modo Criação
+        setIsClientModalOpen(true);
+    };
+
+    const handleOpenEditClient = (client: Client) => {
+        setClientToEdit(client); // Modo Edição
+        setIsClientModalOpen(true);
+    };
+
+    const handleModalSuccess = () => {
+        // Atualiza a lista (Esquerda)
+        setRefreshListTrigger(prev => prev + 1);
+        
+        // Se estávamos editando o cliente que estava em foco (Centro), atualizamos o contexto dele
+        if (clientToEdit && contextClient && clientToEdit.id === contextClient.id) {
+             // Hack sênior: Como não temos o objeto atualizado aqui (só o void do sucesso), 
+             // confiamos que a lista vai recarregar, ou poderíamos buscar byId.
+             // Por simplicidade visual imediata, mantemos assim.
+        }
+        
+        setIsClientModalOpen(false);
+        setClientToEdit(undefined);
+    };
+
+    // --- HANDLERS ---
+        const handleClientSelect = (client: Client | null) => {
+        setContextClient(client);
+        // Se mudar o cliente, limpamos qualquer análise anterior pendente para evitar confusão
+        if (analysisResult) clearAnalysis();
+    };
+
+    // Recebe o texto do AIInputWidget e dispara a análise
+    const handleAnalyzeRequest = async (text: string) => {
+        // FUTURO: Aqui injetaremos o 'contextClient' no prompt para o RAG
+        await analyzeText(text);
+    };
+
+    const handleAnalysisSuccess = () => {
+        setRefreshListTrigger(prev => prev + 1); // Atualiza a lista da esquerda
+        clearAnalysis(); // Limpa o card de ação, voltando para o Dashboard
+    };
+
+    const handleEditRequest = (client: Client) => {
+        // Este handler pode ser usado para abrir o Modal de Edição diretamente do Dashboard
+        // Por enquanto, o ClientListWidget já gerencia isso, mas podemos conectar futuramente.
+        console.log("Solicitação de edição via Dashboard:", client.name);
     };
 
     return (
-        <div className="space-y-8 max-w-6xl mx-auto pb-20">
+        <div className="h-[calc(100vh-8rem)] min-h-[600px] w-full">
             
-            {/* Header */}
-            <div className="flex items-center space-x-3 border-b border-gray-700 pb-4">
-                <div className="p-3 bg-accent-primary/20 rounded-xl">
-                    <FaBrain className="w-8 h-8 text-accent-primary" />
-                </div>
-                <div>
-                    <h1 className="text-3xl font-extrabold text-white">
-                        CRM Intelligence Lab
-                    </h1>
-                    <p className="text-gray-400">
-                        Cole uma conversa, email ou anotação e deixe a IA extrair os insights.
-                    </p>
-                </div>
-            </div>
-
-            {/* Área de Input */}
-            <div className="bg-base-metallic p-6 rounded-xl shadow-lg space-y-4">
-                <label className="block text-sm font-bold text-gray-300 uppercase tracking-wider">
-                    Entrada de Dados (Texto Bruto)
-                </label>
-                <textarea
-                    className="w-full h-32 p-4 bg-gray-900 border border-gray-700 rounded-lg text-gray-200 focus:ring-2 focus:ring-accent-primary focus:outline-none transition resize-none"
-                    placeholder="Ex: O cliente João Silva da Acme Corp ligou pedindo um orçamento para 50 licenças..."
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                />
+            <div className="grid grid-cols-12 gap-4 h-full">
                 
-                <div className="flex justify-end">
-                    <button
-                        onClick={handleAnalyze}
-                        disabled={isAnalyzing || !inputText}
-                        className="flex items-center space-x-2 px-6 py-3 bg-accent-primary text-base-dark font-bold rounded-lg hover:bg-orange-500 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transform active:scale-95"
-                    >
-                        {isAnalyzing ? (
-                            <>
-                                <FaMagic className="animate-spin" />
-                                <span>Processando IA...</span>
-                            </>
-                        ) : (
-                            <>
-                                <FaRobot />
-                                <span>Analisar com IA</span>
-                            </>
-                        )}
-                    </button>
-                </div>
-                
-                {error && (
-                    <div className="p-4 bg-red-900/30 border border-red-800 text-red-300 rounded-lg">
-                        <strong>Erro:</strong> {error}
-                    </div>
-                )}
-            </div>
-
-            {/* Área de Resultados (Widget de IA) */}
-            {analysisResult && (
-                <div className="space-y-6 animate-fade-in">
+                {/* ================================================================
+                  COLUNA 1 (ESQUERDA): GESTÃO & INPUT
+                  Span: 3
+                  ================================================================
+                */}
+                <div className="col-span-3 flex flex-col gap-4 h-full">
                     
-                    {/* --- NOVO: CARD DE IDENTIDADE (QUEM É O CLIENTE?) --- */}
-                    {/* Mostra apenas se a IA detectou algo relevante */}
-                    {analysisResult.extractedIdentity && (
-                        <div className="bg-gray-800 border border-gray-600 p-6 rounded-xl shadow-2xl relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-accent-secondary"></div>
-                            
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-                                <div>
-                                    <h3 className="text-lg font-bold text-white flex items-center">
-                                        <FaUser className="mr-2 text-accent-secondary" /> Identidade Detectada
-                                    </h3>
-                                    <p className="text-sm text-gray-400">
-                                        A IA identificou os seguintes dados cadastrais na conversa.
-                                    </p>
-                                </div>
-                                
-                                {/* Botões de Ação (Fase de Persistência) */}
-                                <div className="mt-4 md:mt-0 flex space-x-3">
-                                    <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition">
-                                        Vincular a Existente
-                                    </button>
-                                    <button className="flex items-center px-4 py-2 bg-accent-secondary hover:bg-violet-600 text-white rounded-lg text-sm font-bold transition shadow-lg">
-                                        <FaSave className="mr-2" /> Salvar Novo Cliente
-                                    </button>
-                                </div>
-                            </div>
+                    {/* 1.1 Lista de Clientes (Ocupa o espaço restante) */}
+                    <div className="flex-1 min-h-0 overflow-hidden rounded-xl shadow-lg border border-gray-700 bg-base-metallic">
+                        <ClientListWidget 
+                            onSelectClient={handleClientSelect} 
+                            refreshTrigger={refreshListTrigger}
+                            onNewClient={handleOpenNewClient}
+                            onEditClient={handleOpenEditClient}
+                        />
+                    </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                {/* Nome */}
-                                <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
-                                    <label className="text-xs text-gray-500 uppercase font-bold">Nome</label>
-                                    <div className="text-white font-medium flex items-center mt-1">
-                                        {analysisResult.extractedIdentity.personName || <span className="text-gray-600 italic">Não identificado</span>}
-                                    </div>
-                                </div>
-                                {/* Empresa */}
-                                <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
-                                    <label className="text-xs text-gray-500 uppercase font-bold">Empresa</label>
-                                    <div className="text-white font-medium flex items-center mt-1">
-                                        <FaBuilding className="mr-2 text-gray-500" />
-                                        {analysisResult.extractedIdentity.companyName || <span className="text-gray-600 italic">Não identificado</span>}
-                                    </div>
-                                </div>
-                                {/* Contato */}
-                                <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
-                                    <label className="text-xs text-gray-500 uppercase font-bold">Contato</label>
-                                    <div className="text-white font-medium flex items-center mt-1 truncate">
-                                        <FaEnvelope className="mr-2 text-gray-500" />
-                                        {analysisResult.extractedIdentity.contactInfo || <span className="text-gray-600 italic">Não identificado</span>}
-                                    </div>
-                                </div>
-                                {/* Intenção */}
-                                <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
-                                    <label className="text-xs text-gray-500 uppercase font-bold">Intenção</label>
-                                    <div className="text-accent-primary font-bold flex items-center mt-1">
-                                        <FaBullseye className="mr-2" />
-                                        {translateIntent(analysisResult.extractedIdentity.intentType)}
-                                    </div>
-                                </div>
-                            </div>
+                    {/* 1.2 Console de IA (Fixo na base) */}
+                    <div className="h-64 flex-shrink-0 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
+                        <AIInputWidget 
+                            onAnalyze={handleAnalyzeRequest}
+                            isAnalyzing={isAnalyzing}
+                        />
+                    </div>
+                </div>
+
+
+                {/* ================================================================
+                  COLUNA 2 (CENTRO): O PALCO (DASHBOARD OU AÇÃO)
+                  Span: 6
+                  ================================================================
+                */}
+                <div className="col-span-6 h-full flex flex-col gap-4">
+                    
+                    {/* ÁREA DE ERRO (GLOBAL DA IA) */}
+                    {aiError && (
+                        <div className="bg-red-900/40 border border-red-500/50 p-3 rounded-lg text-sm text-red-200 flex items-center justify-between animate-fade-in">
+                            <span><strong>Erro na IA:</strong> {aiError}</span>
+                            <button onClick={clearAnalysis} className="text-xs underline hover:text-white">Fechar</button>
                         </div>
                     )}
 
-                    {/* --- GRID DE ANÁLISE (Existente) --- */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        
-                        <div className="md:col-span-2 space-y-6">
-                            {/* Resumo */}
-                            <div className="bg-base-metallic p-6 rounded-xl shadow-lg border-l-4 border-accent-primary">
-                                <h3 className="text-lg font-bold text-white mb-2 flex items-center">
-                                    <FaMagic className="mr-2 text-accent-primary" /> Resumo Executivo
-                                </h3>
-                                <p className="text-gray-300 leading-relaxed">
-                                    {analysisResult.summary}
+                    {/* CONTEÚDO DINÂMICO */}
+                    {analysisResult ? (
+                        // MODO AÇÃO: A IA detectou algo e pede confirmação
+                        <div className="flex-1 overflow-y-auto pr-1">
+                            <AnalysisActionCard 
+                                analysis={analysisResult}
+                                content="Texto original processado..." // Futuro: Passar o texto real se necessário
+                                contextClient={contextClient}
+                                onSuccess={handleAnalysisSuccess}
+                            />
+                        </div>
+                    ) : (
+                        // MODO VISUALIZAÇÃO: Dashboard do Cliente Selecionado
+                        <div className="flex-1 h-full">
+                            <ClientDashboard 
+                                client={contextClient} 
+                                onEdit={handleEditRequest}
+                            />
+                        </div>
+                    )}
+                </div>
+
+
+                {/* ================================================================
+                  COLUNA 3 (DIREITA): COMUNICAÇÃO (OMNICHANNEL)
+                  Span: 3
+                  ================================================================
+                */}
+                <div className="col-span-3 bg-base-metallic rounded-xl border border-gray-700 flex flex-col overflow-hidden shadow-lg h-full">
+                    
+                    {/* Header de Abas */}
+                    <div className="flex border-b border-gray-700 bg-gray-800">
+                        <button 
+                            onClick={() => setActiveChatTab('WA')}
+                            className={`flex-1 py-3 text-xs font-bold flex items-center justify-center space-x-2 transition ${activeChatTab === 'WA' ? 'bg-green-900/20 text-green-400 border-b-2 border-green-400' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'}`}
+                        >
+                            <FaWhatsapp className="w-4 h-4" /> <span>WhatsApp</span>
+                        </button>
+                        <button 
+                            onClick={() => setActiveChatTab('TG')}
+                            className={`flex-1 py-3 text-xs font-bold flex items-center justify-center space-x-2 transition ${activeChatTab === 'TG' ? 'bg-blue-900/20 text-blue-400 border-b-2 border-blue-400' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'}`}
+                        >
+                            <FaTelegram className="w-4 h-4" /> <span>Telegram</span>
+                        </button>
+                    </div>
+
+                    {/* Área de Chat (Placeholder) */}
+                    <div className="flex-1 overflow-y-auto bg-gray-900/50 p-4">
+                        {contextClient ? (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-600 opacity-60">
+                                {activeChatTab === 'WA' ? <FaWhatsapp className="w-12 h-12 mb-3" /> : <FaTelegram className="w-12 h-12 mb-3" />}
+                                <p className="text-xs text-center">
+                                    Histórico de conversas com <strong>{contextClient.name}</strong> vazio.
+                                    <br/>(Integração de API pendente)
                                 </p>
                             </div>
-
-                            {/* Ações */}
-                            <div className="bg-base-metallic p-6 rounded-xl shadow-lg">
-                                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-                                    <FaCheckCircle className="mr-2 text-success" /> Próximos Passos
-                                </h3>
-                                <ul className="space-y-3">
-                                    {analysisResult.actionItems.map((item, idx) => (
-                                        <li key={idx} className="flex items-start p-3 bg-gray-900/50 rounded-lg border border-gray-700">
-                                            <input type="checkbox" className="mt-1 mr-3 text-accent-primary rounded focus:ring-0" />
-                                            <span className="text-gray-300">{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-700 opacity-40">
+                                <FaUserSlash className="w-10 h-10 mb-2" />
+                                <p className="text-xs text-center">Selecione um cliente para ver o chat.</p>
                             </div>
-                        </div>
+                        )}
+                    </div>
 
-                        <div className="space-y-6">
-                            {/* Sentimento */}
-                            <div className={`p-6 rounded-xl shadow-lg border-2 ${getSentimentColor(analysisResult.sentiment)}`}>
-                                <h3 className="text-sm font-bold uppercase tracking-widest opacity-80 mb-1">
-                                    Sentimento
-                                </h3>
-                                <div className="text-3xl font-extrabold">
-                                    {analysisResult.sentiment}
-                                </div>
-                            </div>
-
-                            {/* Probabilidade */}
-                            {analysisResult.dealProbability !== undefined && (
-                                <div className="bg-base-metallic p-6 rounded-xl shadow-lg">
-                                    <h3 className="text-sm font-bold text-gray-400 uppercase mb-2">
-                                        Probabilidade de Negócio
-                                    </h3>
-                                    <div className="flex items-center space-x-3">
-                                        <FaChartLine className="text-accent-primary w-6 h-6" />
-                                        <div className="text-3xl font-bold text-white">
-                                            {analysisResult.dealProbability}%
-                                        </div>
-                                    </div>
-                                    <div className="w-full bg-gray-700 h-2 rounded-full mt-3">
-                                        <div 
-                                            className="bg-accent-primary h-2 rounded-full transition-all duration-1000" 
-                                            style={{ width: `${analysisResult.dealProbability}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Tags */}
-                            <div className="bg-base-metallic p-6 rounded-xl shadow-lg">
-                                <h3 className="text-sm font-bold text-gray-400 uppercase mb-3 flex items-center">
-                                    <FaTag className="mr-2" /> Tags
-                                </h3>
-                                <div className="flex flex-wrap gap-2">
-                                    {analysisResult.tags.map((tag, idx) => (
-                                        <span key={idx} className="px-3 py-1 bg-gray-700 text-gray-300 text-sm rounded-full border border-gray-600">
-                                            #{tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
+                    {/* Input de Chat */}
+                    <div className="p-3 border-t border-gray-700 bg-gray-800">
+                        <div className="flex items-center space-x-2">
+                            <input 
+                                type="text" 
+                                placeholder={contextClient ? `Mensagem para ${contextClient.name.split(' ')[0]}...` : "Selecione um cliente..."}
+                                className="flex-1 bg-gray-900 text-xs text-white px-3 py-2.5 rounded-lg border border-gray-600 focus:outline-none focus:border-gray-500 disabled:opacity-50"
+                                disabled={!contextClient}
+                            />
+                            <button className="p-2.5 bg-gray-700 text-gray-400 rounded-lg cursor-not-allowed hover:bg-gray-600 disabled:opacity-50">
+                                <FaPaperPlane className="w-3 h-3" />
+                            </button>
                         </div>
                     </div>
                 </div>
-            )}
+
+            </div>
+            {/* Modal de Cliente (Criação/Edição) */}
+            <ClientModal
+                isOpen={isClientModalOpen}
+                onClose={() => setIsClientModalOpen(false)}
+                onSuccess={handleModalSuccess}
+                currentClient={clientToEdit} 
+            />
         </div>
     );
 }
@@ -8538,135 +8516,235 @@ export const TenantGuard: React.FC<TenantGuardProps> = ({ children }) => {
 
 // ===== FILE: src/core/components/client/ClientModal.tsx =====
 
+// src/core/components/client/ClientModal.tsx
 
-import React, { useState } from 'react';
-import { FaTimes } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaTimes, FaMapMarkerAlt } from 'react-icons/fa';
 import { useClientMutation } from '@/core/hooks/useClientMutation';
+import { Client, AddressType } from '@/core/types/client';
 
-// DTO e Propriedades do Modal
 interface ClientModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess: () => void; // Callback para recarregar a lista
-    // FUTURO: currentClient?: Client para edição
+    onSuccess: () => void; 
+    currentClient?: Client;
 }
 
 /**
  * @component ClientModal
- * @description Modal de Criação de Cliente (Formulário).
- * Porquê: Interage com a ACL e a lógica de isolamento no Backend.
+ * @description Modal de Criação e Edição de Cliente.
+ * @update Visual melhorado (Glassmorphism) para não "matar" o fundo com preto total.
  */
 export const ClientModal: React.FC<ClientModalProps> = ({ 
     isOpen, 
     onClose, 
-    onSuccess 
+    onSuccess,
+    currentClient 
 }) => {
     
-    // 1. ESTADO E HOOKS
-    const { createClient, isLoading, error: mutationError } = useClientMutation();
-    const [formData, setFormData] = useState({
+    const { createClient, updateClient, isLoading, error: mutationError } = useClientMutation();
+    const isEditing = !!currentClient;
+
+    const initialFormState = {
         name: '',
         document: '',
         email: '',
-    });
-    const [submitError, setSubmitError] = useState<string | null>(null);
-
-    // Lida com a mudança nos campos
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        phone: '',
+        address: {
+            street: '',
+            number: '',
+            district: '',
+            city: '',
+            state: '',
+            zipCode: ''
+        }
     };
 
-    // 2. LÓGICA DE SUBMISSÃO
+    const [formData, setFormData] = useState(initialFormState);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            if (currentClient) {
+                const mainAddress = currentClient.addresses?.find(a => a.type === AddressType.MAIN) || currentClient.addresses?.[0];
+                setFormData({
+                    name: currentClient.name,
+                    document: currentClient.document || '',
+                    email: currentClient.email || '',
+                    phone: currentClient.phone || '',
+                    address: {
+                        street: mainAddress?.street || '',
+                        number: mainAddress?.number || '',
+                        district: mainAddress?.district || '',
+                        city: mainAddress?.city || '',
+                        state: mainAddress?.state || '',
+                        zipCode: mainAddress?.zipCode || ''
+                    }
+                });
+            } else {
+                setFormData(initialFormState);
+            }
+            setSubmitError(null);
+        }
+    }, [isOpen, currentClient]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData(prev => ({
+            ...prev,
+            address: {
+                ...prev.address,
+                [e.target.name]: e.target.value
+            }
+        }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitError(null);
 
+        const addressesToSend = formData.address.street.trim() ? [{
+            street: formData.address.street,
+            number: formData.address.number || 'S/N',
+            district: formData.address.district || 'Centro',
+            city: formData.address.city || 'Indefinida',
+            state: formData.address.state || 'UF',
+            zipCode: formData.address.zipCode || '00000000',
+            type: AddressType.MAIN
+        }] : undefined;
+
+        const payload = {
+            name: formData.name,
+            document: formData.document.trim() || undefined,
+            email: formData.email.trim() || undefined,
+            phone: formData.phone.trim() || undefined,
+            addresses: addressesToSend
+        };
+
         try {
-            // Chamada de Criação
-            await createClient(formData);
-            
-            onSuccess(); // Chama recarga da lista
-            onClose();   // Fecha o modal
-            
+            if (isEditing && currentClient) {
+                await updateClient(currentClient.id, payload);
+            } else {
+                await createClient(payload);
+            }
+            onSuccess();
+            onClose();
         } catch (err: any) {
-            // O erro pode ser do Backend (limite excedido 422, conflito 409)
-            setSubmitError(mutationError || err.response?.data?.message || 'Falha ao cadastrar cliente.');
+            setSubmitError(mutationError || err.response?.data?.message || 'Falha ao salvar cliente.');
         }
     };
     
     if (!isOpen) return null;
 
-    // 3. RENDERIZAÇÃO
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-            <div className="bg-base-metallic p-6 rounded-lg shadow-2xl w-full max-w-md">
+        // CORREÇÃO VISUAL: Fundo com transparência e desfoque (Backdrop Blur)
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center transition-all animate-fade-in">
+            
+            {/* Card do Modal centralizado */}
+            <div 
+                className="bg-base-metallic p-6 rounded-xl shadow-2xl w-full max-w-lg border border-gray-600 transform transition-all scale-100"
+                onClick={(e) => e.stopPropagation()} // Evita fechar ao clicar dentro
+            >
                 
-                {/* Cabeçalho do Modal */}
+                {/* Header */}
                 <div className="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
-                    <h2 className="text-xl font-bold text-white">
-                        Novo Cliente
+                    <h2 className="text-xl font-bold text-white flex items-center">
+                        {isEditing ? (
+                            <>
+                                <span className="mr-2 text-accent-secondary">✎</span> 
+                                Editar: {currentClient?.name}
+                            </>
+                        ) : (
+                            'Novo Cliente / Lead'
+                        )}
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white">
+                    <button onClick={onClose} className="text-gray-400 hover:text-white hover:bg-gray-700 rounded-full p-1 transition">
                         <FaTimes className="w-5 h-5" />
                     </button>
                 </div>
 
-                {/* Mensagens de Erro */}
                 {submitError && (
-                    <div className="p-3 mb-4 text-sm font-medium text-danger bg-red-900/50 rounded-md">
+                    <div className="p-3 mb-4 text-sm font-medium text-danger bg-red-900/50 rounded-md border border-red-800">
                         {submitError}
                     </div>
                 )}
 
-                {/* Formulário */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                     
                     {/* Nome */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-300">Nome Completo *</label>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            required
-                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
-                        />
+                        <label className="block text-xs font-bold text-accent-primary uppercase mb-1">Nome Completo *</label>
+                        <input type="text" name="name" value={formData.name} onChange={handleChange} required
+                            className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:ring-1 focus:ring-accent-secondary focus:outline-none transition" />
                     </div>
                     
-                    {/* Documento (CPF/CNPJ) */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300">CPF/CNPJ *</label>
-                        <input
-                            type="text"
-                            name="document"
-                            value={formData.document}
-                            onChange={handleChange}
-                            required
-                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
-                        />
+                    {/* Contato */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">E-mail</label>
+                            <input type="email" name="email" value={formData.email} onChange={handleChange}
+                                className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-500" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Telefone</label>
+                            <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="(00) 00000-0000"
+                                className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-500" />
+                        </div>
                     </div>
 
-                    {/* Email (Opcional) */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300">E-mail</label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-white"
-                        />
+                    {/* Endereço */}
+                    <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700">
+                        <label className="text-xs font-bold text-gray-300 uppercase mb-2 flex items-center">
+                            <FaMapMarkerAlt className="mr-1 text-accent-secondary" /> Endereço Principal
+                        </label>
+                        <div className="grid grid-cols-4 gap-2">
+                            <div className="col-span-3">
+                                <input type="text" name="street" placeholder="Logradouro" value={formData.address.street} onChange={handleAddressChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
+                            </div>
+                            <div className="col-span-1">
+                                <input type="text" name="number" placeholder="Nº" value={formData.address.number} onChange={handleAddressChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
+                            </div>
+                            <div className="col-span-2">
+                                <input type="text" name="district" placeholder="Bairro" value={formData.address.district} onChange={handleAddressChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
+                            </div>
+                            <div className="col-span-2">
+                                <input type="text" name="city" placeholder="Cidade" value={formData.address.city} onChange={handleAddressChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
+                            </div>
+                            <div className="col-span-1">
+                                <input type="text" name="state" placeholder="UF" maxLength={2} value={formData.address.state} onChange={handleAddressChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white uppercase focus:outline-none" />
+                            </div>
+                            <div className="col-span-3">
+                                <input type="text" name="zipCode" placeholder="CEP" value={formData.address.zipCode} onChange={handleAddressChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Botão de Ação */}
+                    {/* Documento */}
+                    <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1">CPF / CNPJ (Opcional)</label>
+                        <input type="text" name="document" value={formData.document} onChange={handleChange}
+                            className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-500" />
+                    </div>
+
+                    {/* Botão Submit */}
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-base-dark bg-accent-secondary hover:bg-violet-600 transition disabled:bg-gray-500"
+                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold text-white bg-accent-secondary hover:bg-violet-600 transition disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95 mt-4"
                     >
-                        {isLoading ? 'Cadastrando...' : 'Cadastrar Cliente'}
+                        {isLoading 
+                            ? (isEditing ? 'Salvando Alterações...' : 'Cadastrando...') 
+                            : (isEditing ? 'Salvar Alterações' : 'Cadastrar Cliente')
+                        }
                     </button>
                 </form>
             </div>
@@ -8871,12 +8949,99 @@ export const ClientTablePage: React.FC = () => {
 }
 
 
+// ===== FILE: src/core/components/tenant/TenantSelector.tsx =====
+
+"use client";
+
+import React from 'react';
+import { FaBuilding, FaChevronDown } from 'react-icons/fa';
+import { useNavigation } from '@/core/hooks/useNavigation';
+
+interface TenantSelectorProps {
+    currentTenantId: string;
+    // Opcional: Se já tivermos o nome carregado no layout, podemos passar aqui. 
+    // Caso contrário, usamos um fallback ou o próprio ID.
+    currentTenantName?: string; 
+}
+
+/**
+ * @component TenantSelector
+ * @description Dropdown para troca de contexto de Tenant.
+ * @note Atualmente exibe apenas o Tenant da URL, mas está estruturado (Array)
+ * para receber múltiplos tenants assim que o Backend implementar a relação N:N (User_Tenants).
+ */
+export const TenantSelector: React.FC<TenantSelectorProps> = ({ 
+    currentTenantId, 
+    currentTenantName 
+}) => {
+    const { toDashboard } = useNavigation();
+
+    // --- TODO: INTEGRAÇÃO FUTURA (MULTI-TENANT) ---
+    // Atualmente, montamos o array apenas com o tenant atual para manter a estrutura pronta.
+    // No futuro, substituir por: const { availableTenants } = useAuth();
+    const availableTenants = [
+        { 
+            id: currentTenantId, 
+            name: currentTenantName || `Empresa Atual (${currentTenantId.substring(0, 8)}...)` 
+        }
+    ];
+    // -----------------------------------------------
+
+    const handleSwitch = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newId = e.target.value;
+        if (newId !== currentTenantId) {
+            toDashboard(newId);
+        }
+    };
+
+    return (
+        <div className="relative group min-w-[220px]">
+            <div className="flex items-center space-x-3 bg-gray-800 p-1.5 pr-3 rounded-lg border border-gray-700 hover:border-accent-primary/50 transition duration-200 cursor-pointer shadow-sm">
+                
+                {/* Ícone da Empresa */}
+                <div className="p-2 bg-gradient-to-br from-gray-700 to-gray-800 rounded-md shadow-inner text-accent-primary">
+                    <FaBuilding className="w-4 h-4" />
+                </div>
+                
+                {/* Select Estilizado */}
+                <div className="flex-1 flex flex-col relative">
+                    <label className="text-[10px] uppercase text-gray-500 font-bold tracking-wider leading-none mb-0.5">
+                        Ambiente
+                    </label>
+                    
+                    <select
+                        value={currentTenantId}
+                        onChange={handleSwitch}
+                        // Se houver apenas 1 tenant, desabilitamos visualmente a "sensação" de troca, mas mantemos a UI
+                        disabled={availableTenants.length <= 1}
+                        className="bg-transparent text-sm font-bold text-white w-full focus:outline-none appearance-none cursor-pointer py-0.5 pr-4 z-10 disabled:cursor-default"
+                    >
+                        {availableTenants.map(t => (
+                            <option key={t.id} value={t.id} className="bg-gray-800 text-gray-200 py-2">
+                                {t.name}
+                            </option>
+                        ))}
+                    </select>
+
+                    {/* Seta (Só exibe se houver mais de 1 opção no futuro) */}
+                    {availableTenants.length > 1 && (
+                        <div className="absolute right-0 bottom-1 pointer-events-none text-gray-500 group-hover:text-white transition">
+                            <FaChevronDown className="w-2.5 h-2.5" />
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 // ===== FILE: src/core/hooks/useClientMutation.ts =====
 
 
 import { useState } from 'react';
 import { api } from '@/core/services/api';
-import { Client, CreateClientDto } from '@/core/types/client';
+import { Client, CreateClientDto, UpdateClientDto } from '@/core/types/client';
 
 /**
  * @function useClientMutation
@@ -8910,15 +9075,60 @@ export function useClientMutation() {
         }
     };
 
-    // FUTURO: updateClient (PATCH)
-    // FUTURO: deleteClient (DELETE)
+    /**
+     * @method updateClient
+     * @description Envia requisição PATCH para atualizar dados parciais do cliente.
+     * @param id UUID do cliente.
+     * @param data Objeto com os campos a serem alterados.
+     */
+    const updateClient = async (id: string, data: UpdateClientDto): Promise<Client> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.patch(`/client/${id}`, data);
+            return response.data as Client;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao atualizar o Cliente.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-    return { createClient, isLoading, error };
+    /**
+     * @method deleteClient
+     * @description Executa um "Soft Delete" (Desativação) via PATCH.
+     * @param id UUID do cliente.
+     */
+    const deleteClient = async (id: string): Promise<void> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            // Porquê: O Backend espera um PATCH com isActive: false para desativar.
+            // Isso mantém o histórico (interações, vendas) intacto.
+            await api.patch(`/client/${id}`, { isActive: false });
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao desativar o Cliente.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return { createClient,
+                updateClient,
+                deleteClient,
+                isLoading,
+                error
+            };
 }
 
 
 // ===== FILE: src/core/hooks/useClients.ts =====
 
+// src/core/hooks/useClients.ts
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/core/services/api';
@@ -8926,22 +9136,38 @@ import { Client } from '@/core/types/client';
 
 /**
  * @function useClients
- * @description Hook customizado para buscar e gerenciar o estado da lista de Clientes.
- * Porquê: A rota /client no Backend retorna APENAS os clientes do Tenant logado (isolamento).
+ * @description Hook inteligente para gerenciamento de Clientes.
+ * @update Adicionado 'externalTrigger' para permitir recarga forçada por componentes pais.
  */
-export function useClients() {
+export function useClients(externalTrigger: number = 0) {
     const [clients, setClients] = useState<Client[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Função para buscar e recarregar dados
+    // --- ESTADO DE BUSCA ---
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedTerm, setDebouncedTerm] = useState('');
+
+    // 1. EFEITO DE DEBOUNCE
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedTerm(searchTerm);
+        }, 500); 
+
+        return () => {
+            clearTimeout(timer); 
+        };
+    }, [searchTerm]);
+
+    // 2. FUNÇÃO DE BUSCA (Memoized)
     const fetchClients = useCallback(async () => {
         try {
             setIsLoading(true);
             setError(null);
             
-            // FUTURO: Rota GET /client deve ser implementada no Backend para esta chamada.
-            const response = await api.get('/client'); 
+            const params = debouncedTerm ? { q: debouncedTerm } : {};
+
+            const response = await api.get('/client', { params });
             
             setClients(response.data as Client[]);
             
@@ -8953,14 +9179,22 @@ export function useClients() {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [debouncedTerm]); 
 
+    // 3. DISPARO INICIAL E REATIVO
+    // IMPORTANTE: Adicionamos 'externalTrigger' aqui. Se ele mudar, o efeito roda novamente.
     useEffect(() => {
         fetchClients();
-    }, [fetchClients]); 
+    }, [fetchClients, externalTrigger]);
 
-    // Retorna a função de busca para ser usada no onSuccess do formulário (revalidação)
-    return { clients, isLoading, error, refreshData: fetchClients };
+    return { 
+        clients, 
+        isLoading, 
+        error, 
+        refreshData: fetchClients,
+        searchTerm,
+        setSearchTerm 
+    };
 }
 
 
@@ -9744,32 +9978,94 @@ export interface LoginResponse {
 
 // ===== FILE: src/core/types/client.ts =====
 
+// src/core/types/client.ts
 
-// Definições de Tipagem para a Entidade Cliente
+// Enum para Tipos de Endereço
+export enum AddressType {
+    MAIN = 'MAIN',
+    BILLING = 'BILLING',
+    SHIPPING = 'SHIPPING'
+}
+
+// Interface para o Objeto de Endereço
+export interface ClientAddress {
+    id: string;
+    street: string;
+    number: string;
+    complement?: string;
+    district: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    type: AddressType;
+}
+
+// DTO para o Objeto de Endereço
+export interface AddressDto {
+    street: string;
+    number: string;
+    complement?: string;
+    district: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    type?: AddressType;
+}
 
 /**
  * @interface Client
- * @description Tipagem para a Entidade Cliente (que pertence a um Tenant).
+ * @description Tipagem para a Entidade Cliente.
+ * @update Adicionado campo aiSummary (Memória de Longo Prazo).
  */
 export interface Client {
     id: string;
     tenantId: string;
     name: string;
-    document: string;
+    document: string | null;
     email: string | null;
+    phone: string | null;
+    
+    // --- NOVO: Resumo da IA ---
+    aiSummary: string | null; 
+    
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
+
+    addresses?: ClientAddress[];
 }
 
 /**
  * @interface CreateClientDto
- * @description Tipagem para o payload de criação de Cliente.
+ * @description DTO para criação.
  */
 export interface CreateClientDto {
     name: string;
-    document: string;
+    document?: string; 
     email?: string;
+    phone?: string;
+    
+    // --- NOVO ---
+    aiSummary?: string;
+
+    addresses?: AddressDto[];
+}
+
+/**
+ * @interface UpdateClientDto
+ * @description DTO para atualização.
+ */
+export interface UpdateClientDto {
+    name?: string;
+    document?: string;
+    email?: string;
+    phone?: string;
+    isActive?: boolean;
+    
+    // --- NOVO ---
+    aiSummary?: string;
+
+    addresses?: AddressDto[];
 }
 
 
@@ -9949,14 +10245,14 @@ export const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation'; // MODIFICAÇÃO: Importa useParams para ler a URL
-import { FaUsers, FaHome, FaSignOutAlt, FaBook, FaBox } from 'react-icons/fa';
+import { useParams, usePathname } from 'next/navigation'; 
+import { FaUsers, FaHome, FaSignOutAlt, FaBook, FaBox, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/core/types/user'; 
+import { UserRole } from '@/core/types/user';
 
-// Definição das funcionalidades/módulos e suas chaves (Mock do Backend Features)
+// Definição das funcionalidades/módulos
 const featureModules = [
     { 
         key: 'CLIENTE_VIEW', 
@@ -9980,72 +10276,123 @@ const featureModules = [
 
 /**
  * @component ClientSidebar
- * @description Barra de navegação lateral para as rotinas de negócio do Tenant.
- * PORQUÊ: Renderiza links dinamicamente com base no Contexto do Tenant (URL) e ACL.
+ * @description Barra de navegação lateral retrátil para as rotinas de negócio.
+ * @update Adicionado suporte a colapso (Retrátil) para otimizar espaço de tela.
  */
 export const ClientSidebar: React.FC = () => {
     
     const { user } = useAuth();
     const params = useParams();
-    const tenantId = params?.tenantId as string; // MODIFICAÇÃO: Captura o ID da rota dinâmica
+    const pathname = usePathname(); // Para destacar o link ativo
+    const tenantId = params?.tenantId as string;
     
+    // Estado de controle da Sidebar (Expandida/Recolhida)
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
     // MOCK ACL
     const hasFeatureAccess = (featureKey: string) => {
         if (user?.role === UserRole.TENANT_ADMIN) return true;
         return ['CLIENTE_VIEW', 'CRM_VIEW'].includes(featureKey); 
     }
 
-    // Se o tenantId ainda não estiver disponível (hidratação), evita renderizar links quebrados
-    if (!tenantId) return null; 
+    if (!tenantId) return null;
+
+    // Classes dinâmicas baseadas no estado
+    const sidebarWidth = isCollapsed ? 'w-20' : 'w-64';
+    const linkPadding = isCollapsed ? 'justify-center px-2' : 'px-4';
+    const hideText = isCollapsed ? 'hidden' : 'block';
+
+    // Helper para verificar rota ativa
+    const isActive = (path: string) => pathname?.includes(path);
 
     return (
-        <div className="flex flex-col w-64 min-h-screen bg-base-metallic p-4 space-y-6 border-r border-gray-700">
+        <div 
+            className={`relative flex flex-col min-h-screen bg-base-metallic border-r border-gray-700 transition-all duration-300 ease-in-out ${sidebarWidth}`}
+        >
             
-            {/* Título */}
-            <div className="text-xl font-bold text-accent-secondary uppercase tracking-wider">
-                FilixFin Workspace
+            {/* Botão de Toggle (Aba) */}
+            <button
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="absolute -right-3 top-8 bg-gray-700 text-white p-1 rounded-full border border-gray-600 shadow-md hover:bg-accent-primary transition z-50"
+                title={isCollapsed ? "Expandir Menu" : "Recolher Menu"}
+            >
+                {isCollapsed ? <FaChevronRight className="w-3 h-3" /> : <FaChevronLeft className="w-3 h-3" />}
+            </button>
+
+            {/* Título / Logo */}
+            <div className={`p-6 flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} overflow-hidden`}>
+                {isCollapsed ? (
+                    <span className="text-xl font-extrabold text-accent-primary cursor-default">F</span>
+                ) : (
+                    <div className="text-xl font-bold text-accent-secondary uppercase tracking-wider whitespace-nowrap">
+                        FilixFin <span className="text-white text-xs block normal-case font-normal opacity-50">Workspace</span>
+                    </div>
+                )}
             </div>
 
             {/* Navegação Principal */}
-            <nav className="flex-1 space-y-2">
+            <nav className="flex-1 space-y-2 py-4">
                 
-                {/* Link Estático: Dashboard Principal (Dinâmico por Tenant) */}
+                {/* Dashboard Principal */}
                 <Link 
-                    href={`/${tenantId}/dashboard`} // MODIFICAÇÃO: Rota dinâmica
-                    className="flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150"
+                    href={`/${tenantId}/dashboard`}
+                    className={`flex items-center space-x-3 py-3 mx-2 rounded-lg transition duration-150 group ${
+                        isActive('/dashboard') && !isActive('/dashboard/') // Exato ou raiz
+                        ? 'bg-gray-700 text-white' 
+                        : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                    } ${linkPadding}`}
+                    title="Dashboard Principal"
                 >
-                    <FaHome className="w-4 h-4 text-accent-primary" />
-                    <span>Dashboard Principal</span>
+                    <FaHome className={`w-5 h-5 flex-shrink-0 ${isActive('/dashboard') && !isActive('/dashboard/') ? 'text-accent-primary' : 'group-hover:text-accent-primary'}`} />
+                    <span className={`text-sm font-medium whitespace-nowrap ${hideText}`}>Dashboard</span>
                 </Link>
 
-                {/* LINKS DINÂMICOS (Baseados nas Features/Planos) */}
+                {/* LINKS DINÂMICOS */}
                 {featureModules.map((item) => (
                     hasFeatureAccess(item.key) && (
                         <Link 
                             key={item.name} 
-                            href={`/${tenantId}${item.href}`} // MODIFICAÇÃO: Prefixa com o tenantId
-                            className="flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150"
+                            href={`/${tenantId}${item.href}`}
+                            className={`flex items-center space-x-3 py-3 mx-2 rounded-lg transition duration-150 group ${
+                                isActive(item.href) 
+                                ? 'bg-gray-700 text-white' 
+                                : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                            } ${linkPadding}`}
+                            title={item.name}
                         >
-                            <item.icon className="w-4 h-4 text-accent-primary" />
-                            <span>{item.name}</span>
+                            <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive(item.href) ? 'text-accent-primary' : 'group-hover:text-accent-primary'}`} />
+                            <span className={`text-sm font-medium whitespace-nowrap ${hideText}`}>{item.name}</span>
                         </Link>
                     )
                 ))}
                 
-                {/* Link para área de Admin Global (Apenas se for Admin) */}
+                {/* Separador */}
+                <div className="my-4 border-t border-gray-700 mx-4 opacity-50"></div>
+
+                {/* Link Admin */}
                 {(user?.role === UserRole.TENANT_ADMIN) && (
-                    <Link href="/admin/tenants" className="flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-700 hover:text-white transition duration-150">
-                        <FaSignOutAlt className="w-4 h-4 transform rotate-180 text-violet-400" />
-                        <span>Configurações Admin</span>
+                    <Link 
+                        href="/admin/tenants" 
+                        className={`flex items-center space-x-3 py-3 mx-2 rounded-lg text-gray-400 hover:bg-gray-700 hover:text-white transition duration-150 group ${linkPadding}`}
+                        title="Configurações Admin"
+                    >
+                        <FaSignOutAlt className="w-5 h-5 flex-shrink-0 transform rotate-180 text-violet-400 group-hover:text-white" />
+                        <span className={`text-sm font-medium whitespace-nowrap ${hideText}`}>Admin</span>
                     </Link>
                 )}
             </nav>
             
-            {/* Logout Simples */}
-            <Link href="/logout" className="text-sm text-red-400 hover:text-red-500 transition border-t border-gray-700 pt-4 flex items-center space-x-2">
-                <FaSignOutAlt className="w-4 h-4" />
-                <span>Sair / Logout</span>
-            </Link>
+            {/* Logout */}
+            <div className="p-4 border-t border-gray-700">
+                <Link 
+                    href="/logout" 
+                    className={`flex items-center space-x-2 text-sm text-red-400 hover:text-red-500 transition hover:bg-red-900/10 rounded-lg py-2 ${linkPadding}`}
+                    title="Sair"
+                >
+                    <FaSignOutAlt className="w-5 h-5 flex-shrink-0" />
+                    <span className={`font-medium whitespace-nowrap ${hideText}`}>Sair</span>
+                </Link>
+            </div>
         </div>
     );
 };
@@ -10059,42 +10406,38 @@ export const ClientSidebar: React.FC = () => {
 
 import React from 'react';
 import { useParams } from 'next/navigation';
-import { FaBuilding, FaUserCircle, FaBell } from 'react-icons/fa';
+import { FaUserCircle, FaBell } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
+// IMPORTAÇÃO DO NOVO COMPONENTE
+import { TenantSelector } from '@/core/components/tenant/TenantSelector';
 
 /**
  * @component TopNavigation
  * @description Cabeçalho global da área do Dashboard.
- * PORQUÊ: Exibe o contexto atual (Tenant) e perfil do usuário, preparando para o Seletor de Tenant.
+ * @update Integrado com TenantSelector para troca de contexto.
  */
 export const TopNavigation: React.FC = () => {
     
     const { user } = useAuth();
     const params = useParams();
     
-    // Captura o ID do tenant da URL para exibição visual
-    // FUTURO: Buscar o Nome Fantasia do Tenant via hook useTenant(id)
+    // Captura o ID do tenant da URL para o Seletor
     const currentTenantId = params?.tenantId as string;
 
     return (
         <header className="h-16 bg-base-metallic border-b border-gray-700 flex items-center justify-between px-6 shadow-md">
             
-            {/* Lado Esquerdo: Contexto do Tenant */}
-            <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gray-700 rounded-lg text-accent-primary">
-                    <FaBuilding className="w-5 h-5" />
-                </div>
-                <div>
-                    <h2 className="text-sm font-bold text-white leading-tight">
-                        Contexto da Empresa
-                    </h2>
-                    <p className="text-xs text-gray-400 font-mono">
-                        ID: {currentTenantId || 'Carregando...'}
-                    </p>
-                </div>
+            {/* Lado Esquerdo: Seletor de Contexto (Tenant) */}
+            <div className="flex items-center">
+                {/* Agora usamos o componente inteligente.
+                    Passamos o ID atual para que ele saiba qual opção pré-selecionar.
+                */}
+                {currentTenantId && (
+                    <TenantSelector currentTenantId={currentTenantId} />
+                )}
             </div>
 
-            {/* Lado Direito: Ações e Perfil */}
+            {/* Lado Direito: Ações e Perfil (Mantido) */}
             <div className="flex items-center space-x-6">
                 
                 {/* Notificações (Placeholder) */}
@@ -11599,6 +11942,944 @@ export const TenantTable: React.FC = () => {
 };
 
 
+// ===== FILE: src/features/crm/components/AnalysisActionCard.tsx =====
+
+// src/features/crm/components/AnalysisActionCard.tsx
+
+import React, { useState, useEffect } from 'react';
+import { 
+    FaUser, FaEnvelope, FaPhone, FaBullseye, FaSave, FaLink, 
+    FaCheckCircle, FaExclamationTriangle, FaPen, FaMapMarkerAlt 
+} from 'react-icons/fa';
+import { InteractionAnalysis } from '../types';
+import { Client, AddressType } from '@/core/types/client';
+import { useInteractionMutation, ClientActionType } from '../hooks/useInteractionMutation';
+
+interface AnalysisActionCardProps {
+    analysis: InteractionAnalysis;
+    content: string;
+    contextClient: Client | null;
+    onSuccess: () => void;
+}
+
+export const AnalysisActionCard: React.FC<AnalysisActionCardProps> = ({
+    analysis,
+    content,
+    contextClient,
+    onSuccess
+}) => {
+    const { registerInteraction, isLoading, error, success } = useInteractionMutation();
+    
+    // Identidade extraída (atalho)
+    const identity = analysis.extractedIdentity || {
+        personName: '',
+        companyName: '',
+        email: '',
+        phone: '',
+        extractedAddresses: [],
+        intentType: 'UNKNOWN'
+    };
+
+    // --- ESTADO DO FORMULÁRIO ---
+    // Agora inclui dados de endereço aninhados
+    const [formData, setFormData] = useState({
+        name: '',
+        document: '',
+        email: '',
+        phone: '',
+        // Dados de Endereço (Focamos no endereço principal para este card rápido)
+        address: {
+            street: '',
+            number: '',
+            district: '',
+            city: '',
+            state: '',
+            zipCode: ''
+        }
+    });
+
+    // Sincroniza o form quando a análise muda
+    useEffect(() => {
+        // Tenta pegar o primeiro endereço extraído pela IA
+        const detectedAddress = identity.extractedAddresses?.[0];
+
+        setFormData({
+            name: identity.personName || 'Novo Lead',
+            document: '', 
+            email: identity.email || '',
+            phone: identity.phone || '',
+            address: {
+                street: detectedAddress?.street || '',
+                number: detectedAddress?.number || '',
+                district: detectedAddress?.district || '',
+                city: detectedAddress?.city || '',
+                state: detectedAddress?.state || '',
+                zipCode: detectedAddress?.zipCode || ''
+            }
+        });
+    }, [analysis]); 
+
+    const [mode, setMode] = useState<'VIEW' | 'CREATE_EDIT'>('VIEW');
+
+    // --- HANDLERS ---
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    // Handler específico para campos de endereço aninhados
+    const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({
+            ...formData,
+            address: {
+                ...formData.address,
+                [e.target.name]: e.target.value
+            }
+        });
+    };
+
+    const handleLinkExisting = async () => {
+        if (!contextClient) return;
+        await registerInteraction({
+            action: ClientActionType.LINK_EXISTING,
+            clientId: contextClient.id,
+            type: 'NOTE', 
+            content: content,
+            aiAnalysis: analysis
+        });
+        if (!error) onSuccess();
+    };
+
+    const handleCreateNew = async () => {
+        if (!formData.name.trim()) {
+            alert("O Nome do cliente é obrigatório.");
+            return;
+        }
+
+        // Monta o array de endereços apenas se houver dados mínimos (Rua)
+        const addressesToSend = formData.address.street.trim() ? [{
+            street: formData.address.street,
+            number: formData.address.number || 'S/N', // Fallback seguro
+            district: formData.address.district || 'Centro',
+            city: formData.address.city || 'Indefinida',
+            state: formData.address.state || 'UF',
+            zipCode: formData.address.zipCode || '00000-000',
+            type: AddressType.MAIN
+        }] : undefined;
+
+        await registerInteraction({
+            action: ClientActionType.CREATE_NEW,
+            type: 'NOTE',
+            content: content,
+            aiAnalysis: analysis,
+            newClientData: {
+                name: formData.name,
+                document: formData.document.trim() || undefined, 
+                email: formData.email.trim() || undefined,
+                phone: formData.phone.trim() || undefined,
+                addresses: addressesToSend
+            }
+        });
+
+        if (!error) onSuccess();
+    };
+
+    if (success) {
+        return (
+            <div className="bg-green-900/20 border border-green-500/50 p-6 rounded-xl text-center animate-fade-in">
+                <FaCheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-white">Registrado com Sucesso!</h3>
+                <button onClick={onSuccess} className="mt-4 text-sm text-green-400 hover:underline">Continuar</button>
+            </div>
+        );
+    }
+
+    // Helper para exibir endereço formatado
+    const formattedAddress = formData.address.street 
+        ? `${formData.address.street}, ${formData.address.number || 'S/N'} - ${formData.address.city}/${formData.address.state}`
+        : null;
+
+    return (
+        <div className="bg-gray-800 border border-gray-600 p-4 rounded-xl shadow-lg relative overflow-hidden transition-all">
+            <div className="absolute top-0 left-0 w-1 h-full bg-accent-secondary"></div>
+            
+            {/* Header */}
+            <div className="flex justify-between items-start mb-4 pl-2">
+                <div>
+                    <h3 className="text-sm font-bold text-white flex items-center">
+                        <FaUser className="mr-2 text-accent-secondary" /> 
+                        {mode === 'VIEW' ? 'Dados Detectados (IA)' : 'Revisão de Cadastro'}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-1">
+                        {mode === 'VIEW' ? 'Verifique os dados encontrados.' : 'Edite os dados antes de salvar.'}
+                    </p>
+                </div>
+                <div className="bg-gray-700 px-2 py-1 rounded text-[10px] text-accent-primary font-bold border border-gray-600 uppercase">
+                    <FaBullseye className="mr-1 inline" /> {identity.intentType}
+                </div>
+            </div>
+
+            {/* --- MODO VISUALIZAÇÃO (READ-ONLY) --- */}
+            {mode === 'VIEW' && (
+                <div className="grid grid-cols-2 gap-3 text-sm mb-4 pl-2">
+                    <div className="bg-gray-900 p-2 rounded border border-gray-700 col-span-2">
+                        <span className="text-[10px] text-gray-500 block uppercase font-bold">Nome</span>
+                        <span className="text-white font-medium">{identity.personName || '-'}</span>
+                    </div>
+                    
+                    <div className="bg-gray-900 p-2 rounded border border-gray-700">
+                        <span className="text-[10px] text-gray-500 block uppercase font-bold">E-mail</span>
+                        <div className="flex items-center text-white mt-1">
+                            <FaEnvelope className="mr-2 text-gray-600" />
+                            <span className="truncate text-xs">{identity.email || '-'}</span>
+                        </div>
+                    </div>
+                    <div className="bg-gray-900 p-2 rounded border border-gray-700">
+                        <span className="text-[10px] text-gray-500 block uppercase font-bold">Telefone</span>
+                        <div className="flex items-center text-white mt-1">
+                            <FaPhone className="mr-2 text-gray-600" />
+                            <span className="truncate text-xs">{identity.phone || '-'}</span>
+                        </div>
+                    </div>
+
+                    {/* Exibição de Endereço Detectado */}
+                    {formattedAddress && (
+                        <div className="bg-gray-900 p-2 rounded border border-gray-700 col-span-2">
+                            <span className="text-[10px] text-gray-500 block uppercase font-bold">Endereço Sugerido</span>
+                            <div className="flex items-center text-white mt-1">
+                                <FaMapMarkerAlt className="mr-2 text-accent-secondary" />
+                                <span className="truncate text-xs">{formattedAddress}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* --- MODO EDIÇÃO (FORMULÁRIO COMPLETO) --- */}
+            {mode === 'CREATE_EDIT' && (
+                <div className="space-y-3 mb-4 pl-2 animate-fade-in">
+                    {/* Dados Básicos */}
+                    <div>
+                        <label className="text-[10px] text-accent-primary font-bold uppercase block mb-1">Nome *</label>
+                        <input type="text" name="name" value={formData.name} onChange={handleChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white focus:border-accent-primary focus:outline-none" />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1">E-mail</label>
+                            <input type="email" name="email" value={formData.email} onChange={handleChange}
+                                className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white focus:border-accent-primary focus:outline-none" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Telefone</label>
+                            <input type="text" name="phone" value={formData.phone} onChange={handleChange}
+                                className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white focus:border-accent-primary focus:outline-none" />
+                        </div>
+                    </div>
+
+                    {/* Seção de Endereço */}
+                    <div className="border-t border-gray-700 pt-3 mt-2">
+                        <label className="text-[10px] text-gray-300 font-bold uppercase block mb-2 flex items-center">
+                            <FaMapMarkerAlt className="mr-1" /> Endereço Principal
+                        </label>
+                        <div className="grid grid-cols-4 gap-2">
+                            <div className="col-span-3">
+                                <input type="text" name="street" placeholder="Rua / Logradouro" value={formData.address.street} onChange={handleAddressChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:border-accent-primary focus:outline-none" />
+                            </div>
+                            <div className="col-span-1">
+                                <input type="text" name="number" placeholder="Nº" value={formData.address.number} onChange={handleAddressChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:border-accent-primary focus:outline-none" />
+                            </div>
+                            <div className="col-span-2">
+                                <input type="text" name="district" placeholder="Bairro" value={formData.address.district} onChange={handleAddressChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:border-accent-primary focus:outline-none" />
+                            </div>
+                            <div className="col-span-2">
+                                <input type="text" name="city" placeholder="Cidade" value={formData.address.city} onChange={handleAddressChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:border-accent-primary focus:outline-none" />
+                            </div>
+                            <div className="col-span-1">
+                                <input type="text" name="state" placeholder="UF" maxLength={2} value={formData.address.state} onChange={handleAddressChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:border-accent-primary focus:outline-none uppercase" />
+                            </div>
+                            <div className="col-span-3">
+                                <input type="text" name="zipCode" placeholder="CEP" value={formData.address.zipCode} onChange={handleAddressChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:border-accent-primary focus:outline-none" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1">CPF / CNPJ (Opcional)</label>
+                        <input type="text" name="document" value={formData.document} onChange={handleChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white focus:border-accent-primary focus:outline-none" />
+                    </div>
+                </div>
+            )}
+
+            {/* Mensagem de Erro */}
+            {error && (
+                <div className="mb-4 p-3 bg-red-900/40 border border-red-500/50 rounded flex items-center text-xs text-red-200">
+                    <FaExclamationTriangle className="mr-2 flex-shrink-0" />
+                    {error}
+                </div>
+            )}
+
+            {/* Ações */}
+            <div className="pl-2 pt-2 border-t border-gray-700">
+                {mode === 'VIEW' ? (
+                    <div className="flex gap-2">
+                        {contextClient ? (
+                            <button onClick={handleLinkExisting} disabled={isLoading} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg text-xs font-bold transition border border-gray-500">
+                                {isLoading ? 'Vinculando...' : <><FaLink className="mr-2 inline" /> Vincular Existente</>}
+                            </button>
+                        ) : (
+                            <div className="flex-1 text-[10px] text-gray-500 flex items-center justify-center bg-gray-900/50 rounded border border-dashed border-gray-700 select-none">
+                                Selecione na lista p/ vincular
+                            </div>
+                        )}
+                        <button onClick={() => setMode('CREATE_EDIT')} className="flex-1 bg-accent-secondary hover:bg-violet-600 text-white py-2 rounded-lg text-xs font-bold transition shadow-lg">
+                            <FaPen className="mr-2 inline" /> Editar e Salvar
+                        </button>
+                    </div>
+                ) : (
+                    <div className="flex gap-2">
+                        <button onClick={() => setMode('VIEW')} className="flex-1 bg-gray-700 text-gray-300 py-2 rounded text-xs font-bold hover:bg-gray-600">Cancelar</button>
+                        <button onClick={handleCreateNew} disabled={isLoading} className="flex-1 bg-accent-primary hover:bg-orange-600 text-base-dark py-2 rounded text-xs font-bold shadow-lg">
+                            {isLoading ? 'Salvando...' : 'Confirmar Lead'}
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+
+// ===== FILE: src/features/crm/components/ai-widget/AIInputWidget.tsx =====
+
+// src/features/crm/components/ai-widget/AIInputWidget.tsx
+
+import React, { useState } from 'react';
+import { FaMicrophone, FaPaperPlane, FaMagic, FaBrain } from 'react-icons/fa'; // Adicionado FaBrain
+
+interface AIInputWidgetProps {
+    onAnalyze: (text: string) => void;
+    isAnalyzing: boolean;
+}
+
+/**
+ * @component AIInputWidget
+ * @description Console de entrada multimodal (Texto/Voz).
+ * @update Visual restaurado com ícone de Cérebro e placeholder original.
+ */
+export const AIInputWidget: React.FC<AIInputWidgetProps> = ({ onAnalyze, isAnalyzing }) => {
+    
+    const [text, setText] = useState('');
+    const [isRecording, setIsRecording] = useState(false);
+
+    const handleSend = () => {
+        if (!text.trim()) return;
+        onAnalyze(text);
+        // Mantemos o texto por segurança até o sucesso, controlado pelo pai se necessário.
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+    };
+
+    const handleMicClick = () => {
+        setIsRecording(!isRecording);
+        if (!isRecording) {
+            console.log("Microfone ativado...");
+        }
+    };
+
+    return (
+        <div className="bg-base-metallic border-t border-gray-700 p-3 flex flex-col h-full">
+            
+            {/* Header do Widget com o Ícone de Cérebro */}
+            <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center space-x-2">
+                    <FaBrain className="text-accent-primary w-4 h-4" />
+                    <label className="text-[10px] font-bold text-gray-300 uppercase tracking-wider">
+                        Filix IA
+                    </label>
+                </div>
+                
+                {isAnalyzing && (
+                    <span className="text-[10px] text-accent-secondary flex items-center animate-pulse font-bold">
+                        <FaMagic className="mr-1" /> Processando...
+                    </span>
+                )}
+            </div>
+
+            <div className="flex-1 relative">
+                <textarea
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="w-full h-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-white resize-none focus:ring-1 focus:ring-accent-primary focus:border-accent-primary focus:outline-none scrollbar-thin scrollbar-thumb-gray-700 placeholder-gray-500"
+                    // Placeholder restaurado conforme pedido
+                    placeholder="Digite uma nota, cole um e-mail ou use o microfone..."
+                    disabled={isAnalyzing}
+                />
+                
+                {/* Botão de Microfone Flutuante */}
+                <button 
+                    onClick={handleMicClick}
+                    className={`absolute bottom-2 right-2 p-2 rounded-full transition ${isRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-gray-800 text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500'}`}
+                    title="Gravar Áudio"
+                >
+                    <FaMicrophone className="w-3 h-3" />
+                </button>
+            </div>
+
+            <div className="mt-2">
+                <button
+                    onClick={handleSend}
+                    disabled={isAnalyzing || !text.trim()}
+                    className="w-full flex items-center justify-center py-2 bg-accent-primary hover:bg-orange-600 text-base-dark font-bold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-xs shadow-lg transform active:scale-95"
+                >
+                    {isAnalyzing ? 'Analisando...' : <><FaPaperPlane className="mr-2" /> Enviar para Análise</>}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+
+// ===== FILE: src/features/crm/components/client-dashboard/ClientDashboard.tsx =====
+
+// src/features/crm/components/client-dashboard/ClientDashboard.tsx
+
+import React, { useState } from 'react';
+import { FaUser, FaEdit, FaMagic, FaHistory, FaEnvelope, FaPhone, FaMapMarkerAlt, FaIdCard, FaBrain } from 'react-icons/fa';
+import { Client, AddressType } from '@/core/types/client';
+
+interface ClientDashboardProps {
+    client: Client | null;
+    onEdit: (client: Client) => void;
+}
+
+type DashboardTab = 'OVERVIEW' | 'TIMELINE';
+
+/**
+ * @component ClientDashboard
+ * @description Painel Central: Exibe o "Dossiê" completo do cliente selecionado.
+ * Inclui dados cadastrais, resumo de inteligência (Long-Term Memory) e histórico.
+ */
+export const ClientDashboard: React.FC<ClientDashboardProps> = ({ client, onEdit }) => {
+    
+    const [activeTab, setActiveTab] = useState<DashboardTab>('OVERVIEW');
+
+    // --- EMPTY STATE (Nenhum cliente selecionado) ---
+    if (!client) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center text-gray-500 bg-base-metallic/50 rounded-xl border border-gray-700/50 border-dashed">
+                <div className="p-4 bg-gray-800 rounded-full mb-4">
+                    <FaUser className="w-8 h-8 text-gray-600" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-400">Nenhum Cliente Selecionado</h3>
+                <p className="text-sm mt-2 max-w-xs text-center opacity-70">
+                    Selecione um cliente na lista à esquerda para visualizar seu dossiê, resumo da IA e histórico.
+                </p>
+            </div>
+        );
+    }
+
+    // Helper para endereço principal
+    const mainAddress = client.addresses?.find(a => a.type === AddressType.MAIN) || client.addresses?.[0];
+    const addressText = mainAddress 
+        ? `${mainAddress.street}, ${mainAddress.number} - ${mainAddress.district}, ${mainAddress.city}/${mainAddress.state}`
+        : 'Sem endereço cadastrado';
+
+    return (
+        <div className="bg-base-metallic rounded-xl border border-gray-700 flex flex-col h-full overflow-hidden shadow-2xl relative">
+            
+            {/* --- HEADER DO CLIENTE --- */}
+            <div className="p-6 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900">
+                <div className="flex justify-between items-start">
+                    <div className="flex items-center space-x-4">
+                        {/* Avatar / Ícone */}
+                        <div className="h-16 w-16 rounded-full bg-accent-primary/20 flex items-center justify-center border-2 border-accent-primary text-accent-primary shadow-lg">
+                            <span className="text-2xl font-bold">{client.name.charAt(0).toUpperCase()}</span>
+                        </div>
+                        
+                        <div>
+                            <h1 className="text-2xl font-extrabold text-white tracking-tight">{client.name}</h1>
+                            <div className="flex items-center space-x-3 mt-1 text-sm text-gray-400">
+                                {client.document ? (
+                                    <span className="flex items-center"><FaIdCard className="mr-1.5 opacity-70" /> {client.document}</span>
+                                ) : (
+                                    <span className="flex items-center text-accent-secondary"><FaMagic className="mr-1.5" /> Lead (Em prospecção)</span>
+                                )}
+                                <span className={`px-2 py-0.5 rounded text-[10px] uppercase border ${client.isActive ? 'border-green-500/30 text-green-400 bg-green-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
+                                    {client.isActive ? 'Ativo' : 'Inativo'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Ações */}
+                    <button 
+                        onClick={() => onEdit(client)}
+                        className="p-2 text-gray-400 hover:text-white bg-gray-700/50 hover:bg-gray-700 rounded-lg transition border border-gray-600"
+                        title="Editar Dados"
+                    >
+                        <FaEdit className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+
+            {/* --- NAVEGAÇÃO (TABS) --- */}
+            <div className="flex border-b border-gray-700 bg-gray-800/50 px-6">
+                <button 
+                    onClick={() => setActiveTab('OVERVIEW')}
+                    className={`py-3 px-4 text-sm font-bold border-b-2 transition ${activeTab === 'OVERVIEW' ? 'border-accent-primary text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                >
+                    Visão Geral & IA
+                </button>
+                <button 
+                    onClick={() => setActiveTab('TIMELINE')}
+                    className={`py-3 px-4 text-sm font-bold border-b-2 transition ${activeTab === 'TIMELINE' ? 'border-accent-primary text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                >
+                    Histórico de Interações
+                </button>
+            </div>
+
+            {/* --- CONTEÚDO --- */}
+            <div className="flex-1 overflow-y-auto p-6">
+                
+                {activeTab === 'OVERVIEW' && (
+                    <div className="space-y-6 animate-fade-in">
+                        
+                        {/* 1. MEMÓRIA DA IA (SUMMARY) */}
+                        <div className="bg-gray-800/50 rounded-xl border border-gray-600 p-4 relative overflow-hidden group">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-accent-secondary to-accent-primary"></div>
+                            
+                            <div className="flex justify-between items-center mb-3">
+                                <h3 className="text-sm font-bold text-white flex items-center">
+                                    <FaBrain className="mr-2 text-accent-primary" /> Dossiê Vivo (IA Memory)
+                                </h3>
+                                {/* Futuro: Botão para pedir para a IA regenerar o resumo */}
+                            </div>
+                            
+                            <div className="text-sm text-gray-300 leading-relaxed">
+                                {client.aiSummary ? (
+                                    client.aiSummary
+                                ) : (
+                                    <span className="text-gray-500 italic">
+                                        Ainda não há um resumo gerado pela Inteligência Artificial para este cliente. 
+                                        Realize interações para construir o perfil.
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 2. DADOS DE CONTATO & ENDEREÇO */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Contato */}
+                            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Contato</h4>
+                                <div className="space-y-3">
+                                    <div className="flex items-center text-sm text-gray-200">
+                                        <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400">
+                                            <FaEnvelope />
+                                        </div>
+                                        <span className="truncate">{client.email || 'Não informado'}</span>
+                                    </div>
+                                    <div className="flex items-center text-sm text-gray-200">
+                                        <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400">
+                                            <FaPhone />
+                                        </div>
+                                        <span>{client.phone || 'Não informado'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Endereço */}
+                            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Localização Principal</h4>
+                                <div className="flex items-start text-sm text-gray-200">
+                                    <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400 flex-shrink-0">
+                                        <FaMapMarkerAlt />
+                                    </div>
+                                    <span className="leading-relaxed">{addressText}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. FUTURO: Métricas (Vendas, Tickets) */}
+                        <div className="grid grid-cols-3 gap-4 opacity-50 grayscale cursor-not-allowed" title="Em breve">
+                            <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 text-center">
+                                <div className="text-2xl font-bold text-white">R$ 0,00</div>
+                                <div className="text-xs text-gray-500 uppercase">LTV Total</div>
+                            </div>
+                            <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 text-center">
+                                <div className="text-2xl font-bold text-white">0</div>
+                                <div className="text-xs text-gray-500 uppercase">Negócios</div>
+                            </div>
+                            <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 text-center">
+                                <div className="text-2xl font-bold text-white">-</div>
+                                <div className="text-xs text-gray-500 uppercase">Última Compra</div>
+                            </div>
+                        </div>
+
+                    </div>
+                )}
+
+                {activeTab === 'TIMELINE' && (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
+                        <FaHistory className="w-12 h-12 opacity-20" />
+                        <p>O histórico de interações será implementado na próxima etapa.</p>
+                        {/* Aqui entrará o componente <InteractionTimeline clientId={client.id} /> */}
+                    </div>
+                )}
+
+            </div>
+        </div>
+    );
+};
+
+
+// ===== FILE: src/features/crm/components/client-widget/ClientListItem.tsx =====
+
+// src/features/crm/components/client-widget/ClientListItem.tsx
+
+import React from 'react';
+import { FaBuilding, FaEnvelope, FaEdit, FaTrash, FaUndo } from 'react-icons/fa'; // Novos ícones
+import { Client } from '@/core/types/client';
+
+interface ClientListItemProps {
+    client: Client;
+    onClick: (client: Client) => void;
+    isSelected?: boolean;
+    // --- NOVAS PROPS DE AÇÃO ---
+    onEdit?: (client: Client) => void;
+    onDelete?: (client: Client) => void;
+}
+
+export const ClientListItem: React.FC<ClientListItemProps> = ({ 
+    client, 
+    onClick, 
+    isSelected = false,
+    onEdit,
+    onDelete
+}) => {
+    
+    const baseClasses = "p-3 rounded-lg cursor-pointer transition border group relative"; // Adicionado relative
+    const stateClasses = isSelected 
+        ? "bg-gray-800 border-accent-secondary shadow-md" 
+        : "border-transparent hover:bg-gray-700 hover:border-gray-600";
+
+    // Função auxiliar para evitar propagação do clique (selecionar o card)
+    const handleAction = (e: React.MouseEvent, action?: (c: Client) => void) => {
+        e.stopPropagation();
+        if (action) action(client);
+    };
+
+    return (
+        <div 
+            onClick={() => onClick(client)}
+            className={`${baseClasses} ${stateClasses}`}
+        >
+            <div className="flex justify-between items-start">
+                
+                {/* Lado Esquerdo: Dados */}
+                <div className="flex-1 pr-2">
+                    <h3 className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-200 group-hover:text-white'}`}>
+                        {client.name}
+                    </h3>
+                    <p className="text-[10px] text-gray-500 font-mono mt-0.5">
+                        {client.document || 'Lead (Sem Doc)'}
+                    </p>
+                    
+                    {/* Informação Secundária */}
+                    <div className="mt-2 flex items-center text-xs text-gray-400">
+                        {client.email ? (
+                            <>
+                                <FaEnvelope className="mr-1.5 w-3 h-3 text-gray-600 group-hover:text-accent-primary transition-colors" />
+                                <span className="truncate max-w-[140px]">{client.email}</span>
+                            </>
+                        ) : (
+                            <>
+                                <FaBuilding className="mr-1.5 w-3 h-3 text-gray-600" />
+                                <span className="italic opacity-50">Sem contato</span>
+                            </>
+                        )}
+                    </div>
+                </div>
+                
+                {/* Lado Direito: Status e Ações */}
+                <div className="flex flex-col items-end space-y-2">
+                    
+                    {/* Badge de Status */}
+                    <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded border ${
+                        client.isActive 
+                            ? 'bg-green-900/20 text-green-400 border-green-900/30' 
+                            : 'bg-red-900/20 text-red-400 border-red-900/30'
+                    }`}>
+                        {client.isActive ? 'Ativo' : 'Inativo'}
+                    </span>
+
+                    {/* --- BOTÕES DE AÇÃO (Só aparecem no Hover ou se Selecionado) --- */}
+                    <div className={`flex space-x-2 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-200`}>
+                        
+                        {/* Botão Editar */}
+                        <button 
+                            onClick={(e) => handleAction(e, onEdit)}
+                            className="p-1.5 text-gray-400 hover:text-accent-secondary hover:bg-gray-600 rounded transition"
+                            title="Editar Cliente"
+                        >
+                            <FaEdit className="w-3 h-3" />
+                        </button>
+
+                        {/* Botão Excluir/Ativar */}
+                        <button 
+                            onClick={(e) => handleAction(e, onDelete)}
+                            className={`p-1.5 rounded transition ${client.isActive 
+                                ? 'text-gray-400 hover:text-danger hover:bg-gray-600' 
+                                : 'text-gray-400 hover:text-success hover:bg-gray-600'}`}
+                            title={client.isActive ? "Desativar (Lixeira)" : "Reativar"}
+                        >
+                            {client.isActive ? <FaTrash className="w-3 h-3" /> : <FaUndo className="w-3 h-3" />}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+// ===== FILE: src/features/crm/components/client-widget/ClientListWidget.tsx =====
+
+// src/features/crm/components/client-widget/ClientListWidget.tsx
+
+import React, { useState } from 'react';
+import { FaUser, FaPlus, FaExclamationTriangle } from 'react-icons/fa';
+import { useClients } from '@/core/hooks/useClients';
+import { Client } from '@/core/types/client';
+import { ClientModal } from '@/core/components/client/ClientModal';
+import { ClientSearchInput } from './ClientSearchInput';
+import { ClientListItem } from './ClientListItem';
+// NOVO IMPORT: Hook de Mutação para o Delete
+import { useClientMutation } from '@/core/hooks/useClientMutation';
+
+interface ClientListWidgetProps {
+    onSelectClient?: (client: Client | null) => void;
+    refreshTrigger?: number;
+    onNewClient: () => void;
+    onEditClient: (client: Client) => void;
+}
+
+export const ClientListWidget: React.FC<ClientListWidgetProps> = ({ 
+    onSelectClient,
+    refreshTrigger = 0,
+    onNewClient,
+    onEditClient
+}) => {
+    
+    const { 
+        clients, 
+        isLoading, 
+        error, 
+        searchTerm, 
+        setSearchTerm, 
+        refreshData 
+    } = useClients(refreshTrigger);
+
+    // Hook de Mutação para ações destrutivas/edição
+    const { deleteClient, updateClient, isLoading: isMutating } = useClientMutation();
+
+    const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+    
+    
+    // --- HANDLERS ---
+
+    /**
+     * @method handleSelect
+     * @description Gerencia a seleção e "deseleção" (Toggle) de um cliente.
+     * @update Agora verifica se o ID já está selecionado para limpar o estado (Toggle).
+     */
+    const handleSelect = (client: Client) => {
+        // Verifica se o cliente clicado JÁ É o que estava selecionado
+        if (selectedClientId === client.id) {
+            // CENÁRIO: Desmarcar (Limpar Seleção)
+            setSelectedClientId(null);
+            if (onSelectClient) {
+                onSelectClient(null); // Avisa ao pai que não tem mais contexto
+            }
+        } else {
+            // CENÁRIO: Marcar Novo
+            setSelectedClientId(client.id);
+            if (onSelectClient) {
+                onSelectClient(client);
+            }
+        }
+    };
+
+    const handleSuccessCreateOrUpdate = () => {
+        refreshData(); // Atualiza a lista
+    };
+
+    const handleNewClient = () => {
+        onNewClient();
+    };
+
+    const handleEdit = (client: Client) => {
+        onEditClient(client);
+    };
+
+/**
+     * @method handleDelete
+     * @description Agora atua como um Toggle Inteligente (Ativar/Desativar).
+     */
+    const handleDelete = async (client: Client) => {
+        const isActive = client.isActive;
+        const actionText = isActive ? 'mover para a lixeira' : 'reativar';
+        const confirmText = `Tem certeza que deseja ${actionText} o cliente "${client.name}"?`;
+
+        if (confirm(confirmText)) {
+            try {
+                if (isActive) {
+                    // Se está ativo, desativa (Soft Delete)
+                    await deleteClient(client.id);
+                } else {
+                    // Se está inativo, reativa (Update simples)
+                    await updateClient(client.id, { isActive: true });
+                }
+                // Atualiza a lista visualmente
+                refreshData(); 
+            } catch (error) {
+                console.error("Falha ao alterar status:", error);
+                alert(`Erro ao ${actionText} cliente.`);
+            }
+        }
+    };
+
+    return (
+        <div className="col-span-3 bg-base-metallic rounded-xl border border-gray-700 flex flex-col overflow-hidden shadow-lg h-full">
+            
+            {/* Header */}
+            <div className="p-4 border-b border-gray-700 bg-gray-800 flex justify-between items-center flex-shrink-0">
+                <h2 className="font-bold text-white flex items-center">
+                    <FaUser className="mr-2 text-accent-secondary" /> Clientes
+                </h2>
+                <button 
+                    onClick={handleNewClient}
+                    className="text-xs bg-accent-secondary hover:bg-violet-600 text-white px-2 py-1 rounded flex items-center transition shadow-sm"
+                    title="Adicionar Novo Cliente"
+                >
+                    <FaPlus className="mr-1" /> Novo
+                </button>
+            </div>
+
+            {/* Input de Busca */}
+            <div className="flex-shrink-0">
+                <ClientSearchInput 
+                    value={searchTerm} 
+                    onChange={setSearchTerm} 
+                    isLoading={isLoading || isMutating} 
+                />
+            </div>
+
+            {/* Lista */}
+            <div className="flex-1 overflow-y-auto p-2 space-y-2 relative">
+                
+                {error && (
+                    <div className="p-4 text-center text-xs text-red-400 bg-red-900/10 rounded-lg border border-red-900/30">
+                        <FaExclamationTriangle className="mx-auto mb-2 w-5 h-5 opacity-50" />
+                        <p>{error}</p>
+                        <button onClick={() => refreshData()} className="mt-2 text-accent-primary hover:underline">
+                            Tentar novamente
+                        </button>
+                    </div>
+                )}
+
+                {!isLoading && !error && clients.length === 0 && (
+                    <div className="text-center py-10 text-gray-500 text-sm">
+                        <p>Nenhum cliente encontrado.</p>
+                        {searchTerm && <p className="text-xs mt-1 opacity-70">Tente outro termo de busca.</p>}
+                    </div>
+                )}
+
+                {clients.map(client => (
+                    <ClientListItem
+                        key={client.id}
+                        client={client}
+                        onClick={handleSelect}
+                        isSelected={selectedClientId === client.id}
+                        // NOVAS PROPS CONECTADAS
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                    />
+                ))}
+            </div>
+
+            <div className="p-2 border-t border-gray-700 bg-gray-800/50 text-[10px] text-gray-500 text-center flex-shrink-0">
+                {clients.length} registro(s) carregado(s)
+            </div>
+
+        </div>
+    );
+};
+
+
+// ===== FILE: src/features/crm/components/client-widget/ClientSearchInput.tsx =====
+
+// src/features/crm/components/client-widget/ClientSearchInput.tsx
+
+import React from 'react';
+import { FaSearch } from 'react-icons/fa';
+
+interface ClientSearchInputProps {
+    value: string;
+    onChange: (newValue: string) => void;
+    isLoading?: boolean;
+}
+
+/**
+ * @component ClientSearchInput
+ * @description Campo de busca visual com ícone e estado de loading opcional.
+ * * Pure Component: Não possui lógica de negócio, apenas UI.
+ */
+export const ClientSearchInput: React.FC<ClientSearchInputProps> = ({ 
+    value, 
+    onChange,
+    isLoading = false
+}) => {
+    return (
+        <div className="p-3 border-b border-gray-700 bg-base-metallic">
+            <div className="relative">
+                {/* Ícone: Alterna entre Lupa e Spinner se estiver carregando */}
+                <div className="absolute left-3 top-2.5 text-gray-500 w-4 h-4 flex items-center justify-center">
+                    {isLoading ? (
+                        <span className="animate-spin h-3 w-3 border-2 border-accent-secondary border-t-transparent rounded-full" />
+                    ) : (
+                        <FaSearch />
+                    )}
+                </div>
+                
+                <input 
+                    type="text" 
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder="Buscar por nome, CPF ou CNPJ..." 
+                    className="w-full bg-gray-900 text-sm text-white pl-9 pr-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-accent-secondary focus:ring-1 focus:ring-accent-secondary transition-all placeholder-gray-500"
+                />
+            </div>
+        </div>
+    );
+};
+
+
 // ===== FILE: src/features/crm/hooks/useCRMIntelligence.ts =====
 
 // src/features/crm/hooks/useCRMIntelligence.ts
@@ -11655,13 +12936,74 @@ export function useCRMIntelligence() {
 }
 
 
+// ===== FILE: src/features/crm/hooks/useInteractionMutation.ts =====
+
+// src/features/crm/hooks/useInteractionMutation.ts
+
+import { useState } from 'react';
+import { api } from '@/core/services/api';
+import { InteractionAnalysis } from '../types';
+// IMPORTAÇÃO CORRETA: Reuso do tipo central
+import { CreateClientDto } from '@/core/types/client';
+
+export enum ClientActionType {
+    LINK_EXISTING = 'LINK_EXISTING',
+    CREATE_NEW = 'CREATE_NEW'
+}
+
+// Interface do Payload específico desta rota
+export interface RegisterInteractionPayload {
+    type: 'NOTE' | 'AUDIO' | 'EMAIL' | 'MEETING';
+    content: string;
+    aiAnalysis?: InteractionAnalysis;
+    action: ClientActionType;
+    clientId?: string;       
+    // USO CORRETO: Referência ao DTO global
+    newClientData?: CreateClientDto; 
+}
+
+export function useInteractionMutation() {
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
+
+    const registerInteraction = async (payload: RegisterInteractionPayload) => {
+        setIsLoading(true);
+        setError(null);
+        setSuccess(false);
+
+        try {
+            const response = await api.post('/crm/interaction', payload);
+            setSuccess(true);
+            return response.data;
+        } catch (err: any) {
+            console.error("Erro ao registrar interação:", err);
+            const msg = err.response?.data?.message || "Falha ao salvar interação e dados do cliente.";
+            setError(msg);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return {
+        registerInteraction,
+        isLoading,
+        error,
+        success,
+        resetState: () => {
+            setError(null);
+            setSuccess(false);
+        }
+    };
+}
+
+
 // ===== FILE: src/features/crm/types.ts =====
 
 // src/features/crm/types.ts
 
 import { Client } from '@/core/types/client';
-
-// --- ENUMS (Espelhos do Backend) ---
 
 export enum DealStatus {
     NEW = 'NEW',
@@ -11679,23 +13021,43 @@ export enum InteractionType {
     MEETING = 'MEETING',
 }
 
-// --- INTELEGÊNCIA ARTIFICIAL (O Contrato com o LangChain) ---
+// --- NOVO: Interface para o Endereço Extraído pela IA ---
+// Porquê: Define a estrutura que esperamos receber do backend (via Zod/LLM).
+// Todos os campos são anuláveis (nullable) pois a IA pode não encontrar todos os detalhes no texto.
+export interface ExtractedAddress {
+    street: string | null;
+    number: string | null;
+    complement: string | null;
+    district: string | null;
+    city: string | null;
+    state: string | null;
+    zipCode: string | null;
+    // Tipo literal compatível com o Enum do backend
+    type: "MAIN" | "BILLING" | "SHIPPING" | null;
+}
 
 /**
  * @interface InteractionAnalysis
  * @description Estrutura exata do JSON retornado pelo endpoint /crm/analyze (Backend).
- * Define os insights extraídos pela IA.
+ * @update Adicionado suporte a lista de endereços extraídos (extractedAddresses).
  */
 export interface InteractionAnalysis {
     summary: string;
     sentiment: "POSITIVE" | "NEUTRAL" | "NEGATIVE" | "TENSE";
     tags: string[];
     actionItems: string[];
-    dealProbability?: number; // Opcional, pois o Zod definiu como optional
+    dealProbability?: number;
+    
     extractedIdentity?: {
         personName: string | null;
         companyName: string | null;
-        contactInfo: string | null;
+        // Campos granulares de contato
+        email: string | null;
+        phone: string | null;
+        
+        // --- NOVO: Lista de Endereços identificados ---
+        extractedAddresses?: ExtractedAddress[];
+
         intentType: "NEW_BUSINESS" | "SUPPORT" | "FOLLOW_UP" | "UNKNOWN";
     };
 }
@@ -11710,7 +13072,7 @@ export interface CRMDeal {
     status: DealStatus;
     value: number;
     probability: number;
-    expectedCloseDate?: string; // Datas vêm como string do JSON
+    expectedCloseDate?: string; 
     createdAt: string;
     updatedAt: string;
     
@@ -11723,12 +13085,11 @@ export interface CRMInteraction {
     tenantId: string;
     clientId: string;
     type: InteractionType;
-    content: string; // Texto bruto ou transcrição
+    content: string;
     mediaUrl?: string;
     
     // A Inteligência Anexada
     aiAnalysis?: InteractionAnalysis;
-    
     createdAt: string;
 }
 
