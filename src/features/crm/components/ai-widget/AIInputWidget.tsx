@@ -1,27 +1,35 @@
 // src/features/crm/components/ai-widget/AIInputWidget.tsx
 
 import React, { useState } from 'react';
-import { FaMicrophone, FaPaperPlane, FaMagic, FaBrain } from 'react-icons/fa'; // Adicionado FaBrain
+import { FaMicrophone, FaPaperPlane, FaMagic, FaBrain } from 'react-icons/fa';
 
 interface AIInputWidgetProps {
     onAnalyze: (text: string) => void;
     isAnalyzing: boolean;
+    // --- NOVAS PROPS PARA CONTROLE DE ESTADO ---
+    value: string;
+    onChange: (text: string) => void;
 }
 
 /**
  * @component AIInputWidget
  * @description Console de entrada multimodal (Texto/Voz).
- * @update Visual restaurado com ícone de Cérebro e placeholder original.
+ * @update Refatorado para ser um componente CONTROLADO (Controlled Component).
+ * O estado do texto agora reside no pai (CRMPage), permitindo limpeza externa.
  */
-export const AIInputWidget: React.FC<AIInputWidgetProps> = ({ onAnalyze, isAnalyzing }) => {
+export const AIInputWidget: React.FC<AIInputWidgetProps> = ({ 
+    onAnalyze, 
+    isAnalyzing,
+    value,      // Recebe do pai
+    onChange    // Notifica o pai
+}) => {
     
-    const [text, setText] = useState('');
+    // O estado local 'text' foi removido. Usamos 'value'.
     const [isRecording, setIsRecording] = useState(false);
 
     const handleSend = () => {
-        if (!text.trim()) return;
-        onAnalyze(text);
-        // Mantemos o texto por segurança até o sucesso, controlado pelo pai se necessário.
+        if (!value.trim()) return;
+        onAnalyze(value);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -35,13 +43,14 @@ export const AIInputWidget: React.FC<AIInputWidgetProps> = ({ onAnalyze, isAnaly
         setIsRecording(!isRecording);
         if (!isRecording) {
             console.log("Microfone ativado...");
+            // Futuro: Implementar Web Speech API aqui e chamar onChange(transcrição)
         }
     };
 
     return (
         <div className="bg-base-metallic border-t border-gray-700 p-3 flex flex-col h-full">
             
-            {/* Header do Widget com o Ícone de Cérebro */}
+            {/* Header do Widget */}
             <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center space-x-2">
                     <FaBrain className="text-accent-primary w-4 h-4" />
@@ -59,16 +68,14 @@ export const AIInputWidget: React.FC<AIInputWidgetProps> = ({ onAnalyze, isAnaly
 
             <div className="flex-1 relative">
                 <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
+                    value={value} // Controlado pelo Pai
+                    onChange={(e) => onChange(e.target.value)} // Atualiza o Pai
                     onKeyDown={handleKeyDown}
                     className="w-full h-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-white resize-none focus:ring-1 focus:ring-accent-primary focus:border-accent-primary focus:outline-none scrollbar-thin scrollbar-thumb-gray-700 placeholder-gray-500"
-                    // Placeholder restaurado conforme pedido
                     placeholder="Digite uma nota, cole um e-mail ou use o microfone..."
                     disabled={isAnalyzing}
                 />
                 
-                {/* Botão de Microfone Flutuante */}
                 <button 
                     onClick={handleMicClick}
                     className={`absolute bottom-2 right-2 p-2 rounded-full transition ${isRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-gray-800 text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500'}`}
@@ -81,7 +88,7 @@ export const AIInputWidget: React.FC<AIInputWidgetProps> = ({ onAnalyze, isAnaly
             <div className="mt-2">
                 <button
                     onClick={handleSend}
-                    disabled={isAnalyzing || !text.trim()}
+                    disabled={isAnalyzing || !value.trim()}
                     className="w-full flex items-center justify-center py-2 bg-accent-primary hover:bg-orange-600 text-base-dark font-bold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-xs shadow-lg transform active:scale-95"
                 >
                     {isAnalyzing ? 'Analisando...' : <><FaPaperPlane className="mr-2" /> Enviar para Análise</>}

@@ -1,20 +1,21 @@
 // src/core/components/client/ClientForm.tsx
 
 import React, { useState, useEffect } from 'react';
-import { FaMapMarkerAlt, FaExclamationTriangle, FaSave } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaExclamationTriangle, FaSave, FaStickyNote } from 'react-icons/fa';
 import { useClientMutation } from '@/core/hooks/useClientMutation';
 import { Client, AddressType } from '@/core/types/client';
 
 interface ClientFormProps {
     client?: Client;
-    onSuccess: () => void;
+    // MODIFICAÇÃO: onSuccess agora recebe o cliente salvo/atualizado
+    onSuccess: (savedClient: Client) => void;
     showSubmitButton?: boolean;
 }
 
 /**
  * @component ClientForm
- * @description Formulário unificado para Criação e Edição de Clientes.
- * @update Adicionada persistência do ID do endereço para evitar erros de constraint no backend.
+ * @description Formulário unificado.
+ * @update Agora retorna o objeto Client no callback onSuccess para atualização imediata do estado pai.
  */
 export const ClientForm: React.FC<ClientFormProps> = ({ 
     client, 
@@ -25,14 +26,14 @@ export const ClientForm: React.FC<ClientFormProps> = ({
     const { createClient, updateClient, isLoading, error } = useClientMutation();
     const isEditing = !!client;
 
-    // Estado Inicial (Template)
     const initialFormState = {
         name: '',
         document: '',
         email: '',
         phone: '',
+        userNotes: '',
         address: {
-            id: '', // <--- NOVO: Campo para rastrear o ID do endereço
+            id: '',
             street: '',
             number: '',
             district: '',
@@ -44,7 +45,6 @@ export const ClientForm: React.FC<ClientFormProps> = ({
 
     const [formData, setFormData] = useState(initialFormState);
 
-    // Efeito: Hidrata o formulário
     useEffect(() => {
         if (client) {
             const mainAddress = client.addresses?.find(a => a.type === AddressType.MAIN) || client.addresses?.[0];
@@ -54,8 +54,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                 document: client.document || '',
                 email: client.email || '',
                 phone: client.phone || '',
+                userNotes: client.userNotes || '',
                 address: {
-                    id: mainAddress?.id || '', // <--- NOVO: Captura o ID existente
+                    id: mainAddress?.id || '',
                     street: mainAddress?.street || '',
                     number: mainAddress?.number || '',
                     district: mainAddress?.district || '',
@@ -69,8 +70,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
         }
     }, [client]);
 
-    // Handlers
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
@@ -84,13 +84,11 @@ export const ClientForm: React.FC<ClientFormProps> = ({
         }));
     };
 
-    // Submissão
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Monta payload de endereço
         const addressesToSend = formData.address.street.trim() ? [{
-            id: formData.address.id || undefined, // <--- NOVO: Envia o ID para update (ou undefined para create)
+            id: formData.address.id || undefined,
             street: formData.address.street,
             number: formData.address.number || 'S/N',
             district: formData.address.district || 'Centro',
@@ -105,16 +103,19 @@ export const ClientForm: React.FC<ClientFormProps> = ({
             document: formData.document.trim() || undefined,
             email: formData.email.trim() || undefined,
             phone: formData.phone.trim() || undefined,
+            userNotes: formData.userNotes || undefined,
             addresses: addressesToSend
         };
 
         try {
+            let result: Client;
             if (isEditing && client) {
-                await updateClient(client.id, payload);
+                result = await updateClient(client.id, payload);
             } else {
-                await createClient(payload);
+                result = await createClient(payload);
             }
-            onSuccess();
+            // Passa o resultado para o pai (atualiza a tela sem fetch extra)
+            onSuccess(result);
         } catch (err) {
             console.error("Erro no formulário:", err);
         }
@@ -130,7 +131,6 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                 </div>
             )}
 
-            {/* --- BLOCO 1: DADOS BÁSICOS --- */}
             <div className="space-y-4">
                 <div>
                     <label className="block text-[10px] font-bold text-accent-primary uppercase mb-1 tracking-wider">
@@ -166,7 +166,6 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                 </div>
             </div>
 
-            {/* --- BLOCO 2: ENDEREÇO (CARD VISUAL) --- */}
             <div className="bg-gray-800/40 p-4 rounded-xl border border-gray-700/50">
                 <label className="text-[10px] font-bold text-gray-300 uppercase mb-3 flex items-center tracking-wider">
                     <FaMapMarkerAlt className="mr-1.5 text-accent-secondary" /> Endereço Principal
@@ -202,7 +201,6 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                 </div>
             </div>
 
-            {/* --- BLOCO 3: DOCS --- */}
             <div>
                 <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">
                     CPF / CNPJ
@@ -211,6 +209,20 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                     type="text" name="document" value={formData.document} onChange={handleChange}
                     className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition font-mono" 
                     placeholder="000.000.000-00"
+                />
+            </div>
+
+            <div className="pt-2 border-t border-gray-700/50">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2 tracking-wider flex items-center">
+                    <FaStickyNote className="mr-1.5 text-yellow-500/70" /> Notas Privadas (Não lidas pela IA)
+                </label>
+                <textarea
+                    name="userNotes"
+                    value={formData.userNotes}
+                    onChange={handleChange}
+                    rows={4}
+                    className="w-full px-3 py-2.5 bg-gray-800/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-yellow-500/50 transition placeholder-gray-600 resize-y"
+                    placeholder="Digite observações internas sobre este cliente..."
                 />
             </div>
 

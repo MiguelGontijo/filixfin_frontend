@@ -4,6 +4,7 @@
 
 import React, { useState } from 'react';
 import { FaWhatsapp, FaTelegram, FaPaperPlane } from 'react-icons/fa';
+import { api } from '@/core/services/api'; // Importação da API para o refresh manual
 
 // --- HOOKS ---
 import { useCRMIntelligence } from '@/features/crm/hooks/useCRMIntelligence';
@@ -11,7 +12,6 @@ import { useCRMIntelligence } from '@/features/crm/hooks/useCRMIntelligence';
 import { ClientListWidget } from '@/features/crm/components/client-widget/ClientListWidget';
 import { AIInputWidget } from '@/features/crm/components/ai-widget/AIInputWidget';
 import { AnalysisActionCard } from '@/features/crm/components/AnalysisActionCard';
-// Importamos o componente e o Tipo de modo
 import { ClientDashboard, DashboardMode } from '@/features/crm/components/client-dashboard/ClientDashboard';
 // --- TIPOS ---
 import { Client } from '@/core/types/client';
@@ -20,12 +20,16 @@ import { WhatsAppWidget } from '@/features/crm/components/communication/WhatsApp
 /**
  * @component CRMPage
  * @description Workstation CRM 2.0 - Hub Centralizado
- * @update Refatoração Completa: Eliminação de Modais e correção de fluxo de estado pai/filho.
+ * @update Tipagem corrigida nas chamadas de API (Axios Generics).
  */
 export default function CRMPage() {
     
     // 1. ESTADOS DE INTELIGÊNCIA
     const { analyzeText, isAnalyzing, analysisResult, error: aiError, clearAnalysis } = useCRMIntelligence();
+    
+    // Texto do input da IA (Estado elevado para permitir limpeza)
+    const [aiInputText, setAiInputText] = useState('');
+    // Texto original capturado no momento do envio (para o Card de Ação)
     const [originalText, setOriginalText] = useState('');
 
     // 2. ESTADOS DE CONTEXTO E NAVEGAÇÃO
@@ -33,7 +37,6 @@ export default function CRMPage() {
     const [refreshListTrigger, setRefreshListTrigger] = useState(0);
     
     // --- NOVO: Controle de Modo do Painel Central ---
-    // Substitui os estados de modal (isOpen) e flags internas (isEditing)
     const [dashboardMode, setDashboardMode] = useState<DashboardMode>('VIEW');
 
     // 3. ESTADOS DE UI (CHAT)
@@ -62,9 +65,22 @@ export default function CRMPage() {
     };
 
     // Callback: Sucesso no salvamento (Formulário completou)
-    const handleUpdateSuccess = () => {
-        setRefreshListTrigger(prev => prev + 1); // Recarrega a lista lateral
-        setDashboardMode('VIEW'); // Retorna o painel para modo de visualização
+    const handleUpdateSuccess = async () => {
+        // 1. Atualiza a lista lateral para refletir mudanças (ex: nome)
+        setRefreshListTrigger(prev => prev + 1);
+        // 2. Retorna o painel para modo de visualização
+        setDashboardMode('VIEW'); 
+        
+        // 3. RE-HIDRATAÇÃO DO CONTEXTO (Refresh dos dados em tela)
+        if (contextClient?.id) {
+            try {
+                // CORREÇÃO: Adicionado <Client> para tipar o retorno do Axios
+                const res = await api.get<Client>(`/client/${contextClient.id}`);
+                setContextClient(res.data); 
+            } catch (err) {
+                console.error("Erro ao recarregar dados do cliente após edição:", err);
+            }
+        }
     };
 
     // --- HANDLERS DE IA ---
@@ -74,10 +90,27 @@ export default function CRMPage() {
         await analyzeText(text, contextClient?.id);
     };
 
-    const handleAnalysisSuccess = () => {
+    const handleAnalysisSuccess = async () => {
+        // 1. Atualiza a lista lateral
         setRefreshListTrigger(prev => prev + 1);
+        
+        // 2. Limpa o card de ação (UI)
         clearAnalysis();
+        
+        // 3. Limpa o Input da IA (UX)
+        setAiInputText(''); 
         setOriginalText('');
+
+        // 4. Recarrega o Cliente Atual (Refresh Context)
+        if (contextClient?.id) {
+            try {
+                // CORREÇÃO: Adicionado <Client> para tipar o retorno do Axios
+                const res = await api.get<Client>(`/client/${contextClient.id}`);
+                setContextClient(res.data); 
+            } catch (err) {
+                console.error("Falha ao re-hidratar contexto do cliente após análise:", err);
+            }
+        }
     };
 
     return (
@@ -103,6 +136,8 @@ export default function CRMPage() {
                     {/* 1.2 Console de IA */}
                     <div className="h-64 flex-shrink-0 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
                         <AIInputWidget 
+                            value={aiInputText}    // Controlado
+                            onChange={setAiInputText} // Controlado
                             onAnalyze={handleAnalyzeRequest}
                             isAnalyzing={isAnalyzing}
                         />
@@ -115,7 +150,6 @@ export default function CRMPage() {
                   ================================================================*/}
                 <div className="col-span-6 h-full flex flex-col gap-4">
                     
-                    {/* ÁREA DE ERRO (GLOBAL DA IA) */}
                     {aiError && (
                         <div className="bg-red-900/40 border border-red-500/50 p-3 rounded-lg text-sm text-red-200 flex items-center justify-between animate-fade-in">
                             <span><strong>Erro na IA:</strong> {aiError}</span>
@@ -123,9 +157,7 @@ export default function CRMPage() {
                         </div>
                     )}
 
-                    {/* CONTEÚDO DINÂMICO */}
                     {analysisResult ? (
-                        // MODO AÇÃO IA: Prioridade máxima (sobrepõe o dashboard)
                         <div className="flex-1 overflow-y-auto pr-1">
                             <AnalysisActionCard 
                                 analysis={analysisResult}
@@ -135,13 +167,12 @@ export default function CRMPage() {
                             />
                         </div>
                     ) : (
-                        // MODO DASHBOARD (View/Edit/Create)
                         <div className="flex-1 h-full">
                             <ClientDashboard 
                                 client={contextClient}
-                                mode={dashboardMode} // <--- AQUI ESTAVA O PROBLEMA: Agora passamos o estado correto
-                                onModeChange={setDashboardMode} // <--- AQUI: Passamos a função para o filho
-                                onUpdateSuccess={handleUpdateSuccess} // Callback de refresh
+                                mode={dashboardMode} 
+                                onModeChange={setDashboardMode} 
+                                onUpdateSuccess={handleUpdateSuccess} 
                             />
                         </div>
                     )}

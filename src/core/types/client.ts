@@ -1,13 +1,11 @@
 // src/core/types/client.ts
 
-// Enum para Tipos de Endereço
 export enum AddressType {
     MAIN = 'MAIN',
     BILLING = 'BILLING',
     SHIPPING = 'SHIPPING'
 }
 
-// Interface para o Objeto de Endereço
 export interface ClientAddress {
     id: string;
     street: string;
@@ -20,7 +18,6 @@ export interface ClientAddress {
     type: AddressType;
 }
 
-// DTO para o Objeto de Endereço
 export interface AddressDto {
     street: string;
     number: string;
@@ -35,7 +32,7 @@ export interface AddressDto {
 /**
  * @interface Client
  * @description Tipagem para a Entidade Cliente.
- * @update Adicionado campo aiSummary (Memória de Longo Prazo).
+ * @update Adicionado userNotes (Notas Privadas).
  */
 export interface Client {
     id: string;
@@ -45,9 +42,12 @@ export interface Client {
     email: string | null;
     phone: string | null;
     
-    // --- NOVO: Resumo da IA ---
-    aiSummary: string | null; 
+    // IA Memory
+    aiSummary: string | null;
     
+    // Notas Privadas do Usuário ---
+    userNotes: string | null;
+
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -64,9 +64,8 @@ export interface CreateClientDto {
     document?: string; 
     email?: string;
     phone?: string;
-    
-    // --- NOVO ---
     aiSummary?: string;
+    userNotes?: string;
 
     addresses?: AddressDto[];
 }
@@ -81,9 +80,8 @@ export interface UpdateClientDto {
     email?: string;
     phone?: string;
     isActive?: boolean;
-    
-    // --- NOVO ---
     aiSummary?: string;
+    userNotes?: string;
 
     addresses?: AddressDto[];
 }
