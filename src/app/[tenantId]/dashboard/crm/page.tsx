@@ -3,111 +3,94 @@
 "use client";
 
 import React, { useState } from 'react';
-import { FaWhatsapp, FaTelegram, FaPaperPlane, FaUserSlash } from 'react-icons/fa';
+import { FaWhatsapp, FaTelegram, FaPaperPlane } from 'react-icons/fa';
 
 // --- HOOKS ---
 import { useCRMIntelligence } from '@/features/crm/hooks/useCRMIntelligence';
-
 // --- COMPONENTES (WIDGETS) ---
 import { ClientListWidget } from '@/features/crm/components/client-widget/ClientListWidget';
 import { AIInputWidget } from '@/features/crm/components/ai-widget/AIInputWidget';
 import { AnalysisActionCard } from '@/features/crm/components/AnalysisActionCard';
-import { ClientDashboard } from '@/features/crm/components/client-dashboard/ClientDashboard';
-
+// Importamos o componente e o Tipo de modo
+import { ClientDashboard, DashboardMode } from '@/features/crm/components/client-dashboard/ClientDashboard';
 // --- TIPOS ---
 import { Client } from '@/core/types/client';
-import { ClientModal } from '@/core/components/client/ClientModal';
+import { WhatsAppWidget } from '@/features/crm/components/communication/WhatsAppWidget';
 
 /**
  * @component CRMPage
- * @description Workstation CRM 2.0
- * Layout de 3 Colunas: Gestão/Input (Esq) | Inteligência/Dashboard (Centro) | Comunicação (Dir)
+ * @description Workstation CRM 2.0 - Hub Centralizado
+ * @update Refatoração Completa: Eliminação de Modais e correção de fluxo de estado pai/filho.
  */
 export default function CRMPage() {
     
     // 1. ESTADOS DE INTELIGÊNCIA
     const { analyzeText, isAnalyzing, analysisResult, error: aiError, clearAnalysis } = useCRMIntelligence();
-    
-    // 2. ESTADOS DE CONTEXTO (CLIENTE)
+    const [originalText, setOriginalText] = useState('');
+
+    // 2. ESTADOS DE CONTEXTO E NAVEGAÇÃO
     const [contextClient, setContextClient] = useState<Client | null>(null);
     const [refreshListTrigger, setRefreshListTrigger] = useState(0);
+    
+    // --- NOVO: Controle de Modo do Painel Central ---
+    // Substitui os estados de modal (isOpen) e flags internas (isEditing)
+    const [dashboardMode, setDashboardMode] = useState<DashboardMode>('VIEW');
 
     // 3. ESTADOS DE UI (CHAT)
     const [activeChatTab, setActiveChatTab] = useState<'WA' | 'TG'>('WA');
 
-    const [isClientModalOpen, setIsClientModalOpen] = useState(false);
-    const [clientToEdit, setClientToEdit] = useState<Client | undefined>(undefined);
+    // --- HANDLERS DE AÇÃO (Orquestrador) ---
     
-    // --- NOVOS HANDLERS DE MODAL ---
-    
+    // Ação: Botão "+ Novo" na lista lateral
     const handleOpenNewClient = () => {
-        setClientToEdit(undefined); // Modo Criação
-        setIsClientModalOpen(true);
+        setContextClient(null); // Limpa a seleção visual
+        setDashboardMode('CREATE'); // Força o painel central para modo de criação
     };
 
+    // Ação: Botão "Editar" (Lápis) no item da lista
     const handleOpenEditClient = (client: Client) => {
-        setClientToEdit(client); // Modo Edição
-        setIsClientModalOpen(true);
+        setContextClient(client); // Seleciona o cliente
+        setDashboardMode('EDIT'); // Força o painel central para modo de edição
     };
 
-    const handleModalSuccess = () => {
-        // Atualiza a lista (Esquerda)
-        setRefreshListTrigger(prev => prev + 1);
-        
-        // Se estávamos editando o cliente que estava em foco (Centro), atualizamos o contexto dele
-        if (clientToEdit && contextClient && clientToEdit.id === contextClient.id) {
-             // Hack sênior: Como não temos o objeto atualizado aqui (só o void do sucesso), 
-             // confiamos que a lista vai recarregar, ou poderíamos buscar byId.
-             // Por simplicidade visual imediata, mantemos assim.
-        }
-        
-        setIsClientModalOpen(false);
-        setClientToEdit(undefined);
-    };
-
-    // --- HANDLERS ---
-    const handleDashboardUpdateSuccess = () => {
-        setRefreshListTrigger(prev => prev + 1);
-        // Opcional: Se quiser, recarregue também o contextClient buscando do backend pelo ID
-        // Para MVP, a lista recarrega e se clicar de novo atualiza.
-    };
-    
+    // Ação: Clique simples no card da lista
     const handleClientSelect = (client: Client | null) => {
         setContextClient(client);
-        // Se mudar o cliente, limpamos qualquer análise anterior pendente para evitar confusão
-        if (analysisResult) clearAnalysis();
+        setDashboardMode('VIEW'); // Garante que voltemos para visualização ao trocar de cliente
+        
+        if (analysisResult) clearAnalysis(); // Limpa qualquer análise de IA pendente do cliente anterior
     };
 
-    // Recebe o texto do AIInputWidget e dispara a análise
+    // Callback: Sucesso no salvamento (Formulário completou)
+    const handleUpdateSuccess = () => {
+        setRefreshListTrigger(prev => prev + 1); // Recarrega a lista lateral
+        setDashboardMode('VIEW'); // Retorna o painel para modo de visualização
+    };
+
+    // --- HANDLERS DE IA ---
+
     const handleAnalyzeRequest = async (text: string) => {
-        // FUTURO: Aqui injetaremos o 'contextClient' no prompt para o RAG
-        await analyzeText(text);
+        setOriginalText(text);
+        await analyzeText(text, contextClient?.id);
     };
 
     const handleAnalysisSuccess = () => {
-        setRefreshListTrigger(prev => prev + 1); // Atualiza a lista da esquerda
-        clearAnalysis(); // Limpa o card de ação, voltando para o Dashboard
-    };
-
-    const handleEditRequest = (client: Client) => {
-        // Este handler pode ser usado para abrir o Modal de Edição diretamente do Dashboard
-        // Por enquanto, o ClientListWidget já gerencia isso, mas podemos conectar futuramente.
-        console.log("Solicitação de edição via Dashboard:", client.name);
+        setRefreshListTrigger(prev => prev + 1);
+        clearAnalysis();
+        setOriginalText('');
     };
 
     return (
         <div className="h-[calc(100vh-8rem)] min-h-[600px] w-full">
             
             <div className="grid grid-cols-12 gap-4 h-full">
-                
                 {/* ================================================================
                   COLUNA 1 (ESQUERDA): GESTÃO & INPUT
                   Span: 3
-                  ================================================================
-                */}
+                  ================================================================*/}
                 <div className="col-span-3 flex flex-col gap-4 h-full">
                     
-                    {/* 1.1 Lista de Clientes (Ocupa o espaço restante) */}
+                    {/* 1.1 Lista de Clientes */}
                     <div className="flex-1 min-h-0 overflow-hidden rounded-xl shadow-lg border border-gray-700 bg-base-metallic">
                         <ClientListWidget 
                             onSelectClient={handleClientSelect} 
@@ -117,7 +100,7 @@ export default function CRMPage() {
                         />
                     </div>
 
-                    {/* 1.2 Console de IA (Fixo na base) */}
+                    {/* 1.2 Console de IA */}
                     <div className="h-64 flex-shrink-0 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
                         <AIInputWidget 
                             onAnalyze={handleAnalyzeRequest}
@@ -126,12 +109,10 @@ export default function CRMPage() {
                     </div>
                 </div>
 
-
                 {/* ================================================================
-                  COLUNA 2 (CENTRO): O PALCO (DASHBOARD OU AÇÃO)
+                  COLUNA 2 (CENTRO): O PALCO (DASHBOARD UNIFICADO)
                   Span: 6
-                  ================================================================
-                */}
+                  ================================================================*/}
                 <div className="col-span-6 h-full flex flex-col gap-4">
                     
                     {/* ÁREA DE ERRO (GLOBAL DA IA) */}
@@ -144,32 +125,32 @@ export default function CRMPage() {
 
                     {/* CONTEÚDO DINÂMICO */}
                     {analysisResult ? (
-                        // MODO AÇÃO: A IA detectou algo e pede confirmação
+                        // MODO AÇÃO IA: Prioridade máxima (sobrepõe o dashboard)
                         <div className="flex-1 overflow-y-auto pr-1">
                             <AnalysisActionCard 
                                 analysis={analysisResult}
-                                content="Texto original processado..." // Futuro: Passar o texto real se necessário
+                                content={originalText}
                                 contextClient={contextClient}
                                 onSuccess={handleAnalysisSuccess}
                             />
                         </div>
                     ) : (
-                        // MODO VISUALIZAÇÃO: Dashboard do Cliente Selecionado
+                        // MODO DASHBOARD (View/Edit/Create)
                         <div className="flex-1 h-full">
                             <ClientDashboard 
-                                client={contextClient} 
-                                onUpdateSuccess={handleDashboardUpdateSuccess}
+                                client={contextClient}
+                                mode={dashboardMode} // <--- AQUI ESTAVA O PROBLEMA: Agora passamos o estado correto
+                                onModeChange={setDashboardMode} // <--- AQUI: Passamos a função para o filho
+                                onUpdateSuccess={handleUpdateSuccess} // Callback de refresh
                             />
                         </div>
                     )}
                 </div>
 
-
                 {/* ================================================================
                   COLUNA 3 (DIREITA): COMUNICAÇÃO (OMNICHANNEL)
                   Span: 3
-                  ================================================================
-                */}
+                  ================================================================*/}
                 <div className="col-span-3 bg-base-metallic rounded-xl border border-gray-700 flex flex-col overflow-hidden shadow-lg h-full">
                     
                     {/* Header de Abas */}
@@ -188,20 +169,14 @@ export default function CRMPage() {
                         </button>
                     </div>
 
-                    {/* Área de Chat (Placeholder) */}
-                    <div className="flex-1 overflow-y-auto bg-gray-900/50 p-4">
-                        {contextClient ? (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-600 opacity-60">
-                                {activeChatTab === 'WA' ? <FaWhatsapp className="w-12 h-12 mb-3" /> : <FaTelegram className="w-12 h-12 mb-3" />}
-                                <p className="text-xs text-center">
-                                    Histórico de conversas com <strong>{contextClient.name}</strong> vazio.
-                                    <br/>(Integração de API pendente)
-                                </p>
-                            </div>
+                    {/* Área de Chat */}
+                    <div className="flex-1 overflow-hidden relative bg-gray-900/50">
+                        {activeChatTab === 'WA' ? (
+                            <WhatsAppWidget />
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-700 opacity-40">
-                                <FaUserSlash className="w-10 h-10 mb-2" />
-                                <p className="text-xs text-center">Selecione um cliente para ver o chat.</p>
+                            <div className="h-full flex flex-col items-center justify-center text-gray-600 opacity-60 p-4">
+                                <FaTelegram className="w-12 h-12 mb-3" />
+                                <p className="text-xs text-center">Integração com Telegram em desenvolvimento.</p>
                             </div>
                         )}
                     </div>
@@ -221,15 +196,7 @@ export default function CRMPage() {
                         </div>
                     </div>
                 </div>
-
             </div>
-            {/* Modal de Cliente (Criação/Edição) */}
-            <ClientModal
-                isOpen={isClientModalOpen}
-                onClose={() => setIsClientModalOpen(false)}
-                onSuccess={handleModalSuccess}
-                currentClient={clientToEdit} 
-            />
         </div>
     );
 }

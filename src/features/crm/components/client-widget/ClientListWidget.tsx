@@ -4,10 +4,9 @@ import React, { useState } from 'react';
 import { FaUser, FaPlus, FaExclamationTriangle } from 'react-icons/fa';
 import { useClients } from '@/core/hooks/useClients';
 import { Client } from '@/core/types/client';
-import { ClientModal } from '@/core/components/client/ClientModal';
+// REMOVIDO: import { ClientModal } ... (O modal não deve mais existir aqui)
 import { ClientSearchInput } from './ClientSearchInput';
 import { ClientListItem } from './ClientListItem';
-// NOVO IMPORT: Hook de Mutação para o Delete
 import { useClientMutation } from '@/core/hooks/useClientMutation';
 
 interface ClientListWidgetProps {
@@ -33,29 +32,20 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
         refreshData 
     } = useClients(refreshTrigger);
 
-    // Hook de Mutação para ações destrutivas/edição
     const { deleteClient, updateClient, isLoading: isMutating } = useClientMutation();
-
     const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
     
-    
+    // REMOVIDO: Estado local do modal (isModalOpen) - A página pai gerencia isso agora.
+
     // --- HANDLERS ---
 
-    /**
-     * @method handleSelect
-     * @description Gerencia a seleção e "deseleção" (Toggle) de um cliente.
-     * @update Agora verifica se o ID já está selecionado para limpar o estado (Toggle).
-     */
     const handleSelect = (client: Client) => {
-        // Verifica se o cliente clicado JÁ É o que estava selecionado
         if (selectedClientId === client.id) {
-            // CENÁRIO: Desmarcar (Limpar Seleção)
             setSelectedClientId(null);
             if (onSelectClient) {
-                onSelectClient(null); // Avisa ao pai que não tem mais contexto
+                onSelectClient(null);
             }
         } else {
-            // CENÁRIO: Marcar Novo
             setSelectedClientId(client.id);
             if (onSelectClient) {
                 onSelectClient(client);
@@ -63,22 +53,15 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
         }
     };
 
-    const handleSuccessCreateOrUpdate = () => {
-        refreshData(); // Atualiza a lista
-    };
-
+    // Handler direto: Apenas repassa a intenção para o Pai (CRMPage)
     const handleNewClient = () => {
-        onNewClient();
+        onNewClient(); 
     };
 
     const handleEdit = (client: Client) => {
         onEditClient(client);
     };
 
-/**
-     * @method handleDelete
-     * @description Agora atua como um Toggle Inteligente (Ativar/Desativar).
-     */
     const handleDelete = async (client: Client) => {
         const isActive = client.isActive;
         const actionText = isActive ? 'mover para a lixeira' : 'reativar';
@@ -87,14 +70,11 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
         if (confirm(confirmText)) {
             try {
                 if (isActive) {
-                    // Se está ativo, desativa (Soft Delete)
                     await deleteClient(client.id);
                 } else {
-                    // Se está inativo, reativa (Update simples)
                     await updateClient(client.id, { isActive: true });
                 }
-                // Atualiza a lista visualmente
-                refreshData(); 
+                refreshData();
             } catch (error) {
                 console.error("Falha ao alterar status:", error);
                 alert(`Erro ao ${actionText} cliente.`);
@@ -154,7 +134,6 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
                         client={client}
                         onClick={handleSelect}
                         isSelected={selectedClientId === client.id}
-                        // NOVAS PROPS CONECTADAS
                         onEdit={handleEdit}
                         onDelete={handleDelete}
                     />
@@ -165,6 +144,7 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
                 {clients.length} registro(s) carregado(s)
             </div>
 
+            {/* REMOVIDO: <ClientModal ... /> - Não renderizamos mais o modal aqui */}
         </div>
     );
 };

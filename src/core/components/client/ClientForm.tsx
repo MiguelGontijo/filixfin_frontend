@@ -1,44 +1,75 @@
-// src/features/crm/components/client-dashboard/ClientForm.tsx
+// src/core/components/client/ClientForm.tsx
 
 import React, { useState, useEffect } from 'react';
-import { FaMapMarkerAlt, FaExclamationTriangle } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaExclamationTriangle, FaSave } from 'react-icons/fa';
 import { useClientMutation } from '@/core/hooks/useClientMutation';
 import { Client, AddressType } from '@/core/types/client';
 
 interface ClientFormProps {
-    client: Client;
+    client?: Client;
     onSuccess: () => void;
+    showSubmitButton?: boolean;
 }
 
 /**
  * @component ClientForm
- * @description Formulário de Edição In-Place para o Dashboard do Cliente.
- * @note Este componente é controlado remotamente pelo botão "Salvar" do Header via ID do form.
+ * @description Formulário unificado para Criação e Edição de Clientes.
+ * @update Adicionada persistência do ID do endereço para evitar erros de constraint no backend.
  */
-export const ClientForm: React.FC<ClientFormProps> = ({ client, onSuccess }) => {
+export const ClientForm: React.FC<ClientFormProps> = ({ 
+    client, 
+    onSuccess, 
+    showSubmitButton = true 
+}) => {
     
-    const { updateClient, isLoading, error } = useClientMutation();
+    const { createClient, updateClient, isLoading, error } = useClientMutation();
+    const isEditing = !!client;
 
-    // --- ESTADO DO FORMULÁRIO ---
-    // Inicializamos diretamente com os dados do cliente passado via prop
-    const mainAddress = client.addresses?.find(a => a.type === AddressType.MAIN) || client.addresses?.[0];
-
-    const [formData, setFormData] = useState({
-        name: client.name,
-        document: client.document || '',
-        email: client.email || '',
-        phone: client.phone || '',
+    // Estado Inicial (Template)
+    const initialFormState = {
+        name: '',
+        document: '',
+        email: '',
+        phone: '',
         address: {
-            street: mainAddress?.street || '',
-            number: mainAddress?.number || '',
-            district: mainAddress?.district || '',
-            city: mainAddress?.city || '',
-            state: mainAddress?.state || '',
-            zipCode: mainAddress?.zipCode || ''
+            id: '', // <--- NOVO: Campo para rastrear o ID do endereço
+            street: '',
+            number: '',
+            district: '',
+            city: '',
+            state: '',
+            zipCode: ''
         }
-    });
+    };
 
-    // Handlers de Input
+    const [formData, setFormData] = useState(initialFormState);
+
+    // Efeito: Hidrata o formulário
+    useEffect(() => {
+        if (client) {
+            const mainAddress = client.addresses?.find(a => a.type === AddressType.MAIN) || client.addresses?.[0];
+            
+            setFormData({
+                name: client.name,
+                document: client.document || '',
+                email: client.email || '',
+                phone: client.phone || '',
+                address: {
+                    id: mainAddress?.id || '', // <--- NOVO: Captura o ID existente
+                    street: mainAddress?.street || '',
+                    number: mainAddress?.number || '',
+                    district: mainAddress?.district || '',
+                    city: mainAddress?.city || '',
+                    state: mainAddress?.state || '',
+                    zipCode: mainAddress?.zipCode || ''
+                }
+            });
+        } else {
+            setFormData(initialFormState);
+        }
+    }, [client]);
+
+    // Handlers
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
@@ -53,12 +84,13 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSuccess }) => 
         }));
     };
 
-    // Lógica de Submissão
+    // Submissão
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Monta payload
+        // Monta payload de endereço
         const addressesToSend = formData.address.street.trim() ? [{
+            id: formData.address.id || undefined, // <--- NOVO: Envia o ID para update (ou undefined para create)
             street: formData.address.street,
             number: formData.address.number || 'S/N',
             district: formData.address.district || 'Centro',
@@ -77,19 +109,20 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSuccess }) => 
         };
 
         try {
-            await updateClient(client.id, payload);
-            onSuccess(); // Avisa o pai que terminou
+            if (isEditing && client) {
+                await updateClient(client.id, payload);
+            } else {
+                await createClient(payload);
+            }
+            onSuccess();
         } catch (err) {
-            console.error("Erro no form:", err);
-            // O erro visual é tratado via variável 'error' do hook abaixo
+            console.error("Erro no formulário:", err);
         }
     };
 
     return (
-        // ID é crucial para o botão do Header encontrar este form
         <form id="client-edit-form" onSubmit={handleSubmit} className="space-y-5 animate-fade-in">
             
-            {/* Feedback de Erro */}
             {error && (
                 <div className="p-3 bg-red-900/30 border border-red-800 text-red-300 rounded-lg text-sm flex items-center">
                     <FaExclamationTriangle className="mr-2" />
@@ -99,7 +132,6 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSuccess }) => 
 
             {/* --- BLOCO 1: DADOS BÁSICOS --- */}
             <div className="space-y-4">
-                {/* Nome */}
                 <div>
                     <label className="block text-[10px] font-bold text-accent-primary uppercase mb-1 tracking-wider">
                         Nome Completo *
@@ -107,10 +139,10 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSuccess }) => 
                     <input 
                         type="text" name="name" value={formData.name} onChange={handleChange} required
                         className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:ring-1 focus:ring-accent-secondary focus:border-accent-secondary focus:outline-none transition placeholder-gray-600" 
+                        placeholder="Ex: João Silva ou Empresa Ltda"
                     />
                 </div>
 
-                {/* Contato (Grid) */}
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">
@@ -119,6 +151,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSuccess }) => 
                         <input 
                             type="email" name="email" value={formData.email} onChange={handleChange}
                             className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition" 
+                            placeholder="contato@email.com"
                         />
                     </div>
                     <div>
@@ -141,7 +174,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSuccess }) => 
                 
                 <div className="grid grid-cols-4 gap-3">
                     <div className="col-span-3">
-                        <input type="text" name="street" placeholder="Logradouro" value={formData.address.street} onChange={handleAddressChange}
+                        <input type="text" name="street" placeholder="Rua / Logradouro" value={formData.address.street} onChange={handleAddressChange}
                             className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
                     </div>
                     <div className="col-span-1">
@@ -177,12 +210,25 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSuccess }) => 
                 <input 
                     type="text" name="document" value={formData.document} onChange={handleChange}
                     className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition font-mono" 
+                    placeholder="000.000.000-00"
                 />
             </div>
 
-            {/* Loading State (Visual apenas, pois o botão está no header, mas podemos mostrar algo aqui se demorar muito) */}
-            {isLoading && (
-                <p className="text-xs text-center text-accent-secondary animate-pulse">Salvando alterações...</p>
+            {showSubmitButton && (
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold text-white bg-accent-secondary hover:bg-violet-600 transition disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95 mt-4"
+                >
+                    {isLoading ? (
+                        <span className="animate-pulse">{isEditing ? 'Salvando...' : 'Cadastrando...'}</span>
+                    ) : (
+                        <>
+                            <FaSave className="mr-2" />
+                            {isEditing ? 'Salvar Alterações' : 'Cadastrar Cliente'}
+                        </>
+                    )}
+                </button>
             )}
         </form>
     );

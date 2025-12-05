@@ -7111,7 +7111,7 @@ export default function ClientsPage() {
 "use client";
 
 import React, { useState } from 'react';
-import { FaWhatsapp, FaTelegram, FaPaperPlane, FaUserSlash } from 'react-icons/fa';
+import { FaWhatsapp, FaTelegram, FaPaperPlane } from 'react-icons/fa';
 
 // --- HOOKS ---
 import { useCRMIntelligence } from '@/features/crm/hooks/useCRMIntelligence';
@@ -7125,6 +7125,7 @@ import { ClientDashboard } from '@/features/crm/components/client-dashboard/Clie
 // --- TIPOS ---
 import { Client } from '@/core/types/client';
 import { ClientModal } from '@/core/components/client/ClientModal';
+import { WhatsAppWidget } from '@/features/crm/components/communication/WhatsAppWidget';
 
 /**
  * @component CRMPage
@@ -7173,8 +7174,7 @@ export default function CRMPage() {
         setClientToEdit(undefined);
     };
 
-    // --- HANDLERS ---
-        const handleClientSelect = (client: Client | null) => {
+    const handleClientSelect = (client: Client | null) => {
         setContextClient(client);
         // Se mudar o cliente, limpamos qualquer análise anterior pendente para evitar confusão
         if (analysisResult) clearAnalysis();
@@ -7182,8 +7182,8 @@ export default function CRMPage() {
 
     // Recebe o texto do AIInputWidget e dispara a análise
     const handleAnalyzeRequest = async (text: string) => {
-        // FUTURO: Aqui injetaremos o 'contextClient' no prompt para o RAG
-        await analyzeText(text);
+        // Passa o ID do cliente selecionado (se houver) para ativar o contexto RAG no Backend
+        await analyzeText(text, contextClient?.id);
     };
 
     const handleAnalysisSuccess = () => {
@@ -7191,22 +7191,14 @@ export default function CRMPage() {
         clearAnalysis(); // Limpa o card de ação, voltando para o Dashboard
     };
 
-    const handleEditRequest = (client: Client) => {
-        // Este handler pode ser usado para abrir o Modal de Edição diretamente do Dashboard
-        // Por enquanto, o ClientListWidget já gerencia isso, mas podemos conectar futuramente.
-        console.log("Solicitação de edição via Dashboard:", client.name);
-    };
-
     return (
         <div className="h-[calc(100vh-8rem)] min-h-[600px] w-full">
             
             <div className="grid grid-cols-12 gap-4 h-full">
-                
                 {/* ================================================================
                   COLUNA 1 (ESQUERDA): GESTÃO & INPUT
                   Span: 3
-                  ================================================================
-                */}
+                  ================================================================*/}
                 <div className="col-span-3 flex flex-col gap-4 h-full">
                     
                     {/* 1.1 Lista de Clientes (Ocupa o espaço restante) */}
@@ -7227,13 +7219,10 @@ export default function CRMPage() {
                         />
                     </div>
                 </div>
-
-
                 {/* ================================================================
                   COLUNA 2 (CENTRO): O PALCO (DASHBOARD OU AÇÃO)
                   Span: 6
-                  ================================================================
-                */}
+                  ================================================================*/}
                 <div className="col-span-6 h-full flex flex-col gap-4">
                     
                     {/* ÁREA DE ERRO (GLOBAL DA IA) */}
@@ -7260,18 +7249,15 @@ export default function CRMPage() {
                         <div className="flex-1 h-full">
                             <ClientDashboard 
                                 client={contextClient} 
-                                onEdit={handleEditRequest}
+                                onEdit={handleOpenEditClient}
                             />
                         </div>
                     )}
                 </div>
-
-
                 {/* ================================================================
                   COLUNA 3 (DIREITA): COMUNICAÇÃO (OMNICHANNEL)
                   Span: 3
-                  ================================================================
-                */}
+                  ================================================================*/}
                 <div className="col-span-3 bg-base-metallic rounded-xl border border-gray-700 flex flex-col overflow-hidden shadow-lg h-full">
                     
                     {/* Header de Abas */}
@@ -7291,24 +7277,26 @@ export default function CRMPage() {
                     </div>
 
                     {/* Área de Chat (Placeholder) */}
-                    <div className="flex-1 overflow-y-auto bg-gray-900/50 p-4">
-                        {contextClient ? (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-600 opacity-60">
-                                {activeChatTab === 'WA' ? <FaWhatsapp className="w-12 h-12 mb-3" /> : <FaTelegram className="w-12 h-12 mb-3" />}
+                    <div className="flex-1 overflow-hidden relative bg-gray-900/50">
+                        
+                        {activeChatTab === 'WA' ? (
+                            // --- INTEGRAÇÃO REAL: WIDGET DE WHATSAPP ---
+                            // Gerencia QR Code, Conexão e Status
+                            <WhatsAppWidget />
+                        ) : (
+                            // Placeholder para Telegram
+                            <div className="h-full flex flex-col items-center justify-center text-gray-600 opacity-60 p-4">
+                                <FaTelegram className="w-12 h-12 mb-3" />
                                 <p className="text-xs text-center">
-                                    Histórico de conversas com <strong>{contextClient.name}</strong> vazio.
-                                    <br/>(Integração de API pendente)
+                                    Integração com Telegram em desenvolvimento.
                                 </p>
                             </div>
-                        ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-700 opacity-40">
-                                <FaUserSlash className="w-10 h-10 mb-2" />
-                                <p className="text-xs text-center">Selecione um cliente para ver o chat.</p>
-                            </div>
                         )}
+
                     </div>
 
-                    {/* Input de Chat */}
+                    {/* Input de Chat (Visualmente mantido, mas desabilitado se não tiver cliente/conexão) */}
+                    {/* Nota: Futuramente, este input deve ser controlado pelo WhatsAppWidget ou useMessaging */}
                     <div className="p-3 border-t border-gray-700 bg-gray-800">
                         <div className="flex items-center space-x-2">
                             <input 
@@ -7323,8 +7311,8 @@ export default function CRMPage() {
                         </div>
                     </div>
                 </div>
-
             </div>
+
             {/* Modal de Cliente (Criação/Edição) */}
             <ClientModal
                 isOpen={isClientModalOpen}
@@ -9323,6 +9311,112 @@ export function useFeatures() {
 }
 
 
+// ===== FILE: src/core/hooks/useMessaging.ts =====
+
+// src/core/hooks/useMessaging.ts
+
+import { useState, useCallback } from 'react';
+import { api } from '@/core/services/api';
+import { ConnectionStatus, SendMessagePayload } from '@/core/types/messaging';
+
+/**
+ * @hook useMessaging
+ * @description Gerencia a integração com o provedor de mensageria (WhatsApp/Evolution API).
+ * Lida com estados de conexão, exibição de QR Code e envio de mensagens.
+ */
+export function useMessaging() {
+    
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    
+    // Estado da Conexão (QRCode, Status, Nome da Instância)
+    const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null);
+
+    /**
+     * @method checkStatus
+     * @description Verifica se a instância do Tenant já está conectada.
+     */
+    const checkStatus = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.get('/messaging/status');
+            setConnectionStatus(response.data as ConnectionStatus);
+        } catch (err: any) {
+            // Se der 404 ou erro, assumimos desconectado ou erro de serviço
+            console.error("Erro ao checar status:", err);
+            setError("Não foi possível verificar o status da conexão.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    /**
+     * @method connectSession
+     * @description Solicita a criação/conexão da instância. 
+     * Se não estiver conectada, o Backend retornará o QR Code neste payload.
+     */
+    const connectSession = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.post('/messaging/connect');
+            setConnectionStatus(response.data as ConnectionStatus);
+            return response.data as ConnectionStatus;
+        } catch (err: any) {
+            const msg = err.response?.data?.message || "Falha ao iniciar sessão do WhatsApp.";
+            setError(msg);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    /**
+     * @method disconnectSession
+     * @description Encerra a sessão e apaga a instância no provedor.
+     */
+    const disconnectSession = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            await api.post('/messaging/logout');
+            setConnectionStatus(null); // Limpa estado local
+        } catch (err: any) {
+            const msg = err.response?.data?.message || "Falha ao desconectar.";
+            setError(msg);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    /**
+     * @method sendMessage
+     * @description Envia mensagem de texto.
+     */
+    const sendMessage = useCallback(async (payload: SendMessagePayload) => {
+        // Não setamos isLoading global aqui para não travar a UI inteira, 
+        // mas poderia ser um state 'isSending'.
+        try {
+            await api.post('/messaging/send', payload);
+        } catch (err: any) {
+            console.error("Erro ao enviar mensagem:", err);
+            throw new Error("Falha no envio da mensagem via WhatsApp.");
+        }
+    }, []);
+
+    return {
+        connectionStatus,
+        isLoading,
+        error,
+        checkStatus,
+        connectSession,
+        disconnectSession,
+        sendMessage
+    };
+}
+
+
 // ===== FILE: src/core/hooks/useNavigation.ts =====
 
 // src/core/hooks/useNavigation.ts
@@ -10066,6 +10160,31 @@ export interface UpdateClientDto {
     aiSummary?: string;
 
     addresses?: AddressDto[];
+}
+
+
+// ===== FILE: src/core/types/messaging.ts =====
+
+// src/core/types/messaging.ts
+
+/**
+ * @interface ConnectionStatus
+ * @description Representa o estado da conexão com o provedor de mensagens (WhatsApp).
+ */
+export interface ConnectionStatus {
+    instanceName: string;
+    isConnected: boolean;
+    // Base64 do QR Code. Só vem preenchido se isConnected = false e solicitarmos conexão.
+    qrCode?: string; 
+}
+
+/**
+ * @interface SendMessagePayload
+ * @description DTO para envio de mensagens.
+ */
+export interface SendMessagePayload {
+    to: string;
+    content: string;
 }
 
 
@@ -12358,13 +12477,22 @@ export const AIInputWidget: React.FC<AIInputWidgetProps> = ({ onAnalyze, isAnaly
 
 // src/features/crm/components/client-dashboard/ClientDashboard.tsx
 
-import React, { useState } from 'react';
-import { FaUser, FaEdit, FaMagic, FaHistory, FaEnvelope, FaPhone, FaMapMarkerAlt, FaIdCard, FaBrain } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { 
+    FaUser, FaEdit, FaHistory, FaEnvelope, FaPhone, FaMapMarkerAlt, 
+    FaIdCard, FaBrain, FaSave, FaTimes, // Adicionados ícones de ação
+    FaMagic
+} from 'react-icons/fa';
 import { Client, AddressType } from '@/core/types/client';
+// IMPORTAÇÃO NECESSÁRIA PARA O MODO DE EDIÇÃO
+import { ClientForm } from './ClientForm';
+import { InteractionTimeline } from './InteractionTimeline';
 
 interface ClientDashboardProps {
     client: Client | null;
-    onEdit: (client: Client) => void;
+    onEdit: (client: Client) => void; // Mantido para compatibilidade, mas usaremos edição local
+    // NOVO CALLBACK: Para avisar a página que a edição terminou
+    onUpdateSuccess?: () => void; 
 }
 
 type DashboardTab = 'OVERVIEW' | 'TIMELINE';
@@ -12374,9 +12502,18 @@ type DashboardTab = 'OVERVIEW' | 'TIMELINE';
  * @description Painel Central: Exibe o "Dossiê" completo do cliente selecionado.
  * Inclui dados cadastrais, resumo de inteligência (Long-Term Memory) e histórico.
  */
-export const ClientDashboard: React.FC<ClientDashboardProps> = ({ client, onEdit }) => {
+export const ClientDashboard: React.FC<ClientDashboardProps> = ({ client, onEdit, onUpdateSuccess }) => {
     
     const [activeTab, setActiveTab] = useState<DashboardTab>('OVERVIEW');
+    
+    // --- NOVO ESTADO: Controle de Edição Local ---
+    const [isEditing, setIsEditing] = useState(false);
+
+    // Efeito para resetar a edição se o cliente mudar (clique na lista lateral)
+    useEffect(() => {
+        setIsEditing(false);
+        setActiveTab('OVERVIEW');
+    }, [client?.id]);
 
     // --- EMPTY STATE (Nenhum cliente selecionado) ---
     if (!client) {
@@ -12393,17 +12530,23 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ client, onEdit
         );
     }
 
-    // Helper para endereço principal
+    // Helper para endereço principal (Visualização)
     const mainAddress = client.addresses?.find(a => a.type === AddressType.MAIN) || client.addresses?.[0];
     const addressText = mainAddress 
         ? `${mainAddress.street}, ${mainAddress.number} - ${mainAddress.district}, ${mainAddress.city}/${mainAddress.state}`
         : 'Sem endereço cadastrado';
 
+    // Handler de sucesso do formulário
+    const handleFormSuccess = () => {
+        setIsEditing(false);
+        if (onUpdateSuccess) onUpdateSuccess();
+    };
+
     return (
         <div className="bg-base-metallic rounded-xl border border-gray-700 flex flex-col h-full overflow-hidden shadow-2xl relative">
             
             {/* --- HEADER DO CLIENTE --- */}
-            <div className="p-6 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900">
+            <div className="p-6 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900 flex-shrink-0">
                 <div className="flex justify-between items-start">
                     <div className="flex items-center space-x-4">
                         {/* Avatar / Ícone */}
@@ -12426,40 +12569,66 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ client, onEdit
                         </div>
                     </div>
 
-                    {/* Ações */}
-                    <button 
-                        onClick={() => onEdit(client)}
-                        className="p-2 text-gray-400 hover:text-white bg-gray-700/50 hover:bg-gray-700 rounded-lg transition border border-gray-600"
-                        title="Editar Dados"
-                    >
-                        <FaEdit className="w-4 h-4" />
-                    </button>
+                    {/* Ações do Header (Alternam entre Editar e Salvar) */}
+                    <div className="flex space-x-2">
+                        {isEditing ? (
+                            <>
+                                <button 
+                                    onClick={() => setIsEditing(false)}
+                                    className="flex items-center px-3 py-2 text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg transition text-xs font-bold border border-gray-600"
+                                >
+                                    <FaTimes className="mr-1" /> Cancelar
+                                </button>
+                                {/* O atributo form="client-edit-form" conecta este botão ao formulário 
+                                    renderizado lá embaixo, permitindo o submit à distância.
+                                */}
+                                <button 
+                                    type="submit"
+                                    form="client-edit-form"
+                                    className="flex items-center px-3 py-2 text-white bg-accent-secondary hover:bg-violet-600 rounded-lg transition text-xs font-bold shadow-lg"
+                                >
+                                    <FaSave className="mr-1" /> Salvar
+                                </button>
+                            </>
+                        ) : (
+                            <button 
+                                onClick={() => setIsEditing(true)}
+                                className="p-2 text-gray-400 hover:text-white bg-gray-700/50 hover:bg-gray-700 rounded-lg transition border border-gray-600"
+                                title="Editar Dados"
+                            >
+                                <FaEdit className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* --- NAVEGAÇÃO (TABS) --- */}
-            <div className="flex border-b border-gray-700 bg-gray-800/50 px-6">
-                <button 
-                    onClick={() => setActiveTab('OVERVIEW')}
-                    className={`py-3 px-4 text-sm font-bold border-b-2 transition ${activeTab === 'OVERVIEW' ? 'border-accent-primary text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
-                >
-                    Visão Geral & IA
-                </button>
-                <button 
-                    onClick={() => setActiveTab('TIMELINE')}
-                    className={`py-3 px-4 text-sm font-bold border-b-2 transition ${activeTab === 'TIMELINE' ? 'border-accent-primary text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
-                >
-                    Histórico de Interações
-                </button>
-            </div>
+            {/* Escondemos as abas durante a edição para limpar a visão */}
+            {!isEditing && (
+                <div className="flex border-b border-gray-700 bg-gray-800/50 px-6 flex-shrink-0">
+                    <button 
+                        onClick={() => setActiveTab('OVERVIEW')}
+                        className={`py-3 px-4 text-sm font-bold border-b-2 transition ${activeTab === 'OVERVIEW' ? 'border-accent-primary text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                    >
+                        Visão Geral & IA
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('TIMELINE')}
+                        className={`py-3 px-4 text-sm font-bold border-b-2 transition ${activeTab === 'TIMELINE' ? 'border-accent-primary text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+                    >
+                        Histórico de Interações
+                    </button>
+                </div>
+            )}
 
             {/* --- CONTEÚDO --- */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                 
                 {activeTab === 'OVERVIEW' && (
                     <div className="space-y-6 animate-fade-in">
                         
-                        {/* 1. MEMÓRIA DA IA (SUMMARY) */}
+                        {/* 1. MEMÓRIA DA IA (SUMMARY) - Sempre visível no topo */}
                         <div className="bg-gray-800/50 rounded-xl border border-gray-600 p-4 relative overflow-hidden group">
                             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-accent-secondary to-accent-primary"></div>
                             
@@ -12467,7 +12636,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ client, onEdit
                                 <h3 className="text-sm font-bold text-white flex items-center">
                                     <FaBrain className="mr-2 text-accent-primary" /> Dossiê Vivo (IA Memory)
                                 </h3>
-                                {/* Futuro: Botão para pedir para a IA regenerar o resumo */}
                             </div>
                             
                             <div className="text-sm text-gray-300 leading-relaxed">
@@ -12475,47 +12643,13 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ client, onEdit
                                     client.aiSummary
                                 ) : (
                                     <span className="text-gray-500 italic">
-                                        Ainda não há um resumo gerado pela Inteligência Artificial para este cliente. 
-                                        Realize interações para construir o perfil.
+                                        Ainda não há um resumo gerado pela Inteligência Artificial para este cliente.
                                     </span>
                                 )}
                             </div>
                         </div>
 
-                        {/* 2. DADOS DE CONTATO & ENDEREÇO */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Contato */}
-                            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Contato</h4>
-                                <div className="space-y-3">
-                                    <div className="flex items-center text-sm text-gray-200">
-                                        <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400">
-                                            <FaEnvelope />
-                                        </div>
-                                        <span className="truncate">{client.email || 'Não informado'}</span>
-                                    </div>
-                                    <div className="flex items-center text-sm text-gray-200">
-                                        <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400">
-                                            <FaPhone />
-                                        </div>
-                                        <span>{client.phone || 'Não informado'}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Endereço */}
-                            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Localização Principal</h4>
-                                <div className="flex items-start text-sm text-gray-200">
-                                    <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400 flex-shrink-0">
-                                        <FaMapMarkerAlt />
-                                    </div>
-                                    <span className="leading-relaxed">{addressText}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 3. FUTURO: Métricas (Vendas, Tickets) */}
+                        {/* 2. MÉTRICAS (Sempre visível) */}
                         <div className="grid grid-cols-3 gap-4 opacity-50 grayscale cursor-not-allowed" title="Em breve">
                             <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 text-center">
                                 <div className="text-2xl font-bold text-white">R$ 0,00</div>
@@ -12531,17 +12665,448 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ client, onEdit
                             </div>
                         </div>
 
+                        {/* 3. ÁREA DINÂMICA: LEITURA ou EDIÇÃO */}
+                        {/* Aqui fazemos a troca solicitada: Cards de Visualização OU Formulário */}
+                        
+                        {isEditing ? (
+                            // --- MODO EDIÇÃO: Formulário In-Place ---
+                            <div className="pt-2 border-t border-gray-700 animate-fade-in">
+                                <h4 className="text-xs font-bold text-accent-secondary uppercase mb-4">Editando Dados Cadastrais</h4>
+                                <ClientForm 
+                                    client={client} 
+                                    onSuccess={handleFormSuccess}
+                                />
+                            </div>
+                        ) : (
+                            // --- MODO VISUALIZAÇÃO: Cards Originais ---
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Contato */}
+                                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Contato</h4>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center text-sm text-gray-200">
+                                            <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400">
+                                                <FaEnvelope />
+                                            </div>
+                                            <span className="truncate">{client.email || 'Não informado'}</span>
+                                        </div>
+                                        <div className="flex items-center text-sm text-gray-200">
+                                            <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400">
+                                                <FaPhone />
+                                            </div>
+                                            <span>{client.phone || 'Não informado'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Endereço */}
+                                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Localização Principal</h4>
+                                    <div className="flex items-start text-sm text-gray-200">
+                                        <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400 flex-shrink-0">
+                                            <FaMapMarkerAlt />
+                                        </div>
+                                        <span className="leading-relaxed">{addressText}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                     </div>
                 )}
 
                 {activeTab === 'TIMELINE' && (
                     <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
-                        <FaHistory className="w-12 h-12 opacity-20" />
-                        <p>O histórico de interações será implementado na próxima etapa.</p>
-                        {/* Aqui entrará o componente <InteractionTimeline clientId={client.id} /> */}
+                        <InteractionTimeline clientId={client.id} />
+
                     </div>
                 )}
 
+            </div>
+        </div>
+    );
+};
+
+
+// ===== FILE: src/features/crm/components/client-dashboard/ClientForm.tsx =====
+
+// src/features/crm/components/client-dashboard/ClientForm.tsx
+
+import React, { useState, useEffect } from 'react';
+import { FaMapMarkerAlt, FaExclamationTriangle } from 'react-icons/fa';
+import { useClientMutation } from '@/core/hooks/useClientMutation';
+import { Client, AddressType } from '@/core/types/client';
+
+interface ClientFormProps {
+    client: Client;
+    onSuccess: () => void;
+}
+
+/**
+ * @component ClientForm
+ * @description Formulário de Edição In-Place para o Dashboard do Cliente.
+ * @note Este componente é controlado remotamente pelo botão "Salvar" do Header via ID do form.
+ */
+export const ClientForm: React.FC<ClientFormProps> = ({ client, onSuccess }) => {
+    
+    const { updateClient, isLoading, error } = useClientMutation();
+
+    // --- ESTADO DO FORMULÁRIO ---
+    // Inicializamos diretamente com os dados do cliente passado via prop
+    const mainAddress = client.addresses?.find(a => a.type === AddressType.MAIN) || client.addresses?.[0];
+
+    const [formData, setFormData] = useState({
+        name: client.name,
+        document: client.document || '',
+        email: client.email || '',
+        phone: client.phone || '',
+        address: {
+            street: mainAddress?.street || '',
+            number: mainAddress?.number || '',
+            district: mainAddress?.district || '',
+            city: mainAddress?.city || '',
+            state: mainAddress?.state || '',
+            zipCode: mainAddress?.zipCode || ''
+        }
+    });
+
+    // Handlers de Input
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData(prev => ({
+            ...prev,
+            address: {
+                ...prev.address,
+                [e.target.name]: e.target.value
+            }
+        }));
+    };
+
+    // Lógica de Submissão
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        // Monta payload
+        const addressesToSend = formData.address.street.trim() ? [{
+            street: formData.address.street,
+            number: formData.address.number || 'S/N',
+            district: formData.address.district || 'Centro',
+            city: formData.address.city || 'Indefinida',
+            state: formData.address.state || 'UF',
+            zipCode: formData.address.zipCode || '00000000',
+            type: AddressType.MAIN
+        }] : undefined;
+
+        const payload = {
+            name: formData.name,
+            document: formData.document.trim() || undefined,
+            email: formData.email.trim() || undefined,
+            phone: formData.phone.trim() || undefined,
+            addresses: addressesToSend
+        };
+
+        try {
+            await updateClient(client.id, payload);
+            onSuccess(); // Avisa o pai que terminou
+        } catch (err) {
+            console.error("Erro no form:", err);
+            // O erro visual é tratado via variável 'error' do hook abaixo
+        }
+    };
+
+    return (
+        // ID é crucial para o botão do Header encontrar este form
+        <form id="client-edit-form" onSubmit={handleSubmit} className="space-y-5 animate-fade-in">
+            
+            {/* Feedback de Erro */}
+            {error && (
+                <div className="p-3 bg-red-900/30 border border-red-800 text-red-300 rounded-lg text-sm flex items-center">
+                    <FaExclamationTriangle className="mr-2" />
+                    {error}
+                </div>
+            )}
+
+            {/* --- BLOCO 1: DADOS BÁSICOS --- */}
+            <div className="space-y-4">
+                {/* Nome */}
+                <div>
+                    <label className="block text-[10px] font-bold text-accent-primary uppercase mb-1 tracking-wider">
+                        Nome Completo *
+                    </label>
+                    <input 
+                        type="text" name="name" value={formData.name} onChange={handleChange} required
+                        className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:ring-1 focus:ring-accent-secondary focus:border-accent-secondary focus:outline-none transition placeholder-gray-600" 
+                    />
+                </div>
+
+                {/* Contato (Grid) */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">
+                            E-mail
+                        </label>
+                        <input 
+                            type="email" name="email" value={formData.email} onChange={handleChange}
+                            className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition" 
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">
+                            Telefone
+                        </label>
+                        <input 
+                            type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="(00) 00000-0000"
+                            className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition" 
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* --- BLOCO 2: ENDEREÇO (CARD VISUAL) --- */}
+            <div className="bg-gray-800/40 p-4 rounded-xl border border-gray-700/50">
+                <label className="text-[10px] font-bold text-gray-300 uppercase mb-3 flex items-center tracking-wider">
+                    <FaMapMarkerAlt className="mr-1.5 text-accent-secondary" /> Endereço Principal
+                </label>
+                
+                <div className="grid grid-cols-4 gap-3">
+                    <div className="col-span-3">
+                        <input type="text" name="street" placeholder="Logradouro" value={formData.address.street} onChange={handleAddressChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                    </div>
+                    <div className="col-span-1">
+                        <input type="text" name="number" placeholder="Nº" value={formData.address.number} onChange={handleAddressChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                    </div>
+                    
+                    <div className="col-span-2">
+                        <input type="text" name="district" placeholder="Bairro" value={formData.address.district} onChange={handleAddressChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                    </div>
+                    <div className="col-span-2">
+                        <input type="text" name="city" placeholder="Cidade" value={formData.address.city} onChange={handleAddressChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                    </div>
+                    
+                    <div className="col-span-1">
+                        <input type="text" name="state" placeholder="UF" maxLength={2} value={formData.address.state} onChange={handleAddressChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white uppercase focus:border-accent-secondary focus:outline-none" />
+                    </div>
+                    <div className="col-span-3">
+                        <input type="text" name="zipCode" placeholder="CEP" value={formData.address.zipCode} onChange={handleAddressChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                    </div>
+                </div>
+            </div>
+
+            {/* --- BLOCO 3: DOCS --- */}
+            <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">
+                    CPF / CNPJ
+                </label>
+                <input 
+                    type="text" name="document" value={formData.document} onChange={handleChange}
+                    className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition font-mono" 
+                />
+            </div>
+
+            {/* Loading State (Visual apenas, pois o botão está no header, mas podemos mostrar algo aqui se demorar muito) */}
+            {isLoading && (
+                <p className="text-xs text-center text-accent-secondary animate-pulse">Salvando alterações...</p>
+            )}
+        </form>
+    );
+};
+
+
+// ===== FILE: src/features/crm/components/client-dashboard/InteractionTimeline.tsx =====
+
+// src/features/crm/components/client-dashboard/InteractionTimeline.tsx
+
+import React, { useState } from 'react';
+import { 
+    FaStickyNote, FaMicrophone, FaEnvelope, FaHandshake, 
+    FaClock, FaSmile, FaFrown, FaMeh, FaExclamationTriangle, FaSync,
+    FaChevronDown, FaChevronUp 
+} from 'react-icons/fa';
+import { useClientTimeline } from '../../hooks/useClientTimeline';
+import { InteractionType, CRMInteraction } from '../../types';
+
+interface InteractionTimelineProps {
+    clientId: string;
+}
+
+// --- SUB-COMPONENTE: ITEM INDIVIDUAL DA TIMELINE ---
+// Extraído para gerenciar seu próprio estado de expansão
+const TimelineItem: React.FC<{ item: CRMInteraction }> = ({ item }) => {
+    
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    // Helpers Visuais (Movidos para dentro ou mantidos fora se puros)
+    const getIconByType = (type: InteractionType) => {
+        switch (type) {
+            case InteractionType.AUDIO: return <FaMicrophone className="text-blue-400" />;
+            case InteractionType.EMAIL: return <FaEnvelope className="text-purple-400" />;
+            case InteractionType.MEETING: return <FaHandshake className="text-orange-400" />;
+            case InteractionType.NOTE: default: return <FaStickyNote className="text-gray-400" />;
+        }
+    };
+
+    const getSentimentIcon = (sentiment?: string) => {
+        switch (sentiment) {
+            case 'POSITIVE': return <FaSmile className="text-green-500" title="Positivo" />;
+            case 'NEGATIVE': return <FaFrown className="text-red-500" title="Negativo" />;
+            case 'TENSE': return <FaExclamationTriangle className="text-orange-500" title="Tenso" />;
+            case 'NEUTRAL': default: return <FaMeh className="text-gray-500" title="Neutro" />;
+        }
+    };
+
+    const getSentimentBorder = (sentiment?: string) => {
+        switch (sentiment) {
+            case 'POSITIVE': return 'border-l-green-500';
+            case 'NEGATIVE': return 'border-l-red-500';
+            case 'TENSE': return 'border-l-orange-500';
+            default: return 'border-l-gray-600';
+        }
+    };
+
+    const formatDate = (dateString: string) => {
+        if (!dateString) return '-';
+        return new Date(dateString).toLocaleString('pt-BR', {
+            day: '2-digit', month: '2-digit', year: '2-digit',
+            hour: '2-digit', minute: '2-digit'
+        });
+    };
+
+    // PROTEÇÃO: Garante que content nunca seja null/undefined
+    const safeContent = item.content || ""; 
+    const isLongText = safeContent.length > 180 || safeContent.split('\n').length > 3;
+
+    return (
+        <div className="relative pl-6 group">
+            
+            {/* Bolinha da Linha do Tempo */}
+            <div className="absolute left-0 top-1 w-4 h-4 bg-gray-800 border-2 border-gray-600 rounded-full group-hover:border-accent-primary group-hover:scale-110 transition-all z-10"></div>
+
+            {/* Card da Interação (Clicável para expandir) */}
+            <div 
+                onClick={() => isLongText && setIsExpanded(!isExpanded)}
+                className={`bg-gray-800/50 rounded-lg border border-gray-700/50 p-3 shadow-sm transition-all duration-300 border-l-4 ${getSentimentBorder(item.aiAnalysis?.sentiment)} ${isLongText ? 'cursor-pointer hover:bg-gray-800 hover:shadow-md' : ''}`}
+            >
+                
+                {/* Header do Item */}
+                <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center space-x-2">
+                        <div className="p-1.5 bg-gray-700 rounded-md">
+                            {getIconByType(item.type)}
+                        </div>
+                        <div>
+                            <span className="text-xs font-bold text-white block uppercase tracking-wider">
+                                {item.type}
+                            </span>
+                            <span className="text-[10px] text-gray-400">
+                                {formatDate(item.createdAt)}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    {/* Ícone de Sentimento */}
+                    {item.aiAnalysis && (
+                        <div className="bg-gray-900 p-1 rounded-full">
+                            {getSentimentIcon(item.aiAnalysis.sentiment)}
+                        </div>
+                    )}
+                </div>
+
+                {/* Conteúdo com Clamp & Expand */}
+                <div className="relative">
+                    <p className={`text-sm text-gray-300 whitespace-pre-wrap leading-relaxed transition-all duration-500 ${isExpanded ? '' : 'line-clamp-3'}`}>
+                        {item.content}
+                    </p>
+                    
+                    {/* Botão Ler Mais (Só aparece se for longo e não estiver expandido) */}
+                    {isLongText && !isExpanded && (
+                        <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-gray-800/90 to-transparent flex items-end justify-center pointer-events-none">
+                            <span className="text-[10px] text-accent-primary font-bold flex items-center bg-gray-800/80 px-2 rounded">
+                                Ler mais <FaChevronDown className="ml-1" />
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Botão Ler Menos (Opcional, ou clicar no card para fechar) */}
+                {isLongText && isExpanded && (
+                    <div className="mt-2 flex justify-center border-t border-gray-700/30 pt-1">
+                         <span className="text-[10px] text-gray-500 flex items-center hover:text-white transition">
+                            <FaChevronUp className="mr-1" /> Recolher
+                        </span>
+                    </div>
+                )}
+
+                {/* Tags (Sempre visíveis se houver) */}
+                {item.aiAnalysis?.tags && item.aiAnalysis.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-gray-700/50">
+                        {item.aiAnalysis.tags.map((tag, idx) => (
+                            <span key={idx} className="px-2 py-0.5 bg-gray-700 text-gray-400 text-[10px] rounded-full">
+                                #{tag}
+                            </span>
+                        ))}
+                    </div>
+                )}
+
+            </div>
+        </div>
+    );
+};
+
+// --- COMPONENTE PRINCIPAL ---
+export const InteractionTimeline: React.FC<InteractionTimelineProps> = ({ clientId }) => {
+    
+    const { interactions, isLoading, error, refreshTimeline } = useClientTimeline(clientId);
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-3">
+                <FaSync className="animate-spin w-6 h-6 text-accent-secondary" />
+                <span className="text-xs">Carregando histórico...</span>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-4 text-center text-xs text-red-400 bg-red-900/10 rounded-lg">
+                <p>{error}</p>
+                <button onClick={() => refreshTimeline()} className="mt-2 underline hover:text-white">Tentar novamente</button>
+            </div>
+        );
+    }
+
+    if (interactions.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-gray-600 opacity-60">
+                <FaClock className="w-10 h-10 mb-2" />
+                <p className="text-sm">Nenhuma interação registrada.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="relative pl-4 space-y-6 py-2 animate-fade-in custom-scrollbar pr-2">
+            
+            {/* Linha Vertical Conectora */}
+            <div className="absolute left-2 top-4 bottom-4 w-0.5 bg-gray-700 pointer-events-none"></div>
+
+            {interactions.map((item) => (
+                <TimelineItem key={item.id} item={item} />
+            ))}
+            
+            {/* Marcador de Fim */}
+            <div className="relative pl-6 pt-2 opacity-50">
+                <div className="absolute left-[3px] top-3 w-2 h-2 bg-gray-700 rounded-full"></div>
+                <span className="text-[10px] text-gray-500">Início do relacionamento</span>
             </div>
         </div>
     );
@@ -12880,6 +13445,148 @@ export const ClientSearchInput: React.FC<ClientSearchInputProps> = ({
 };
 
 
+// ===== FILE: src/features/crm/components/communication/WhatsAppWidget.tsx =====
+
+// src/features/crm/components/communication/WhatsAppWidget.tsx
+
+import React, { useEffect } from 'react';
+import { FaWhatsapp, FaQrcode, FaUnlink, FaCheckCircle, FaSync, FaExclamationTriangle } from 'react-icons/fa';
+import { useMessaging } from '@/core/hooks/useMessaging';
+
+/**
+ * @component WhatsAppWidget
+ * @description Gerencia a conexão com a instância do WhatsApp (Evolution API).
+ * Exibe QR Code para pareamento ou Status de Conectado.
+ */
+export const WhatsAppWidget: React.FC = () => {
+    
+    const { 
+        connectionStatus, 
+        isLoading, 
+        error, 
+        checkStatus, 
+        connectSession, 
+        disconnectSession 
+    } = useMessaging();
+
+    // Verifica o status ao montar o componente
+    useEffect(() => {
+        checkStatus();
+    }, [checkStatus]);
+
+    // --- HANDLERS ---
+    
+    const handleConnect = () => {
+        connectSession();
+    };
+
+    const handleDisconnect = () => {
+        if (confirm("Tem certeza que deseja desconectar o WhatsApp deste Tenant?")) {
+            disconnectSession();
+        }
+    };
+
+    // --- RENDERIZAÇÃO DE ESTADOS ---
+
+    // 1. Loading
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-3 p-6">
+                <FaSync className="w-8 h-8 animate-spin text-accent-primary" />
+                <span className="text-xs uppercase tracking-wider font-bold">Comunicando com o Servidor...</span>
+            </div>
+        );
+    }
+
+    // 2. Erro
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-red-400 space-y-3 p-6 text-center">
+                <FaExclamationTriangle className="w-8 h-8" />
+                <span className="text-xs font-bold">{error}</span>
+                <button 
+                    onClick={() => checkStatus()} 
+                    className="text-xs underline hover:text-white"
+                >
+                    Tentar Novamente
+                </button>
+            </div>
+        );
+    }
+
+    // 3. Conectado (Sucesso)
+    if (connectionStatus?.isConnected) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full space-y-4 p-6 bg-green-900/10 rounded-lg border border-green-900/30">
+                <div className="relative">
+                    <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center shadow-lg shadow-green-900/50">
+                        <FaWhatsapp className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute bottom-0 right-0 w-5 h-5 bg-green-400 border-2 border-base-metallic rounded-full"></div>
+                </div>
+                
+                <div className="text-center">
+                    <h3 className="text-white font-bold text-lg">WhatsApp Conectado</h3>
+                    <p className="text-green-400 text-xs uppercase tracking-wide mt-1">
+                        Instância: {connectionStatus.instanceName}
+                    </p>
+                </div>
+
+                <button 
+                    onClick={handleDisconnect}
+                    className="flex items-center px-4 py-2 bg-gray-800 hover:bg-red-900/50 text-gray-400 hover:text-red-400 rounded-lg text-xs font-bold transition border border-gray-700 hover:border-red-800"
+                >
+                    <FaUnlink className="mr-2" /> Desconectar
+                </button>
+            </div>
+        );
+    }
+
+    // 4. Desconectado (Com ou Sem QR Code)
+    return (
+        <div className="flex flex-col items-center justify-center h-full space-y-6 p-6">
+            
+            {/* Se tiver QR Code, mostra ele. Senão, mostra o ícone genérico */}
+            {connectionStatus?.qrCode ? (
+                <div className="bg-white p-2 rounded-lg shadow-xl animate-fade-in">
+                    {/* Renderiza a string Base64 como imagem */}
+                    <img 
+                        src={connectionStatus.qrCode} 
+                        alt="QR Code WhatsApp" 
+                        className="w-48 h-48 object-contain" 
+                    />
+                </div>
+            ) : (
+                <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center border-2 border-dashed border-gray-600 text-gray-500">
+                    <FaQrcode className="w-8 h-8" />
+                </div>
+            )}
+
+            <div className="text-center max-w-xs">
+                <h3 className="text-white font-bold mb-1">
+                    {connectionStatus?.qrCode ? 'Escaneie o QR Code' : 'WhatsApp Desconectado'}
+                </h3>
+                <p className="text-gray-400 text-xs">
+                    {connectionStatus?.qrCode 
+                        ? 'Abra o WhatsApp no seu celular e escaneie o código acima para conectar.' 
+                        : 'Integre seu número para enviar mensagens diretamente pelo CRM.'}
+                </p>
+            </div>
+
+            {!connectionStatus?.qrCode && (
+                <button 
+                    onClick={handleConnect}
+                    className="flex items-center px-6 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold shadow-lg shadow-green-900/20 transition transform active:scale-95 text-sm"
+                >
+                    <FaWhatsapp className="mr-2 w-5 h-5" />
+                    Gerar QR Code
+                </button>
+            )}
+        </div>
+    );
+};
+
+
 // ===== FILE: src/features/crm/hooks/useCRMIntelligence.ts =====
 
 // src/features/crm/hooks/useCRMIntelligence.ts
@@ -12891,7 +13598,7 @@ import { InteractionAnalysis } from '../types';
 /**
  * @hook useCRMIntelligence
  * @description Gerencia a comunicação com os serviços de IA do CRM.
- * Porquê: Abstrai a complexidade da chamada de API, tipagem do retorno e estados de loading/erro.
+ * @update Agora suporta envio de clientId para análise contextual (RAG).
  */
 export function useCRMIntelligence() {
     
@@ -12902,18 +13609,23 @@ export function useCRMIntelligence() {
     /**
      * @method analyzeText
      * @description Envia um texto bruto para análise de IA no Backend.
-     * @param text O conteúdo da interação (nota, transcrição, email).
+     * @param text O conteúdo da interação.
+     * @param clientId (Opcional) ID do cliente selecionado para dar contexto à IA.
      */
-    const analyzeText = async (text: string) => {
+    const analyzeText = async (text: string, clientId?: string) => {
         setIsAnalyzing(true);
         setError(null);
-        setAnalysisResult(null); // Limpa resultado anterior
+        setAnalysisResult(null); 
 
         try {
-            // POST para o endpoint que criamos na Fase 3 do Backend
-            const response = await api.post('/crm/analyze', { text });
+            // Monta o payload com ou sem contexto
+            const payload = { 
+                text, 
+                clientId: clientId || undefined 
+            };
+
+            const response = await api.post('/crm/analyze', payload);
             
-            // O Backend (Zod) garante que o retorno bata com a interface InteractionAnalysis
             setAnalysisResult(response.data as InteractionAnalysis);
             
         } catch (err: any) {
@@ -12930,8 +13642,65 @@ export function useCRMIntelligence() {
         isAnalyzing,
         analysisResult,
         error,
-        // Reset para limpar a tela se necessário
         clearAnalysis: () => setAnalysisResult(null) 
+    };
+}
+
+
+// ===== FILE: src/features/crm/hooks/useClientTimeline.ts =====
+
+// src/features/crm/hooks/useClientTimeline.ts
+
+import { useState, useEffect, useCallback } from 'react';
+import { api } from '@/core/services/api';
+import { CRMInteraction } from '../types';
+
+/**
+ * @hook useClientTimeline
+ * @description Gerencia a busca do histórico de interações de um cliente específico.
+ * @param clientId ID do cliente selecionado (ou null se nenhum).
+ */
+export function useClientTimeline(clientId: string | null) {
+    
+    const [interactions, setInteractions] = useState<CRMInteraction[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchTimeline = useCallback(async () => {
+        if (!clientId) {
+            setInteractions([]);
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            // GET na rota que criamos no Backend: /crm/client/:clientId/timeline
+            const response = await api.get(`/crm/client/${clientId}/timeline`);
+            
+            // Tipagem forçada garantida pelo contrato do Backend
+            setInteractions(response.data as CRMInteraction[]);
+            
+        } catch (err: any) {
+            console.error("Erro ao buscar timeline:", err);
+            const msg = err.response?.data?.message || "Falha ao carregar histórico.";
+            setError(msg);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [clientId]);
+
+    // Busca automática sempre que o ID do cliente mudar
+    useEffect(() => {
+        fetchTimeline();
+    }, [fetchTimeline]);
+
+    return {
+        interactions,
+        isLoading,
+        error,
+        refreshTimeline: fetchTimeline // Expomos para permitir recarga manual (ex: após enviar msg)
     };
 }
 

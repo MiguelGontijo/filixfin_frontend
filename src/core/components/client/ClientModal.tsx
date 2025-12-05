@@ -1,21 +1,27 @@
 // src/core/components/client/ClientModal.tsx
 
-import React, { useState, useEffect } from 'react';
-import { FaTimes, FaMapMarkerAlt } from 'react-icons/fa';
-import { useClientMutation } from '@/core/hooks/useClientMutation';
-import { Client, AddressType } from '@/core/types/client';
+import React from 'react';
+import { FaTimes, FaUserPlus, FaUserEdit } from 'react-icons/fa';
+import { Client } from '@/core/types/client';
+import { ClientForm } from './ClientForm'; // Importa o formulário unificado
 
 interface ClientModalProps {
     isOpen: boolean;
     onClose: () => void;
+    /**
+     * Callback para recarregar os dados da lista pai após sucesso.
+     */
     onSuccess: () => void; 
+    /**
+     * Se fornecido, o modal entra em modo de EDIÇÃO. Se undefined, modo CRIAÇÃO.
+     */
     currentClient?: Client;
 }
 
 /**
  * @component ClientModal
- * @description Modal de Criação e Edição de Cliente.
- * @update Visual melhorado (Glassmorphism) para não "matar" o fundo com preto total.
+ * @description Modal container que renderiza o formulário de cliente (ClientForm).
+ * @update Refatorado para usar o componente ClientForm unificado, eliminando código duplicado.
  */
 export const ClientModal: React.FC<ClientModalProps> = ({ 
     isOpen, 
@@ -24,211 +30,61 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     currentClient 
 }) => {
     
-    const { createClient, updateClient, isLoading, error: mutationError } = useClientMutation();
     const isEditing = !!currentClient;
 
-    const initialFormState = {
-        name: '',
-        document: '',
-        email: '',
-        phone: '',
-        address: {
-            street: '',
-            number: '',
-            district: '',
-            city: '',
-            state: '',
-            zipCode: ''
-        }
-    };
-
-    const [formData, setFormData] = useState(initialFormState);
-    const [submitError, setSubmitError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (isOpen) {
-            if (currentClient) {
-                const mainAddress = currentClient.addresses?.find(a => a.type === AddressType.MAIN) || currentClient.addresses?.[0];
-                setFormData({
-                    name: currentClient.name,
-                    document: currentClient.document || '',
-                    email: currentClient.email || '',
-                    phone: currentClient.phone || '',
-                    address: {
-                        street: mainAddress?.street || '',
-                        number: mainAddress?.number || '',
-                        district: mainAddress?.district || '',
-                        city: mainAddress?.city || '',
-                        state: mainAddress?.state || '',
-                        zipCode: mainAddress?.zipCode || ''
-                    }
-                });
-            } else {
-                setFormData(initialFormState);
-            }
-            setSubmitError(null);
-        }
-    }, [isOpen, currentClient]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    };
-
-    const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData(prev => ({
-            ...prev,
-            address: {
-                ...prev.address,
-                [e.target.name]: e.target.value
-            }
-        }));
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSubmitError(null);
-
-        const addressesToSend = formData.address.street.trim() ? [{
-            street: formData.address.street,
-            number: formData.address.number || 'S/N',
-            district: formData.address.district || 'Centro',
-            city: formData.address.city || 'Indefinida',
-            state: formData.address.state || 'UF',
-            zipCode: formData.address.zipCode || '00000000',
-            type: AddressType.MAIN
-        }] : undefined;
-
-        const payload = {
-            name: formData.name,
-            document: formData.document.trim() || undefined,
-            email: formData.email.trim() || undefined,
-            phone: formData.phone.trim() || undefined,
-            addresses: addressesToSend
-        };
-
-        try {
-            if (isEditing && currentClient) {
-                await updateClient(currentClient.id, payload);
-            } else {
-                await createClient(payload);
-            }
-            onSuccess();
-            onClose();
-        } catch (err: any) {
-            setSubmitError(mutationError || err.response?.data?.message || 'Falha ao salvar cliente.');
-        }
+    // Handler intermediário para garantir que o modal feche após o sucesso do form
+    const handleSuccess = () => {
+        onSuccess(); // Notifica o pai (refresh na tabela)
+        onClose();   // Fecha o modal
     };
     
     if (!isOpen) return null;
 
     return (
-        // CORREÇÃO VISUAL: Fundo com transparência e desfoque (Backdrop Blur)
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center transition-all animate-fade-in">
+        // Overlay com Backdrop Blur (Padrão Visual Glassmorphism)
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center transition-all animate-fade-in p-4">
             
-            {/* Card do Modal centralizado */}
+            {/* Container do Modal */}
             <div 
-                className="bg-base-metallic p-6 rounded-xl shadow-2xl w-full max-w-lg border border-gray-600 transform transition-all scale-100"
-                onClick={(e) => e.stopPropagation()} // Evita fechar ao clicar dentro
+                className="bg-base-metallic p-6 rounded-xl shadow-2xl w-full max-w-lg border border-gray-600 transform transition-all scale-100 flex flex-col max-h-[90vh]"
+                onClick={(e) => e.stopPropagation()}
             >
                 
                 {/* Header */}
-                <div className="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
+                <div className="flex justify-between items-center border-b border-gray-700 pb-4 mb-4 flex-shrink-0">
                     <h2 className="text-xl font-bold text-white flex items-center">
                         {isEditing ? (
                             <>
-                                <span className="mr-2 text-accent-secondary">✎</span> 
-                                Editar: {currentClient?.name}
+                                <FaUserEdit className="mr-3 text-accent-secondary" /> 
+                                <span className="truncate max-w-[300px]">Editar: {currentClient.name}</span>
                             </>
                         ) : (
-                            'Novo Cliente / Lead'
+                            <>
+                                <FaUserPlus className="mr-3 text-accent-primary" />
+                                Novo Cliente / Lead
+                            </>
                         )}
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white hover:bg-gray-700 rounded-full p-1 transition">
+                    
+                    <button 
+                        onClick={onClose} 
+                        className="text-gray-400 hover:text-white hover:bg-gray-700 rounded-full p-2 transition duration-200 focus:outline-none"
+                        title="Fechar (Esc)"
+                    >
                         <FaTimes className="w-5 h-5" />
                     </button>
                 </div>
 
-                {submitError && (
-                    <div className="p-3 mb-4 text-sm font-medium text-danger bg-red-900/50 rounded-md border border-red-800">
-                        {submitError}
-                    </div>
-                )}
+                {/* Corpo (Scrollável se necessário) */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                    {/* Renderiza o Formulário Unificado */}
+                    <ClientForm 
+                        client={currentClient}
+                        onSuccess={handleSuccess}
+                        showSubmitButton={true} // No modal, o botão fica dentro do form
+                    />
+                </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    
-                    {/* Nome */}
-                    <div>
-                        <label className="block text-xs font-bold text-accent-primary uppercase mb-1">Nome Completo *</label>
-                        <input type="text" name="name" value={formData.name} onChange={handleChange} required
-                            className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:ring-1 focus:ring-accent-secondary focus:outline-none transition" />
-                    </div>
-                    
-                    {/* Contato */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">E-mail</label>
-                            <input type="email" name="email" value={formData.email} onChange={handleChange}
-                                className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-500" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Telefone</label>
-                            <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="(00) 00000-0000"
-                                className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-500" />
-                        </div>
-                    </div>
-
-                    {/* Endereço */}
-                    <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700">
-                        <label className="text-xs font-bold text-gray-300 uppercase mb-2 flex items-center">
-                            <FaMapMarkerAlt className="mr-1 text-accent-secondary" /> Endereço Principal
-                        </label>
-                        <div className="grid grid-cols-4 gap-2">
-                            <div className="col-span-3">
-                                <input type="text" name="street" placeholder="Logradouro" value={formData.address.street} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
-                            </div>
-                            <div className="col-span-1">
-                                <input type="text" name="number" placeholder="Nº" value={formData.address.number} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
-                            </div>
-                            <div className="col-span-2">
-                                <input type="text" name="district" placeholder="Bairro" value={formData.address.district} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
-                            </div>
-                            <div className="col-span-2">
-                                <input type="text" name="city" placeholder="Cidade" value={formData.address.city} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
-                            </div>
-                            <div className="col-span-1">
-                                <input type="text" name="state" placeholder="UF" maxLength={2} value={formData.address.state} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white uppercase focus:outline-none" />
-                            </div>
-                            <div className="col-span-3">
-                                <input type="text" name="zipCode" placeholder="CEP" value={formData.address.zipCode} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Documento */}
-                    <div>
-                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1">CPF / CNPJ (Opcional)</label>
-                        <input type="text" name="document" value={formData.document} onChange={handleChange}
-                            className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-500" />
-                    </div>
-
-                    {/* Botão Submit */}
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold text-white bg-accent-secondary hover:bg-violet-600 transition disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95 mt-4"
-                    >
-                        {isLoading 
-                            ? (isEditing ? 'Salvando Alterações...' : 'Cadastrando...') 
-                            : (isEditing ? 'Salvar Alterações' : 'Cadastrar Cliente')
-                        }
-                    </button>
-                </form>
             </div>
         </div>
     );

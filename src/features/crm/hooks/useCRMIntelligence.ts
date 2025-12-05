@@ -7,7 +7,7 @@ import { InteractionAnalysis } from '../types';
 /**
  * @hook useCRMIntelligence
  * @description Gerencia a comunicação com os serviços de IA do CRM.
- * Porquê: Abstrai a complexidade da chamada de API, tipagem do retorno e estados de loading/erro.
+ * @update Agora suporta envio de clientId para análise contextual (RAG).
  */
 export function useCRMIntelligence() {
     
@@ -18,18 +18,23 @@ export function useCRMIntelligence() {
     /**
      * @method analyzeText
      * @description Envia um texto bruto para análise de IA no Backend.
-     * @param text O conteúdo da interação (nota, transcrição, email).
+     * @param text O conteúdo da interação.
+     * @param clientId (Opcional) ID do cliente selecionado para dar contexto à IA.
      */
-    const analyzeText = async (text: string) => {
+    const analyzeText = async (text: string, clientId?: string) => {
         setIsAnalyzing(true);
         setError(null);
-        setAnalysisResult(null); // Limpa resultado anterior
+        setAnalysisResult(null); 
 
         try {
-            // POST para o endpoint que criamos na Fase 3 do Backend
-            const response = await api.post('/crm/analyze', { text });
+            // Monta o payload com ou sem contexto
+            const payload = { 
+                text, 
+                clientId: clientId || undefined 
+            };
+
+            const response = await api.post('/crm/analyze', payload);
             
-            // O Backend (Zod) garante que o retorno bata com a interface InteractionAnalysis
             setAnalysisResult(response.data as InteractionAnalysis);
             
         } catch (err: any) {
@@ -46,7 +51,6 @@ export function useCRMIntelligence() {
         isAnalyzing,
         analysisResult,
         error,
-        // Reset para limpar a tela se necessário
         clearAnalysis: () => setAnalysisResult(null) 
     };
 }
