@@ -31,7 +31,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     }).format(totalValue);
 
     return (
-        <div className="flex flex-col h-full w-80 min-w-[320px] bg-base-metallic/30 rounded-xl border border-gray-700/50 flex-shrink-0">
+        <div className="flex flex-col h-full w-72 min-w-[288px] bg-base-metallic/30 rounded-xl border border-gray-700/50 flex-shrink-0">
             
             {/* Header da Coluna */}
             <div className="p-3 border-b border-gray-700/50 bg-gray-800/40 rounded-t-xl flex justify-between items-center">

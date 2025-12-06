@@ -103,7 +103,7 @@ export const CRMContainer: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-2rem)]">
+        <div className="flex flex-col h-full">
             
             {/* --- HEADER DE NAVEGAÇÃO (ABAS GLOBAIS) --- */}
             <div className="flex items-center space-x-1 bg-base-metallic/50 p-1 rounded-lg w-fit mb-2 border border-gray-700/50 self-start mx-0 mt-0">

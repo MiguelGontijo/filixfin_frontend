@@ -35,7 +35,7 @@ export default function DashboardLayout({
                     <TopNavigation />
                     
                     {/* 2.2 Conteúdo Principal da Página */}
-                    <main className="flex-1 p-8 overflow-y-auto relative">
+                    <main className="flex-1 p-2 overflow-hidden relative">
                         {children}
                     </main>
                 </div>

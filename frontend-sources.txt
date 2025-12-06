@@ -98,9 +98,10 @@ export default nextConfig;
       "name": "filixfin_frontend",
       "version": "0.1.0",
       "dependencies": {
+        "@hello-pangea/dnd": "^18.0.1",
         "axios": "^1.13.2",
         "jsonwebtoken": "^9.0.2",
-        "next": "16.0.3",
+        "next": "^16.0.7",
         "react": "19.2.0",
         "react-dom": "19.2.0",
         "react-icons": "^5.5.0"
@@ -113,6 +114,7 @@ export default nextConfig;
         "@types/react": "^19",
         "@types/react-dom": "^19",
         "babel-plugin-react-compiler": "1.0.0",
+        "baseline-browser-mapping": "^2.9.3",
         "eslint": "^9",
         "eslint-config-next": "16.0.3",
         "tailwindcss": "^4",
@@ -163,7 +165,6 @@ export default nextConfig;
       "integrity": "sha512-e7jT4DxYvIDLk1ZHmU/m/mB19rex9sv0c2ftBtjSBv+kVM/902eh0fINUzD7UwLLNR+jU585GxUJ8/EBfAM5fw==",
       "dev": true,
       "license": "MIT",
-      "peer": true,
       "dependencies": {
         "@babel/code-frame": "^7.27.1",
         "@babel/generator": "^7.28.5",
@@ -323,6 +324,15 @@ export default nextConfig;
       },
       "engines": {
         "node": ">=6.0.0"
+      }
+    },
+    "node_modules/@babel/runtime": {
+      "version": "7.28.4",
+      "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.28.4.tgz",
+      "integrity": "sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=6.9.0"
       }
     },
     "node_modules/@babel/template": {
@@ -548,6 +558,23 @@ export default nextConfig;
       },
       "engines": {
         "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
+      }
+    },
+    "node_modules/@hello-pangea/dnd": {
+      "version": "18.0.1",
+      "resolved": "https://registry.npmjs.org/@hello-pangea/dnd/-/dnd-18.0.1.tgz",
+      "integrity": "sha512-xojVWG8s/TGrKT1fC8K2tIWeejJYTAeJuj36zM//yEm/ZrnZUSFGS15BpO+jGZT1ybWvyXmeDJwPYb4dhWlbZQ==",
+      "license": "Apache-2.0",
+      "dependencies": {
+        "@babel/runtime": "^7.26.7",
+        "css-box-model": "^1.2.1",
+        "raf-schd": "^4.0.3",
+        "react-redux": "^9.2.0",
+        "redux": "^5.0.1"
+      },
+      "peerDependencies": {
+        "react": "^18.0.0 || ^19.0.0",
+        "react-dom": "^18.0.0 || ^19.0.0"
       }
     },
     "node_modules/@humanfs/core": {
@@ -1132,9 +1159,9 @@ export default nextConfig;
       }
     },
     "node_modules/@next/env": {
-      "version": "16.0.3",
-      "resolved": "https://registry.npmjs.org/@next/env/-/env-16.0.3.tgz",
-      "integrity": "sha512-IqgtY5Vwsm14mm/nmQaRMmywCU+yyMIYfk3/MHZ2ZTJvwVbBn3usZnjMi1GacrMVzVcAxJShTCpZlPs26EdEjQ==",
+      "version": "16.0.7",
+      "resolved": "https://registry.npmjs.org/@next/env/-/env-16.0.7.tgz",
+      "integrity": "sha512-gpaNgUh5nftFKRkRQGnVi5dpcYSKGcZZkQffZ172OrG/XkrnS7UBTQ648YY+8ME92cC4IojpI2LqTC8sTDhAaw==",
       "license": "MIT"
     },
     "node_modules/@next/eslint-plugin-next": {
@@ -1148,9 +1175,9 @@ export default nextConfig;
       }
     },
     "node_modules/@next/swc-darwin-arm64": {
-      "version": "16.0.3",
-      "resolved": "https://registry.npmjs.org/@next/swc-darwin-arm64/-/swc-darwin-arm64-16.0.3.tgz",
-      "integrity": "sha512-MOnbd92+OByu0p6QBAzq1ahVWzF6nyfiH07dQDez4/Nku7G249NjxDVyEfVhz8WkLiOEU+KFVnqtgcsfP2nLXg==",
+      "version": "16.0.7",
+      "resolved": "https://registry.npmjs.org/@next/swc-darwin-arm64/-/swc-darwin-arm64-16.0.7.tgz",
+      "integrity": "sha512-LlDtCYOEj/rfSnEn/Idi+j1QKHxY9BJFmxx7108A6D8K0SB+bNgfYQATPk/4LqOl4C0Wo3LACg2ie6s7xqMpJg==",
       "cpu": [
         "arm64"
       ],
@@ -1164,9 +1191,9 @@ export default nextConfig;
       }
     },
     "node_modules/@next/swc-darwin-x64": {
-      "version": "16.0.3",
-      "resolved": "https://registry.npmjs.org/@next/swc-darwin-x64/-/swc-darwin-x64-16.0.3.tgz",
-      "integrity": "sha512-i70C4O1VmbTivYdRlk+5lj9xRc2BlK3oUikt3yJeHT1unL4LsNtN7UiOhVanFdc7vDAgZn1tV/9mQwMkWOJvHg==",
+      "version": "16.0.7",
+      "resolved": "https://registry.npmjs.org/@next/swc-darwin-x64/-/swc-darwin-x64-16.0.7.tgz",
+      "integrity": "sha512-rtZ7BhnVvO1ICf3QzfW9H3aPz7GhBrnSIMZyr4Qy6boXF0b5E3QLs+cvJmg3PsTCG2M1PBoC+DANUi4wCOKXpA==",
       "cpu": [
         "x64"
       ],
@@ -1180,9 +1207,9 @@ export default nextConfig;
       }
     },
     "node_modules/@next/swc-linux-arm64-gnu": {
-      "version": "16.0.3",
-      "resolved": "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-16.0.3.tgz",
-      "integrity": "sha512-O88gCZ95sScwD00mn/AtalyCoykhhlokxH/wi1huFK+rmiP5LAYVs/i2ruk7xST6SuXN4NI5y4Xf5vepb2jf6A==",
+      "version": "16.0.7",
+      "resolved": "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-16.0.7.tgz",
+      "integrity": "sha512-mloD5WcPIeIeeZqAIP5c2kdaTa6StwP4/2EGy1mUw8HiexSHGK/jcM7lFuS3u3i2zn+xH9+wXJs6njO7VrAqww==",
       "cpu": [
         "arm64"
       ],
@@ -1196,9 +1223,9 @@ export default nextConfig;
       }
     },
     "node_modules/@next/swc-linux-arm64-musl": {
-      "version": "16.0.3",
-      "resolved": "https://registry.npmjs.org/@next/swc-linux-arm64-musl/-/swc-linux-arm64-musl-16.0.3.tgz",
-      "integrity": "sha512-CEErFt78S/zYXzFIiv18iQCbRbLgBluS8z1TNDQoyPi8/Jr5qhR3e8XHAIxVxPBjDbEMITprqELVc5KTfFj0gg==",
+      "version": "16.0.7",
+      "resolved": "https://registry.npmjs.org/@next/swc-linux-arm64-musl/-/swc-linux-arm64-musl-16.0.7.tgz",
+      "integrity": "sha512-+ksWNrZrthisXuo9gd1XnjHRowCbMtl/YgMpbRvFeDEqEBd523YHPWpBuDjomod88U8Xliw5DHhekBC3EOOd9g==",
       "cpu": [
         "arm64"
       ],
@@ -1212,9 +1239,9 @@ export default nextConfig;
       }
     },
     "node_modules/@next/swc-linux-x64-gnu": {
-      "version": "16.0.3",
-      "resolved": "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-16.0.3.tgz",
-      "integrity": "sha512-Tc3i+nwt6mQ+Dwzcri/WNDj56iWdycGVh5YwwklleClzPzz7UpfaMw1ci7bLl6GRYMXhWDBfe707EXNjKtiswQ==",
+      "version": "16.0.7",
+      "resolved": "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-16.0.7.tgz",
+      "integrity": "sha512-4WtJU5cRDxpEE44Ana2Xro1284hnyVpBb62lIpU5k85D8xXxatT+rXxBgPkc7C1XwkZMWpK5rXLXTh9PFipWsA==",
       "cpu": [
         "x64"
       ],
@@ -1228,9 +1255,9 @@ export default nextConfig;
       }
     },
     "node_modules/@next/swc-linux-x64-musl": {
-      "version": "16.0.3",
-      "resolved": "https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-16.0.3.tgz",
-      "integrity": "sha512-zTh03Z/5PBBPdTurgEtr6nY0vI9KR9Ifp/jZCcHlODzwVOEKcKRBtQIGrkc7izFgOMuXDEJBmirwpGqdM/ZixA==",
+      "version": "16.0.7",
+      "resolved": "https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-16.0.7.tgz",
+      "integrity": "sha512-HYlhqIP6kBPXalW2dbMTSuB4+8fe+j9juyxwfMwCe9kQPPeiyFn7NMjNfoFOfJ2eXkeQsoUGXg+O2SE3m4Qg2w==",
       "cpu": [
         "x64"
       ],
@@ -1244,9 +1271,9 @@ export default nextConfig;
       }
     },
     "node_modules/@next/swc-win32-arm64-msvc": {
-      "version": "16.0.3",
-      "resolved": "https://registry.npmjs.org/@next/swc-win32-arm64-msvc/-/swc-win32-arm64-msvc-16.0.3.tgz",
-      "integrity": "sha512-Jc1EHxtZovcJcg5zU43X3tuqzl/sS+CmLgjRP28ZT4vk869Ncm2NoF8qSTaL99gh6uOzgM99Shct06pSO6kA6g==",
+      "version": "16.0.7",
+      "resolved": "https://registry.npmjs.org/@next/swc-win32-arm64-msvc/-/swc-win32-arm64-msvc-16.0.7.tgz",
+      "integrity": "sha512-EviG+43iOoBRZg9deGauXExjRphhuYmIOJ12b9sAPy0eQ6iwcPxfED2asb/s2/yiLYOdm37kPaiZu8uXSYPs0Q==",
       "cpu": [
         "arm64"
       ],
@@ -1260,9 +1287,9 @@ export default nextConfig;
       }
     },
     "node_modules/@next/swc-win32-x64-msvc": {
-      "version": "16.0.3",
-      "resolved": "https://registry.npmjs.org/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-16.0.3.tgz",
-      "integrity": "sha512-N7EJ6zbxgIYpI/sWNzpVKRMbfEGgsWuOIvzkML7wxAAZhPk1Msxuo/JDu1PKjWGrAoOLaZcIX5s+/pF5LIbBBg==",
+      "version": "16.0.7",
+      "resolved": "https://registry.npmjs.org/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-16.0.7.tgz",
+      "integrity": "sha512-gniPjy55zp5Eg0896qSrf3yB1dw4F/3s8VK1ephdsZZ129j2n6e1WqCbE2YgcKhW9hPB9TVZENugquWJD5x0ug==",
       "cpu": [
         "x64"
       ],
@@ -1681,9 +1708,8 @@ export default nextConfig;
       "version": "19.2.6",
       "resolved": "https://registry.npmjs.org/@types/react/-/react-19.2.6.tgz",
       "integrity": "sha512-p/jUvulfgU7oKtj6Xpk8cA2Y1xKTtICGpJYeJXz2YVO2UcvjQgeRMLDGfDeqeRW2Ta+0QNFwcc8X3GH8SxZz6w==",
-      "dev": true,
+      "devOptional": true,
       "license": "MIT",
-      "peer": true,
       "dependencies": {
         "csstype": "^3.2.2"
       }
@@ -1697,6 +1723,12 @@ export default nextConfig;
       "peerDependencies": {
         "@types/react": "^19.2.0"
       }
+    },
+    "node_modules/@types/use-sync-external-store": {
+      "version": "0.0.6",
+      "resolved": "https://registry.npmjs.org/@types/use-sync-external-store/-/use-sync-external-store-0.0.6.tgz",
+      "integrity": "sha512-zFDAD+tlpf2r4asuHEj0XH6pY6i0g5NeAHPn+15wk3BV6JA69eERFXC1gyGThDkVa1zCyKr5jox1+2LbV/AMLg==",
+      "license": "MIT"
     },
     "node_modules/@typescript-eslint/eslint-plugin": {
       "version": "8.47.0",
@@ -1744,7 +1776,6 @@ export default nextConfig;
       "integrity": "sha512-lJi3PfxVmo0AkEY93ecfN+r8SofEqZNGByvHAI3GBLrvt1Cw6H5k1IM02nSzu0RfUafr2EvFSw0wAsZgubNplQ==",
       "dev": true,
       "license": "MIT",
-      "peer": true,
       "dependencies": {
         "@typescript-eslint/scope-manager": "8.47.0",
         "@typescript-eslint/types": "8.47.0",
@@ -2275,7 +2306,6 @@ export default nextConfig;
       "integrity": "sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==",
       "dev": true,
       "license": "MIT",
-      "peer": true,
       "bin": {
         "acorn": "bin/acorn"
       },
@@ -2579,7 +2609,6 @@ export default nextConfig;
       "integrity": "sha512-Ixm8tFfoKKIPYdCCKYTsqv+Fd4IJ0DQqMyEimo+pxUOMUR9cVPlwTrFt9Avu+3cb6Zp3mAzl+t1MrG2fxxKsxw==",
       "devOptional": true,
       "license": "MIT",
-      "peer": true,
       "dependencies": {
         "@babel/types": "^7.26.0"
       }
@@ -2592,9 +2621,9 @@ export default nextConfig;
       "license": "MIT"
     },
     "node_modules/baseline-browser-mapping": {
-      "version": "2.8.30",
-      "resolved": "https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.8.30.tgz",
-      "integrity": "sha512-aTUKW4ptQhS64+v2d6IkPzymEzzhw+G0bA1g3uBRV3+ntkH+svttKseW5IOR4Ed6NUVKqnY7qT3dKvzQ7io4AA==",
+      "version": "2.9.3",
+      "resolved": "https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.9.3.tgz",
+      "integrity": "sha512-8QdH6czo+G7uBsNo0GiUfouPN1lRzKdJTGnKXwe12gkFbnnOUaUKGN55dMkfy+mnxmvjwl9zcI4VncczcVXDhA==",
       "dev": true,
       "license": "Apache-2.0",
       "bin": {
@@ -2645,7 +2674,6 @@ export default nextConfig;
         }
       ],
       "license": "MIT",
-      "peer": true,
       "dependencies": {
         "baseline-browser-mapping": "^2.8.25",
         "caniuse-lite": "^1.0.30001754",
@@ -2829,11 +2857,20 @@ export default nextConfig;
         "node": ">= 8"
       }
     },
+    "node_modules/css-box-model": {
+      "version": "1.2.1",
+      "resolved": "https://registry.npmjs.org/css-box-model/-/css-box-model-1.2.1.tgz",
+      "integrity": "sha512-a7Vr4Q/kd/aw96bnJG332W9V9LkJO69JRcaCYDUqjp6/z0w6VcZjgAcTbgFxEPfBgdnAwlh3iwu+hLopa+flJw==",
+      "license": "MIT",
+      "dependencies": {
+        "tiny-invariant": "^1.0.6"
+      }
+    },
     "node_modules/csstype": {
       "version": "3.2.3",
       "resolved": "https://registry.npmjs.org/csstype/-/csstype-3.2.3.tgz",
       "integrity": "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==",
-      "dev": true,
+      "devOptional": true,
       "license": "MIT"
     },
     "node_modules/damerau-levenshtein": {
@@ -3243,7 +3280,6 @@ export default nextConfig;
       "integrity": "sha512-BhHmn2yNOFA9H9JmmIVKJmd288g9hrVRDkdoIgRCRuSySRUHH7r/DI6aAXW9T1WwUuY3DFgrcaqB+deURBLR5g==",
       "dev": true,
       "license": "MIT",
-      "peer": true,
       "dependencies": {
         "@eslint-community/eslint-utils": "^4.8.0",
         "@eslint-community/regexpp": "^4.12.1",
@@ -3429,7 +3465,6 @@ export default nextConfig;
       "integrity": "sha512-whOE1HFo/qJDyX4SnXzP4N6zOWn79WhnCUY/iDR0mPfQZO8wcYE4JClzI2oZrhBnnMUCBCHZhO6VQyoBU95mZA==",
       "dev": true,
       "license": "MIT",
-      "peer": true,
       "dependencies": {
         "@rtsao/scc": "^1.1.0",
         "array-includes": "^3.1.9",
@@ -4783,12 +4818,12 @@ export default nextConfig;
       }
     },
     "node_modules/jws": {
-      "version": "3.2.2",
-      "resolved": "https://registry.npmjs.org/jws/-/jws-3.2.2.tgz",
-      "integrity": "sha512-YHlZCB6lMTllWDtSPHz/ZXTsi8S00usEV6v1tjq8tOUZzw7DpSDWVXjXDre6ed1w/pd495ODpHZYSdkRTsa0HA==",
+      "version": "3.2.3",
+      "resolved": "https://registry.npmjs.org/jws/-/jws-3.2.3.tgz",
+      "integrity": "sha512-byiJ0FLRdLdSVSReO/U4E7RoEyOCKnEnEPMjq3HxWtvzLsV08/i5RQKsFVNkCldrCaPr2vDNAOMsfs8T/Hze7g==",
       "license": "MIT",
       "dependencies": {
-        "jwa": "^1.4.1",
+        "jwa": "^1.4.2",
         "safe-buffer": "^5.0.1"
       }
     },
@@ -5320,12 +5355,12 @@ export default nextConfig;
       "license": "MIT"
     },
     "node_modules/next": {
-      "version": "16.0.3",
-      "resolved": "https://registry.npmjs.org/next/-/next-16.0.3.tgz",
-      "integrity": "sha512-Ka0/iNBblPFcIubTA1Jjh6gvwqfjrGq1Y2MTI5lbjeLIAfmC+p5bQmojpRZqgHHVu5cG4+qdIiwXiBSm/8lZ3w==",
+      "version": "16.0.7",
+      "resolved": "https://registry.npmjs.org/next/-/next-16.0.7.tgz",
+      "integrity": "sha512-3mBRJyPxT4LOxAJI6IsXeFtKfiJUbjCLgvXO02fV8Wy/lIhPvP94Fe7dGhUgHXcQy4sSuYwQNcOLhIfOm0rL0A==",
       "license": "MIT",
       "dependencies": {
-        "@next/env": "16.0.3",
+        "@next/env": "16.0.7",
         "@swc/helpers": "0.5.15",
         "caniuse-lite": "^1.0.30001579",
         "postcss": "8.4.31",
@@ -5338,14 +5373,14 @@ export default nextConfig;
         "node": ">=20.9.0"
       },
       "optionalDependencies": {
-        "@next/swc-darwin-arm64": "16.0.3",
-        "@next/swc-darwin-x64": "16.0.3",
-        "@next/swc-linux-arm64-gnu": "16.0.3",
-        "@next/swc-linux-arm64-musl": "16.0.3",
-        "@next/swc-linux-x64-gnu": "16.0.3",
-        "@next/swc-linux-x64-musl": "16.0.3",
-        "@next/swc-win32-arm64-msvc": "16.0.3",
-        "@next/swc-win32-x64-msvc": "16.0.3",
+        "@next/swc-darwin-arm64": "16.0.7",
+        "@next/swc-darwin-x64": "16.0.7",
+        "@next/swc-linux-arm64-gnu": "16.0.7",
+        "@next/swc-linux-arm64-musl": "16.0.7",
+        "@next/swc-linux-x64-gnu": "16.0.7",
+        "@next/swc-linux-x64-musl": "16.0.7",
+        "@next/swc-win32-arm64-msvc": "16.0.7",
+        "@next/swc-win32-x64-msvc": "16.0.7",
         "sharp": "^0.34.4"
       },
       "peerDependencies": {
@@ -5754,12 +5789,17 @@ export default nextConfig;
       ],
       "license": "MIT"
     },
+    "node_modules/raf-schd": {
+      "version": "4.0.3",
+      "resolved": "https://registry.npmjs.org/raf-schd/-/raf-schd-4.0.3.tgz",
+      "integrity": "sha512-tQkJl2GRWh83ui2DiPTJz9wEiMN20syf+5oKfB03yYP7ioZcJwsIK8FjrtLwH1m7C7e+Tt2yYBlrOpdT+dyeIQ==",
+      "license": "MIT"
+    },
     "node_modules/react": {
       "version": "19.2.0",
       "resolved": "https://registry.npmjs.org/react/-/react-19.2.0.tgz",
       "integrity": "sha512-tmbWg6W31tQLeB5cdIBOicJDJRR2KzXsV7uSK9iNfLWQ5bIZfxuPEHp7M8wiHyHnn0DD1i7w3Zmin0FtkrwoCQ==",
       "license": "MIT",
-      "peer": true,
       "engines": {
         "node": ">=0.10.0"
       }
@@ -5769,7 +5809,6 @@ export default nextConfig;
       "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-19.2.0.tgz",
       "integrity": "sha512-UlbRu4cAiGaIewkPyiRGJk0imDN2T3JjieT6spoL2UeSf5od4n5LB/mQ4ejmxhCFT1tYe8IvaFulzynWovsEFQ==",
       "license": "MIT",
-      "peer": true,
       "dependencies": {
         "scheduler": "^0.27.0"
       },
@@ -5791,6 +5830,35 @@ export default nextConfig;
       "resolved": "https://registry.npmjs.org/react-is/-/react-is-16.13.1.tgz",
       "integrity": "sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==",
       "dev": true,
+      "license": "MIT"
+    },
+    "node_modules/react-redux": {
+      "version": "9.2.0",
+      "resolved": "https://registry.npmjs.org/react-redux/-/react-redux-9.2.0.tgz",
+      "integrity": "sha512-ROY9fvHhwOD9ySfrF0wmvu//bKCQ6AeZZq1nJNtbDC+kk5DuSuNX/n6YWYF/SYy7bSba4D4FSz8DJeKY/S/r+g==",
+      "license": "MIT",
+      "dependencies": {
+        "@types/use-sync-external-store": "^0.0.6",
+        "use-sync-external-store": "^1.4.0"
+      },
+      "peerDependencies": {
+        "@types/react": "^18.2.25 || ^19",
+        "react": "^18.0 || ^19",
+        "redux": "^5.0.0"
+      },
+      "peerDependenciesMeta": {
+        "@types/react": {
+          "optional": true
+        },
+        "redux": {
+          "optional": true
+        }
+      }
+    },
+    "node_modules/redux": {
+      "version": "5.0.1",
+      "resolved": "https://registry.npmjs.org/redux/-/redux-5.0.1.tgz",
+      "integrity": "sha512-M9/ELqF6fy8FwmkpnF0S3YKOqMyoWJ4+CS5Efg2ct3oY9daQvd/Pc71FpGZsVsbl3Cpb+IIcjBDUnnyBdQbq4w==",
       "license": "MIT"
     },
     "node_modules/reflect.getprototypeof": {
@@ -6446,6 +6514,12 @@ export default nextConfig;
         "url": "https://opencollective.com/webpack"
       }
     },
+    "node_modules/tiny-invariant": {
+      "version": "1.3.3",
+      "resolved": "https://registry.npmjs.org/tiny-invariant/-/tiny-invariant-1.3.3.tgz",
+      "integrity": "sha512-+FbBPE1o9QAYvviau/qC5SE3caw21q3xkvWKBtja5vgqOWIHHJ3ioaq1VPfn/Szqctz2bU/oYeKd9/z5BL+PVg==",
+      "license": "MIT"
+    },
     "node_modules/tinyglobby": {
       "version": "0.2.15",
       "resolved": "https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.15.tgz",
@@ -6487,7 +6561,6 @@ export default nextConfig;
       "integrity": "sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==",
       "dev": true,
       "license": "MIT",
-      "peer": true,
       "engines": {
         "node": ">=12"
       },
@@ -6650,7 +6723,6 @@ export default nextConfig;
       "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
       "dev": true,
       "license": "Apache-2.0",
-      "peer": true,
       "bin": {
         "tsc": "bin/tsc",
         "tsserver": "bin/tsserver"
@@ -6783,6 +6855,15 @@ export default nextConfig;
       "license": "BSD-2-Clause",
       "dependencies": {
         "punycode": "^2.1.0"
+      }
+    },
+    "node_modules/use-sync-external-store": {
+      "version": "1.6.0",
+      "resolved": "https://registry.npmjs.org/use-sync-external-store/-/use-sync-external-store-1.6.0.tgz",
+      "integrity": "sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==",
+      "license": "MIT",
+      "peerDependencies": {
+        "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
       }
     },
     "node_modules/which": {
@@ -6926,7 +7007,6 @@ export default nextConfig;
       "integrity": "sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ==",
       "dev": true,
       "license": "MIT",
-      "peer": true,
       "funding": {
         "url": "https://github.com/sponsors/colinhacks"
       }
@@ -6963,9 +7043,10 @@ export default nextConfig;
     "lint": "eslint"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "axios": "^1.13.2",
     "jsonwebtoken": "^9.0.2",
-    "next": "16.0.3",
+    "next": "^16.0.7",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-icons": "^5.5.0"
@@ -6978,6 +7059,7 @@ export default nextConfig;
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "baseline-browser-mapping": "^2.9.3",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
     "tailwindcss": "^4",
@@ -7110,218 +7192,16 @@ export default function ClientsPage() {
 
 "use client";
 
-import React, { useState } from 'react';
-import { FaWhatsapp, FaTelegram, FaPaperPlane } from 'react-icons/fa';
-
-// --- HOOKS ---
-import { useCRMIntelligence } from '@/features/crm/hooks/useCRMIntelligence';
-
-// --- COMPONENTES (WIDGETS) ---
-import { ClientListWidget } from '@/features/crm/components/client-widget/ClientListWidget';
-import { AIInputWidget } from '@/features/crm/components/ai-widget/AIInputWidget';
-import { AnalysisActionCard } from '@/features/crm/components/AnalysisActionCard';
-import { ClientDashboard } from '@/features/crm/components/client-dashboard/ClientDashboard';
-
-// --- TIPOS ---
-import { Client } from '@/core/types/client';
-import { ClientModal } from '@/core/components/client/ClientModal';
-import { WhatsAppWidget } from '@/features/crm/components/communication/WhatsAppWidget';
+import React from 'react';
+import { CRMContainer } from '@/features/crm/presentation/CRMContainer';
 
 /**
  * @component CRMPage
- * @description Workstation CRM 2.0
- * Layout de 3 Colunas: Gestão/Input (Esq) | Inteligência/Dashboard (Centro) | Comunicação (Dir)
+ * @description Rota principal do módulo CRM.
+ * Delega toda a lógica e apresentação para o Container do módulo (Clean Architecture).
  */
 export default function CRMPage() {
-    
-    // 1. ESTADOS DE INTELIGÊNCIA
-    const { analyzeText, isAnalyzing, analysisResult, error: aiError, clearAnalysis } = useCRMIntelligence();
-    
-    // 2. ESTADOS DE CONTEXTO (CLIENTE)
-    const [contextClient, setContextClient] = useState<Client | null>(null);
-    const [refreshListTrigger, setRefreshListTrigger] = useState(0);
-
-    // 3. ESTADOS DE UI (CHAT)
-    const [activeChatTab, setActiveChatTab] = useState<'WA' | 'TG'>('WA');
-
-    const [isClientModalOpen, setIsClientModalOpen] = useState(false);
-    const [clientToEdit, setClientToEdit] = useState<Client | undefined>(undefined);
-    
-    // --- NOVOS HANDLERS DE MODAL ---
-    
-    const handleOpenNewClient = () => {
-        setClientToEdit(undefined); // Modo Criação
-        setIsClientModalOpen(true);
-    };
-
-    const handleOpenEditClient = (client: Client) => {
-        setClientToEdit(client); // Modo Edição
-        setIsClientModalOpen(true);
-    };
-
-    const handleModalSuccess = () => {
-        // Atualiza a lista (Esquerda)
-        setRefreshListTrigger(prev => prev + 1);
-        
-        // Se estávamos editando o cliente que estava em foco (Centro), atualizamos o contexto dele
-        if (clientToEdit && contextClient && clientToEdit.id === contextClient.id) {
-             // Hack sênior: Como não temos o objeto atualizado aqui (só o void do sucesso), 
-             // confiamos que a lista vai recarregar, ou poderíamos buscar byId.
-             // Por simplicidade visual imediata, mantemos assim.
-        }
-        
-        setIsClientModalOpen(false);
-        setClientToEdit(undefined);
-    };
-
-    const handleClientSelect = (client: Client | null) => {
-        setContextClient(client);
-        // Se mudar o cliente, limpamos qualquer análise anterior pendente para evitar confusão
-        if (analysisResult) clearAnalysis();
-    };
-
-    // Recebe o texto do AIInputWidget e dispara a análise
-    const handleAnalyzeRequest = async (text: string) => {
-        // Passa o ID do cliente selecionado (se houver) para ativar o contexto RAG no Backend
-        await analyzeText(text, contextClient?.id);
-    };
-
-    const handleAnalysisSuccess = () => {
-        setRefreshListTrigger(prev => prev + 1); // Atualiza a lista da esquerda
-        clearAnalysis(); // Limpa o card de ação, voltando para o Dashboard
-    };
-
-    return (
-        <div className="h-[calc(100vh-8rem)] min-h-[600px] w-full">
-            
-            <div className="grid grid-cols-12 gap-4 h-full">
-                {/* ================================================================
-                  COLUNA 1 (ESQUERDA): GESTÃO & INPUT
-                  Span: 3
-                  ================================================================*/}
-                <div className="col-span-3 flex flex-col gap-4 h-full">
-                    
-                    {/* 1.1 Lista de Clientes (Ocupa o espaço restante) */}
-                    <div className="flex-1 min-h-0 overflow-hidden rounded-xl shadow-lg border border-gray-700 bg-base-metallic">
-                        <ClientListWidget 
-                            onSelectClient={handleClientSelect} 
-                            refreshTrigger={refreshListTrigger}
-                            onNewClient={handleOpenNewClient}
-                            onEditClient={handleOpenEditClient}
-                        />
-                    </div>
-
-                    {/* 1.2 Console de IA (Fixo na base) */}
-                    <div className="h-64 flex-shrink-0 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
-                        <AIInputWidget 
-                            onAnalyze={handleAnalyzeRequest}
-                            isAnalyzing={isAnalyzing}
-                        />
-                    </div>
-                </div>
-                {/* ================================================================
-                  COLUNA 2 (CENTRO): O PALCO (DASHBOARD OU AÇÃO)
-                  Span: 6
-                  ================================================================*/}
-                <div className="col-span-6 h-full flex flex-col gap-4">
-                    
-                    {/* ÁREA DE ERRO (GLOBAL DA IA) */}
-                    {aiError && (
-                        <div className="bg-red-900/40 border border-red-500/50 p-3 rounded-lg text-sm text-red-200 flex items-center justify-between animate-fade-in">
-                            <span><strong>Erro na IA:</strong> {aiError}</span>
-                            <button onClick={clearAnalysis} className="text-xs underline hover:text-white">Fechar</button>
-                        </div>
-                    )}
-
-                    {/* CONTEÚDO DINÂMICO */}
-                    {analysisResult ? (
-                        // MODO AÇÃO: A IA detectou algo e pede confirmação
-                        <div className="flex-1 overflow-y-auto pr-1">
-                            <AnalysisActionCard 
-                                analysis={analysisResult}
-                                content="Texto original processado..." // Futuro: Passar o texto real se necessário
-                                contextClient={contextClient}
-                                onSuccess={handleAnalysisSuccess}
-                            />
-                        </div>
-                    ) : (
-                        // MODO VISUALIZAÇÃO: Dashboard do Cliente Selecionado
-                        <div className="flex-1 h-full">
-                            <ClientDashboard 
-                                client={contextClient} 
-                                onEdit={handleOpenEditClient}
-                            />
-                        </div>
-                    )}
-                </div>
-                {/* ================================================================
-                  COLUNA 3 (DIREITA): COMUNICAÇÃO (OMNICHANNEL)
-                  Span: 3
-                  ================================================================*/}
-                <div className="col-span-3 bg-base-metallic rounded-xl border border-gray-700 flex flex-col overflow-hidden shadow-lg h-full">
-                    
-                    {/* Header de Abas */}
-                    <div className="flex border-b border-gray-700 bg-gray-800">
-                        <button 
-                            onClick={() => setActiveChatTab('WA')}
-                            className={`flex-1 py-3 text-xs font-bold flex items-center justify-center space-x-2 transition ${activeChatTab === 'WA' ? 'bg-green-900/20 text-green-400 border-b-2 border-green-400' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'}`}
-                        >
-                            <FaWhatsapp className="w-4 h-4" /> <span>WhatsApp</span>
-                        </button>
-                        <button 
-                            onClick={() => setActiveChatTab('TG')}
-                            className={`flex-1 py-3 text-xs font-bold flex items-center justify-center space-x-2 transition ${activeChatTab === 'TG' ? 'bg-blue-900/20 text-blue-400 border-b-2 border-blue-400' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'}`}
-                        >
-                            <FaTelegram className="w-4 h-4" /> <span>Telegram</span>
-                        </button>
-                    </div>
-
-                    {/* Área de Chat (Placeholder) */}
-                    <div className="flex-1 overflow-hidden relative bg-gray-900/50">
-                        
-                        {activeChatTab === 'WA' ? (
-                            // --- INTEGRAÇÃO REAL: WIDGET DE WHATSAPP ---
-                            // Gerencia QR Code, Conexão e Status
-                            <WhatsAppWidget />
-                        ) : (
-                            // Placeholder para Telegram
-                            <div className="h-full flex flex-col items-center justify-center text-gray-600 opacity-60 p-4">
-                                <FaTelegram className="w-12 h-12 mb-3" />
-                                <p className="text-xs text-center">
-                                    Integração com Telegram em desenvolvimento.
-                                </p>
-                            </div>
-                        )}
-
-                    </div>
-
-                    {/* Input de Chat (Visualmente mantido, mas desabilitado se não tiver cliente/conexão) */}
-                    {/* Nota: Futuramente, este input deve ser controlado pelo WhatsAppWidget ou useMessaging */}
-                    <div className="p-3 border-t border-gray-700 bg-gray-800">
-                        <div className="flex items-center space-x-2">
-                            <input 
-                                type="text" 
-                                placeholder={contextClient ? `Mensagem para ${contextClient.name.split(' ')[0]}...` : "Selecione um cliente..."}
-                                className="flex-1 bg-gray-900 text-xs text-white px-3 py-2.5 rounded-lg border border-gray-600 focus:outline-none focus:border-gray-500 disabled:opacity-50"
-                                disabled={!contextClient}
-                            />
-                            <button className="p-2.5 bg-gray-700 text-gray-400 rounded-lg cursor-not-allowed hover:bg-gray-600 disabled:opacity-50">
-                                <FaPaperPlane className="w-3 h-3" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Modal de Cliente (Criação/Edição) */}
-            <ClientModal
-                isOpen={isClientModalOpen}
-                onClose={() => setIsClientModalOpen(false)}
-                onSuccess={handleModalSuccess}
-                currentClient={clientToEdit} 
-            />
-        </div>
-    );
+    return <CRMContainer />;
 }
 
 
@@ -8502,43 +8382,44 @@ export const TenantGuard: React.FC<TenantGuardProps> = ({ children }) => {
 };
 
 
-// ===== FILE: src/core/components/client/ClientModal.tsx =====
+// ===== FILE: src/core/components/client/ClientForm.tsx =====
 
-// src/core/components/client/ClientModal.tsx
+// src/core/components/client/ClientForm.tsx
 
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaExclamationTriangle, FaSave, FaStickyNote } from 'react-icons/fa';
 import { useClientMutation } from '@/core/hooks/useClientMutation';
 import { Client, AddressType } from '@/core/types/client';
 
-interface ClientModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSuccess: () => void; 
-    currentClient?: Client;
+interface ClientFormProps {
+    client?: Client;
+    // MODIFICAÇÃO: onSuccess agora recebe o cliente salvo/atualizado
+    onSuccess: (savedClient: Client) => void;
+    showSubmitButton?: boolean;
 }
 
 /**
- * @component ClientModal
- * @description Modal de Criação e Edição de Cliente.
- * @update Visual melhorado (Glassmorphism) para não "matar" o fundo com preto total.
+ * @component ClientForm
+ * @description Formulário unificado.
+ * @update Agora retorna o objeto Client no callback onSuccess para atualização imediata do estado pai.
  */
-export const ClientModal: React.FC<ClientModalProps> = ({ 
-    isOpen, 
-    onClose, 
-    onSuccess,
-    currentClient 
+export const ClientForm: React.FC<ClientFormProps> = ({ 
+    client, 
+    onSuccess, 
+    showSubmitButton = true 
 }) => {
     
-    const { createClient, updateClient, isLoading, error: mutationError } = useClientMutation();
-    const isEditing = !!currentClient;
+    const { createClient, updateClient, isLoading, error } = useClientMutation();
+    const isEditing = !!client;
 
     const initialFormState = {
         name: '',
         document: '',
         email: '',
         phone: '',
+        userNotes: '',
         address: {
+            id: '',
             street: '',
             number: '',
             district: '',
@@ -8549,34 +8430,33 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     };
 
     const [formData, setFormData] = useState(initialFormState);
-    const [submitError, setSubmitError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (isOpen) {
-            if (currentClient) {
-                const mainAddress = currentClient.addresses?.find(a => a.type === AddressType.MAIN) || currentClient.addresses?.[0];
-                setFormData({
-                    name: currentClient.name,
-                    document: currentClient.document || '',
-                    email: currentClient.email || '',
-                    phone: currentClient.phone || '',
-                    address: {
-                        street: mainAddress?.street || '',
-                        number: mainAddress?.number || '',
-                        district: mainAddress?.district || '',
-                        city: mainAddress?.city || '',
-                        state: mainAddress?.state || '',
-                        zipCode: mainAddress?.zipCode || ''
-                    }
-                });
-            } else {
-                setFormData(initialFormState);
-            }
-            setSubmitError(null);
+        if (client) {
+            const mainAddress = client.addresses?.find(a => a.type === AddressType.MAIN) || client.addresses?.[0];
+            
+            setFormData({
+                name: client.name,
+                document: client.document || '',
+                email: client.email || '',
+                phone: client.phone || '',
+                userNotes: client.userNotes || '',
+                address: {
+                    id: mainAddress?.id || '',
+                    street: mainAddress?.street || '',
+                    number: mainAddress?.number || '',
+                    district: mainAddress?.district || '',
+                    city: mainAddress?.city || '',
+                    state: mainAddress?.state || '',
+                    zipCode: mainAddress?.zipCode || ''
+                }
+            });
+        } else {
+            setFormData(initialFormState);
         }
-    }, [isOpen, currentClient]);
+    }, [client]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
@@ -8592,9 +8472,9 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSubmitError(null);
 
         const addressesToSend = formData.address.street.trim() ? [{
+            id: formData.address.id || undefined,
             street: formData.address.street,
             number: formData.address.number || 'S/N',
             district: formData.address.district || 'Centro',
@@ -8609,132 +8489,239 @@ export const ClientModal: React.FC<ClientModalProps> = ({
             document: formData.document.trim() || undefined,
             email: formData.email.trim() || undefined,
             phone: formData.phone.trim() || undefined,
+            userNotes: formData.userNotes || undefined,
             addresses: addressesToSend
         };
 
         try {
-            if (isEditing && currentClient) {
-                await updateClient(currentClient.id, payload);
+            let result: Client;
+            if (isEditing && client) {
+                result = await updateClient(client.id, payload);
             } else {
-                await createClient(payload);
+                result = await createClient(payload);
             }
-            onSuccess();
-            onClose();
-        } catch (err: any) {
-            setSubmitError(mutationError || err.response?.data?.message || 'Falha ao salvar cliente.');
+            // Passa o resultado para o pai (atualiza a tela sem fetch extra)
+            onSuccess(result);
+        } catch (err) {
+            console.error("Erro no formulário:", err);
         }
+    };
+
+    return (
+        <form id="client-edit-form" onSubmit={handleSubmit} className="space-y-5 animate-fade-in">
+            
+            {error && (
+                <div className="p-3 bg-red-900/30 border border-red-800 text-red-300 rounded-lg text-sm flex items-center">
+                    <FaExclamationTriangle className="mr-2" />
+                    {error}
+                </div>
+            )}
+
+            <div className="space-y-4">
+                <div>
+                    <label className="block text-[10px] font-bold text-accent-primary uppercase mb-1 tracking-wider">
+                        Nome Completo *
+                    </label>
+                    <input 
+                        type="text" name="name" value={formData.name} onChange={handleChange} required
+                        className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:ring-1 focus:ring-accent-secondary focus:border-accent-secondary focus:outline-none transition placeholder-gray-600" 
+                        placeholder="Ex: João Silva ou Empresa Ltda"
+                    />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">
+                            E-mail
+                        </label>
+                        <input 
+                            type="email" name="email" value={formData.email} onChange={handleChange}
+                            className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition" 
+                            placeholder="contato@email.com"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">
+                            Telefone
+                        </label>
+                        <input 
+                            type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="(00) 00000-0000"
+                            className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition" 
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-gray-800/40 p-4 rounded-xl border border-gray-700/50">
+                <label className="text-[10px] font-bold text-gray-300 uppercase mb-3 flex items-center tracking-wider">
+                    <FaMapMarkerAlt className="mr-1.5 text-accent-secondary" /> Endereço Principal
+                </label>
+                
+                <div className="grid grid-cols-4 gap-3">
+                    <div className="col-span-3">
+                        <input type="text" name="street" placeholder="Rua / Logradouro" value={formData.address.street} onChange={handleAddressChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                    </div>
+                    <div className="col-span-1">
+                        <input type="text" name="number" placeholder="Nº" value={formData.address.number} onChange={handleAddressChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                    </div>
+                    
+                    <div className="col-span-2">
+                        <input type="text" name="district" placeholder="Bairro" value={formData.address.district} onChange={handleAddressChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                    </div>
+                    <div className="col-span-2">
+                        <input type="text" name="city" placeholder="Cidade" value={formData.address.city} onChange={handleAddressChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                    </div>
+                    
+                    <div className="col-span-1">
+                        <input type="text" name="state" placeholder="UF" maxLength={2} value={formData.address.state} onChange={handleAddressChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white uppercase focus:border-accent-secondary focus:outline-none" />
+                    </div>
+                    <div className="col-span-3">
+                        <input type="text" name="zipCode" placeholder="CEP" value={formData.address.zipCode} onChange={handleAddressChange}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">
+                    CPF / CNPJ
+                </label>
+                <input 
+                    type="text" name="document" value={formData.document} onChange={handleChange}
+                    className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition font-mono" 
+                    placeholder="000.000.000-00"
+                />
+            </div>
+
+            <div className="pt-2 border-t border-gray-700/50">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2 tracking-wider flex items-center">
+                    <FaStickyNote className="mr-1.5 text-yellow-500/70" /> Notas Privadas (Não lidas pela IA)
+                </label>
+                <textarea
+                    name="userNotes"
+                    value={formData.userNotes}
+                    onChange={handleChange}
+                    rows={4}
+                    className="w-full px-3 py-2.5 bg-gray-800/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-yellow-500/50 transition placeholder-gray-600 resize-y"
+                    placeholder="Digite observações internas sobre este cliente..."
+                />
+            </div>
+
+            {showSubmitButton && (
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold text-white bg-accent-secondary hover:bg-violet-600 transition disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95 mt-4"
+                >
+                    {isLoading ? (
+                        <span className="animate-pulse">{isEditing ? 'Salvando...' : 'Cadastrando...'}</span>
+                    ) : (
+                        <>
+                            <FaSave className="mr-2" />
+                            {isEditing ? 'Salvar Alterações' : 'Cadastrar Cliente'}
+                        </>
+                    )}
+                </button>
+            )}
+        </form>
+    );
+};
+
+
+// ===== FILE: src/core/components/client/ClientModal.tsx =====
+
+// src/core/components/client/ClientModal.tsx
+
+import React from 'react';
+import { FaTimes, FaUserPlus, FaUserEdit } from 'react-icons/fa';
+import { Client } from '@/core/types/client';
+import { ClientForm } from './ClientForm'; // Importa o formulário unificado
+
+interface ClientModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    /**
+     * Callback para recarregar os dados da lista pai após sucesso.
+     */
+    onSuccess: () => void; 
+    /**
+     * Se fornecido, o modal entra em modo de EDIÇÃO. Se undefined, modo CRIAÇÃO.
+     */
+    currentClient?: Client;
+}
+
+/**
+ * @component ClientModal
+ * @description Modal container que renderiza o formulário de cliente (ClientForm).
+ * @update Refatorado para usar o componente ClientForm unificado, eliminando código duplicado.
+ */
+export const ClientModal: React.FC<ClientModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    onSuccess,
+    currentClient 
+}) => {
+    
+    const isEditing = !!currentClient;
+
+    // Handler intermediário para garantir que o modal feche após o sucesso do form
+    const handleSuccess = () => {
+        onSuccess(); // Notifica o pai (refresh na tabela)
+        onClose();   // Fecha o modal
     };
     
     if (!isOpen) return null;
 
     return (
-        // CORREÇÃO VISUAL: Fundo com transparência e desfoque (Backdrop Blur)
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center transition-all animate-fade-in">
+        // Overlay com Backdrop Blur (Padrão Visual Glassmorphism)
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center transition-all animate-fade-in p-4">
             
-            {/* Card do Modal centralizado */}
+            {/* Container do Modal */}
             <div 
-                className="bg-base-metallic p-6 rounded-xl shadow-2xl w-full max-w-lg border border-gray-600 transform transition-all scale-100"
-                onClick={(e) => e.stopPropagation()} // Evita fechar ao clicar dentro
+                className="bg-base-metallic p-6 rounded-xl shadow-2xl w-full max-w-lg border border-gray-600 transform transition-all scale-100 flex flex-col max-h-[90vh]"
+                onClick={(e) => e.stopPropagation()}
             >
                 
                 {/* Header */}
-                <div className="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
+                <div className="flex justify-between items-center border-b border-gray-700 pb-4 mb-4 flex-shrink-0">
                     <h2 className="text-xl font-bold text-white flex items-center">
                         {isEditing ? (
                             <>
-                                <span className="mr-2 text-accent-secondary">✎</span> 
-                                Editar: {currentClient?.name}
+                                <FaUserEdit className="mr-3 text-accent-secondary" /> 
+                                <span className="truncate max-w-[300px]">Editar: {currentClient.name}</span>
                             </>
                         ) : (
-                            'Novo Cliente / Lead'
+                            <>
+                                <FaUserPlus className="mr-3 text-accent-primary" />
+                                Novo Cliente / Lead
+                            </>
                         )}
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white hover:bg-gray-700 rounded-full p-1 transition">
+                    
+                    <button 
+                        onClick={onClose} 
+                        className="text-gray-400 hover:text-white hover:bg-gray-700 rounded-full p-2 transition duration-200 focus:outline-none"
+                        title="Fechar (Esc)"
+                    >
                         <FaTimes className="w-5 h-5" />
                     </button>
                 </div>
 
-                {submitError && (
-                    <div className="p-3 mb-4 text-sm font-medium text-danger bg-red-900/50 rounded-md border border-red-800">
-                        {submitError}
-                    </div>
-                )}
+                {/* Corpo (Scrollável se necessário) */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                    {/* Renderiza o Formulário Unificado */}
+                    <ClientForm 
+                        client={currentClient}
+                        onSuccess={handleSuccess}
+                        showSubmitButton={true} // No modal, o botão fica dentro do form
+                    />
+                </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    
-                    {/* Nome */}
-                    <div>
-                        <label className="block text-xs font-bold text-accent-primary uppercase mb-1">Nome Completo *</label>
-                        <input type="text" name="name" value={formData.name} onChange={handleChange} required
-                            className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:ring-1 focus:ring-accent-secondary focus:outline-none transition" />
-                    </div>
-                    
-                    {/* Contato */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">E-mail</label>
-                            <input type="email" name="email" value={formData.email} onChange={handleChange}
-                                className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-500" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Telefone</label>
-                            <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="(00) 00000-0000"
-                                className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-500" />
-                        </div>
-                    </div>
-
-                    {/* Endereço */}
-                    <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700">
-                        <label className="text-xs font-bold text-gray-300 uppercase mb-2 flex items-center">
-                            <FaMapMarkerAlt className="mr-1 text-accent-secondary" /> Endereço Principal
-                        </label>
-                        <div className="grid grid-cols-4 gap-2">
-                            <div className="col-span-3">
-                                <input type="text" name="street" placeholder="Logradouro" value={formData.address.street} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
-                            </div>
-                            <div className="col-span-1">
-                                <input type="text" name="number" placeholder="Nº" value={formData.address.number} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
-                            </div>
-                            <div className="col-span-2">
-                                <input type="text" name="district" placeholder="Bairro" value={formData.address.district} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
-                            </div>
-                            <div className="col-span-2">
-                                <input type="text" name="city" placeholder="Cidade" value={formData.address.city} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
-                            </div>
-                            <div className="col-span-1">
-                                <input type="text" name="state" placeholder="UF" maxLength={2} value={formData.address.state} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white uppercase focus:outline-none" />
-                            </div>
-                            <div className="col-span-3">
-                                <input type="text" name="zipCode" placeholder="CEP" value={formData.address.zipCode} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Documento */}
-                    <div>
-                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1">CPF / CNPJ (Opcional)</label>
-                        <input type="text" name="document" value={formData.document} onChange={handleChange}
-                            className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-gray-500" />
-                    </div>
-
-                    {/* Botão Submit */}
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold text-white bg-accent-secondary hover:bg-violet-600 transition disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95 mt-4"
-                    >
-                        {isLoading 
-                            ? (isEditing ? 'Salvando Alterações...' : 'Cadastrando...') 
-                            : (isEditing ? 'Salvar Alterações' : 'Cadastrar Cliente')
-                        }
-                    </button>
-                </form>
             </div>
         </div>
     );
@@ -9952,27 +9939,48 @@ import { forceGlobalLogout } from '@/contexts/AuthContext';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
+/**
+ * @const api
+ * @description Instância global do Axios para comunicação com o Backend.
+ * @update Adicionado timeout de 15s (Fail Fast) para evitar travamento da UI quando o servidor cai.
+ */
 export const api = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true, 
+    timeout: 15000, // 15 segundos: Tempo máximo de espera antes de abortar
+    headers: {
+        'Content-Type': 'application/json',
+    }
 });
 
 // --- Interceptor de Resposta ---
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Lógica de Exceção:
-        // Se o erro for na rota de verificação de perfil (/user/profile),
-        // NÃO executamos o logout forçado. Apenas rejeitamos a promessa.
-        // Isso permite que o AuthContext trate o "não logado" silenciosamente na Landing Page.
-        const isProfileCheck = error.config?.url?.includes('/user/profile');
+        const originalRequest = error.config;
+
+        // 1. Tratamento de Erro de Rede / Timeout (Backend Off ou Lento)
+        // ECONNABORTED = Timeout do Axios
+        // ERR_NETWORK / Network Error = Backend desligado ou porta fechada
+        if (error.code === 'ECONNABORTED' || error.message.includes('Network Error') || error.code === 'ERR_NETWORK') {
+            console.error('[API] Falha crítica de conexão ou timeout.');
+            
+            // Modificamos a mensagem de erro para algo que a UI (useClients/useAuth) possa exibir amigavelmente
+            error.message = 'O servidor não está respondendo. Verifique sua conexão ou tente novamente em instantes.';
+            
+            return Promise.reject(error);
+        }
+
+        // 2. Tratamento de Sessão Expirada (401/403)
+        // Se for na rota de verificação de perfil, ignoramos o logout forçado (deixa o contexto lidar silenciosamente)
+        const isProfileCheck = originalRequest?.url?.includes('/user/profile');
 
         if ((error.response?.status === 401 || error.response?.status === 403) && !isProfileCheck) {
-            // Se for qualquer outra rota (ex: salvar cliente) e der 401, aí sim desloga.
             console.warn("Sessão expirada em operação protegida. Redirecionando...");
             forceGlobalLogout();
         }
         
+        // Repassa o erro original (ou modificado) para ser tratado no try/catch do componente
         return Promise.reject(error);
     }
 );
@@ -10074,14 +10082,12 @@ export interface LoginResponse {
 
 // src/core/types/client.ts
 
-// Enum para Tipos de Endereço
 export enum AddressType {
     MAIN = 'MAIN',
     BILLING = 'BILLING',
     SHIPPING = 'SHIPPING'
 }
 
-// Interface para o Objeto de Endereço
 export interface ClientAddress {
     id: string;
     street: string;
@@ -10094,7 +10100,6 @@ export interface ClientAddress {
     type: AddressType;
 }
 
-// DTO para o Objeto de Endereço
 export interface AddressDto {
     street: string;
     number: string;
@@ -10109,7 +10114,7 @@ export interface AddressDto {
 /**
  * @interface Client
  * @description Tipagem para a Entidade Cliente.
- * @update Adicionado campo aiSummary (Memória de Longo Prazo).
+ * @update Adicionado userNotes (Notas Privadas).
  */
 export interface Client {
     id: string;
@@ -10119,9 +10124,12 @@ export interface Client {
     email: string | null;
     phone: string | null;
     
-    // --- NOVO: Resumo da IA ---
-    aiSummary: string | null; 
+    // IA Memory
+    aiSummary: string | null;
     
+    // Notas Privadas do Usuário ---
+    userNotes: string | null;
+
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -10138,9 +10146,8 @@ export interface CreateClientDto {
     document?: string; 
     email?: string;
     phone?: string;
-    
-    // --- NOVO ---
     aiSummary?: string;
+    userNotes?: string;
 
     addresses?: AddressDto[];
 }
@@ -10155,9 +10162,8 @@ export interface UpdateClientDto {
     email?: string;
     phone?: string;
     isActive?: boolean;
-    
-    // --- NOVO ---
     aiSummary?: string;
+    userNotes?: string;
 
     addresses?: AddressDto[];
 }
@@ -12382,27 +12388,35 @@ export const AnalysisActionCard: React.FC<AnalysisActionCardProps> = ({
 // src/features/crm/components/ai-widget/AIInputWidget.tsx
 
 import React, { useState } from 'react';
-import { FaMicrophone, FaPaperPlane, FaMagic, FaBrain } from 'react-icons/fa'; // Adicionado FaBrain
+import { FaMicrophone, FaPaperPlane, FaMagic, FaBrain } from 'react-icons/fa';
 
 interface AIInputWidgetProps {
     onAnalyze: (text: string) => void;
     isAnalyzing: boolean;
+    // --- NOVAS PROPS PARA CONTROLE DE ESTADO ---
+    value: string;
+    onChange: (text: string) => void;
 }
 
 /**
  * @component AIInputWidget
  * @description Console de entrada multimodal (Texto/Voz).
- * @update Visual restaurado com ícone de Cérebro e placeholder original.
+ * @update Refatorado para ser um componente CONTROLADO (Controlled Component).
+ * O estado do texto agora reside no pai (CRMPage), permitindo limpeza externa.
  */
-export const AIInputWidget: React.FC<AIInputWidgetProps> = ({ onAnalyze, isAnalyzing }) => {
+export const AIInputWidget: React.FC<AIInputWidgetProps> = ({ 
+    onAnalyze, 
+    isAnalyzing,
+    value,      // Recebe do pai
+    onChange    // Notifica o pai
+}) => {
     
-    const [text, setText] = useState('');
+    // O estado local 'text' foi removido. Usamos 'value'.
     const [isRecording, setIsRecording] = useState(false);
 
     const handleSend = () => {
-        if (!text.trim()) return;
-        onAnalyze(text);
-        // Mantemos o texto por segurança até o sucesso, controlado pelo pai se necessário.
+        if (!value.trim()) return;
+        onAnalyze(value);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -12416,13 +12430,14 @@ export const AIInputWidget: React.FC<AIInputWidgetProps> = ({ onAnalyze, isAnaly
         setIsRecording(!isRecording);
         if (!isRecording) {
             console.log("Microfone ativado...");
+            // Futuro: Implementar Web Speech API aqui e chamar onChange(transcrição)
         }
     };
 
     return (
         <div className="bg-base-metallic border-t border-gray-700 p-3 flex flex-col h-full">
             
-            {/* Header do Widget com o Ícone de Cérebro */}
+            {/* Header do Widget */}
             <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center space-x-2">
                     <FaBrain className="text-accent-primary w-4 h-4" />
@@ -12440,16 +12455,14 @@ export const AIInputWidget: React.FC<AIInputWidgetProps> = ({ onAnalyze, isAnaly
 
             <div className="flex-1 relative">
                 <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
+                    value={value} // Controlado pelo Pai
+                    onChange={(e) => onChange(e.target.value)} // Atualiza o Pai
                     onKeyDown={handleKeyDown}
                     className="w-full h-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-white resize-none focus:ring-1 focus:ring-accent-primary focus:border-accent-primary focus:outline-none scrollbar-thin scrollbar-thumb-gray-700 placeholder-gray-500"
-                    // Placeholder restaurado conforme pedido
                     placeholder="Digite uma nota, cole um e-mail ou use o microfone..."
                     disabled={isAnalyzing}
                 />
                 
-                {/* Botão de Microfone Flutuante */}
                 <button 
                     onClick={handleMicClick}
                     className={`absolute bottom-2 right-2 p-2 rounded-full transition ${isRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-gray-800 text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500'}`}
@@ -12462,7 +12475,7 @@ export const AIInputWidget: React.FC<AIInputWidgetProps> = ({ onAnalyze, isAnaly
             <div className="mt-2">
                 <button
                     onClick={handleSend}
-                    disabled={isAnalyzing || !text.trim()}
+                    disabled={isAnalyzing || !value.trim()}
                     className="w-full flex items-center justify-center py-2 bg-accent-primary hover:bg-orange-600 text-base-dark font-bold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-xs shadow-lg transform active:scale-95"
                 >
                     {isAnalyzing ? 'Analisando...' : <><FaPaperPlane className="mr-2" /> Enviar para Análise</>}
@@ -12479,44 +12492,94 @@ export const AIInputWidget: React.FC<AIInputWidgetProps> = ({ onAnalyze, isAnaly
 
 import React, { useState, useEffect } from 'react';
 import { 
-    FaUser, FaEdit, FaHistory, FaEnvelope, FaPhone, FaMapMarkerAlt, 
-    FaIdCard, FaBrain, FaSave, FaTimes, // Adicionados ícones de ação
-    FaMagic
+    FaUser, FaEdit, FaEnvelope, FaPhone, FaMapMarkerAlt, 
+    FaIdCard, FaBrain, FaSave, FaTimes, 
+    FaMagic, FaPlusCircle, FaStickyNote, 
+    FaChevronDown, FaChevronUp
 } from 'react-icons/fa';
 import { Client, AddressType } from '@/core/types/client';
-// IMPORTAÇÃO NECESSÁRIA PARA O MODO DE EDIÇÃO
-import { ClientForm } from './ClientForm';
+import { ClientForm } from '@/core/components/client/ClientForm';
 import { InteractionTimeline } from './InteractionTimeline';
+
+export type DashboardMode = 'VIEW' | 'EDIT' | 'CREATE';
 
 interface ClientDashboardProps {
     client: Client | null;
-    onEdit: (client: Client) => void; // Mantido para compatibilidade, mas usaremos edição local
-    // NOVO CALLBACK: Para avisar a página que a edição terminou
-    onUpdateSuccess?: () => void; 
+    mode: DashboardMode;
+    onModeChange: (mode: DashboardMode) => void;
+    onUpdateSuccess: () => void;
 }
 
 type DashboardTab = 'OVERVIEW' | 'TIMELINE';
 
+// --- SUB-COMPONENTE REUTILIZÁVEL: CARD EXPANSÍVEL ---
+// Garante que IA e Notas tenham exatamente o mesmo comportamento e visual
+const ExpandableInfoCard: React.FC<{ 
+    title: string; 
+    icon: React.ElementType; 
+    content: string | null; 
+    placeholder: string;
+}> = ({ title, icon: Icon, content, placeholder }) => {
+    
+    const [isExpanded, setIsExpanded] = useState(false);
+    // Define um limite de caracteres para ativar o collapse (ex: 200 chars)
+    const shouldCollapse = content && content.length > 200;
+
+    return (
+        <div className="bg-gray-800/50 rounded-xl border border-gray-600 p-4 relative overflow-hidden group transition-all hover:border-gray-500">
+            {/* Barra lateral gradiente (Estilo unificado) */}
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-accent-secondary to-accent-primary"></div>
+            
+            <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-bold text-white flex items-center">
+                    <Icon className="mr-2 text-accent-primary" /> {title}
+                </h3>
+            </div>
+            
+            <div className="relative">
+                <div className={`text-sm text-gray-300 leading-relaxed whitespace-pre-wrap ${!isExpanded && shouldCollapse ? 'line-clamp-3' : ''}`}>
+                    {content || <span className="text-gray-500 italic">{placeholder}</span>}
+                </div>
+
+                {/* Botão de Toggle (Só aparece se o texto for longo) */}
+                {shouldCollapse && (
+                    <button 
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="mt-2 text-[10px] uppercase font-bold text-accent-secondary hover:text-white flex items-center transition focus:outline-none"
+                    >
+                        {isExpanded ? (
+                            <>Recolher <FaChevronUp className="ml-1" /></>
+                        ) : (
+                            <>Ler mais <FaChevronDown className="ml-1" /></>
+                        )}
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
+
 /**
  * @component ClientDashboard
- * @description Painel Central: Exibe o "Dossiê" completo do cliente selecionado.
- * Inclui dados cadastrais, resumo de inteligência (Long-Term Memory) e histórico.
+ * @description Painel Central Unificado.
+ * @update Adicionado suporte a Collapse/Expand e novo card de Notas do Usuário.
  */
-export const ClientDashboard: React.FC<ClientDashboardProps> = ({ client, onEdit, onUpdateSuccess }) => {
+export const ClientDashboard: React.FC<ClientDashboardProps> = ({ 
+    client, 
+    mode, 
+    onModeChange, 
+    onUpdateSuccess 
+}) => {
     
     const [activeTab, setActiveTab] = useState<DashboardTab>('OVERVIEW');
-    
-    // --- NOVO ESTADO: Controle de Edição Local ---
-    const [isEditing, setIsEditing] = useState(false);
 
-    // Efeito para resetar a edição se o cliente mudar (clique na lista lateral)
     useEffect(() => {
-        setIsEditing(false);
-        setActiveTab('OVERVIEW');
-    }, [client?.id]);
+        if (mode !== 'CREATE') {
+            setActiveTab('OVERVIEW');
+        }
+    }, [client?.id, mode]);
 
-    // --- EMPTY STATE (Nenhum cliente selecionado) ---
-    if (!client) {
+    if (!client && mode !== 'CREATE') {
         return (
             <div className="h-full flex flex-col items-center justify-center text-gray-500 bg-base-metallic/50 rounded-xl border border-gray-700/50 border-dashed">
                 <div className="p-4 bg-gray-800 rounded-full mb-4">
@@ -12524,75 +12587,90 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ client, onEdit
                 </div>
                 <h3 className="text-lg font-medium text-gray-400">Nenhum Cliente Selecionado</h3>
                 <p className="text-sm mt-2 max-w-xs text-center opacity-70">
-                    Selecione um cliente na lista à esquerda para visualizar seu dossiê, resumo da IA e histórico.
+                    Selecione um cliente na lista à esquerda ou clique em "Novo" para cadastrar.
                 </p>
             </div>
         );
     }
 
-    // Helper para endereço principal (Visualização)
-    const mainAddress = client.addresses?.find(a => a.type === AddressType.MAIN) || client.addresses?.[0];
+    const isCreating = mode === 'CREATE';
+    const isFormOpen = mode === 'CREATE' || mode === 'EDIT';
+
+    const displayClient = client || {
+        name: 'Novo Cliente',
+        document: '',
+        email: '',
+        phone: '',
+        isActive: true,
+        aiSummary: null,
+        userNotes: null, // Placeholder para criação
+        addresses: []
+    } as unknown as Client;
+
+    const mainAddress = displayClient.addresses?.find(a => a.type === AddressType.MAIN) || displayClient.addresses?.[0];
     const addressText = mainAddress 
         ? `${mainAddress.street}, ${mainAddress.number} - ${mainAddress.district}, ${mainAddress.city}/${mainAddress.state}`
         : 'Sem endereço cadastrado';
 
-    // Handler de sucesso do formulário
     const handleFormSuccess = () => {
-        setIsEditing(false);
-        if (onUpdateSuccess) onUpdateSuccess();
+        onUpdateSuccess();
     };
 
     return (
         <div className="bg-base-metallic rounded-xl border border-gray-700 flex flex-col h-full overflow-hidden shadow-2xl relative">
             
-            {/* --- HEADER DO CLIENTE --- */}
+            {/* --- HEADER --- */}
             <div className="p-6 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900 flex-shrink-0">
                 <div className="flex justify-between items-start">
                     <div className="flex items-center space-x-4">
-                        {/* Avatar / Ícone */}
-                        <div className="h-16 w-16 rounded-full bg-accent-primary/20 flex items-center justify-center border-2 border-accent-primary text-accent-primary shadow-lg">
-                            <span className="text-2xl font-bold">{client.name.charAt(0).toUpperCase()}</span>
+                        <div className={`h-16 w-16 rounded-full flex items-center justify-center border-2 shadow-lg ${isCreating ? 'bg-gray-700 border-gray-500 text-gray-400' : 'bg-accent-primary/20 border-accent-primary text-accent-primary'}`}>
+                            {isCreating ? (
+                                <FaPlusCircle className="text-2xl" />
+                            ) : (
+                                <span className="text-2xl font-bold">{displayClient.name.charAt(0).toUpperCase()}</span>
+                            )}
                         </div>
                         
                         <div>
-                            <h1 className="text-2xl font-extrabold text-white tracking-tight">{client.name}</h1>
-                            <div className="flex items-center space-x-3 mt-1 text-sm text-gray-400">
-                                {client.document ? (
-                                    <span className="flex items-center"><FaIdCard className="mr-1.5 opacity-70" /> {client.document}</span>
-                                ) : (
-                                    <span className="flex items-center text-accent-secondary"><FaMagic className="mr-1.5" /> Lead (Em prospecção)</span>
-                                )}
-                                <span className={`px-2 py-0.5 rounded text-[10px] uppercase border ${client.isActive ? 'border-green-500/30 text-green-400 bg-green-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
-                                    {client.isActive ? 'Ativo' : 'Inativo'}
-                                </span>
-                            </div>
+                            <h1 className="text-2xl font-extrabold text-white tracking-tight">
+                                {isCreating ? 'Cadastrando Novo Cliente' : displayClient.name}
+                            </h1>
+                            
+                            {!isCreating && (
+                                <div className="flex items-center space-x-3 mt-1 text-sm text-gray-400">
+                                    {displayClient.document ? (
+                                        <span className="flex items-center"><FaIdCard className="mr-1.5 opacity-70" /> {displayClient.document}</span>
+                                    ) : (
+                                        <span className="flex items-center text-accent-secondary"><FaMagic className="mr-1.5" /> Lead (Em prospecção)</span>
+                                    )}
+                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase border ${displayClient.isActive ? 'border-green-500/30 text-green-400 bg-green-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
+                                        {displayClient.isActive ? 'Ativo' : 'Inativo'}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Ações do Header (Alternam entre Editar e Salvar) */}
                     <div className="flex space-x-2">
-                        {isEditing ? (
+                        {isFormOpen ? (
                             <>
                                 <button 
-                                    onClick={() => setIsEditing(false)}
+                                    onClick={() => onModeChange('VIEW')}
                                     className="flex items-center px-3 py-2 text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg transition text-xs font-bold border border-gray-600"
                                 >
                                     <FaTimes className="mr-1" /> Cancelar
                                 </button>
-                                {/* O atributo form="client-edit-form" conecta este botão ao formulário 
-                                    renderizado lá embaixo, permitindo o submit à distância.
-                                */}
                                 <button 
                                     type="submit"
                                     form="client-edit-form"
                                     className="flex items-center px-3 py-2 text-white bg-accent-secondary hover:bg-violet-600 rounded-lg transition text-xs font-bold shadow-lg"
                                 >
-                                    <FaSave className="mr-1" /> Salvar
+                                    <FaSave className="mr-1" /> {isCreating ? 'Cadastrar' : 'Salvar'}
                                 </button>
                             </>
                         ) : (
                             <button 
-                                onClick={() => setIsEditing(true)}
+                                onClick={() => onModeChange('EDIT')}
                                 className="p-2 text-gray-400 hover:text-white bg-gray-700/50 hover:bg-gray-700 rounded-lg transition border border-gray-600"
                                 title="Editar Dados"
                             >
@@ -12603,9 +12681,8 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ client, onEdit
                 </div>
             </div>
 
-            {/* --- NAVEGAÇÃO (TABS) --- */}
-            {/* Escondemos as abas durante a edição para limpar a visão */}
-            {!isEditing && (
+            {/* --- NAVEGAÇÃO --- */}
+            {!isFormOpen && (
                 <div className="flex border-b border-gray-700 bg-gray-800/50 px-6 flex-shrink-0">
                     <button 
                         onClick={() => setActiveTab('OVERVIEW')}
@@ -12622,301 +12699,94 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ client, onEdit
                 </div>
             )}
 
-            {/* --- CONTEÚDO --- */}
+            {/* --- CONTEÚDO PRINCIPAL --- */}
             <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                 
-                {activeTab === 'OVERVIEW' && (
+                {isFormOpen ? (
+                    // --- MODO FORMULÁRIO ---
                     <div className="space-y-6 animate-fade-in">
                         
-                        {/* 1. MEMÓRIA DA IA (SUMMARY) - Sempre visível no topo */}
-                        <div className="bg-gray-800/50 rounded-xl border border-gray-600 p-4 relative overflow-hidden group">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-accent-secondary to-accent-primary"></div>
-                            
-                            <div className="flex justify-between items-center mb-3">
-                                <h3 className="text-sm font-bold text-white flex items-center">
-                                    <FaBrain className="mr-2 text-accent-primary" /> Dossiê Vivo (IA Memory)
-                                </h3>
-                            </div>
-                            
-                            <div className="text-sm text-gray-300 leading-relaxed">
-                                {client.aiSummary ? (
-                                    client.aiSummary
-                                ) : (
-                                    <span className="text-gray-500 italic">
-                                        Ainda não há um resumo gerado pela Inteligência Artificial para este cliente.
-                                    </span>
-                                )}
-                            </div>
+                        {/* Exibição dos Cards em modo "Read-Only/Disabled" visual durante a criação para manter layout */}
+                        <div className="opacity-60 grayscale cursor-not-allowed">
+                            <ExpandableInfoCard 
+                                title="Dossiê Vivo (IA Memory)"
+                                icon={FaBrain}
+                                content={displayClient.aiSummary}
+                                placeholder="O dossiê será gerado automaticamente."
+                            />
                         </div>
 
-                        {/* 2. MÉTRICAS (Sempre visível) */}
-                        <div className="grid grid-cols-3 gap-4 opacity-50 grayscale cursor-not-allowed" title="Em breve">
-                            <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 text-center">
-                                <div className="text-2xl font-bold text-white">R$ 0,00</div>
-                                <div className="text-xs text-gray-500 uppercase">LTV Total</div>
-                            </div>
-                            <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 text-center">
-                                <div className="text-2xl font-bold text-white">0</div>
-                                <div className="text-xs text-gray-500 uppercase">Negócios</div>
-                            </div>
-                            <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 text-center">
-                                <div className="text-2xl font-bold text-white">-</div>
-                                <div className="text-xs text-gray-500 uppercase">Última Compra</div>
-                            </div>
+                        <div className="pt-2 border-t border-gray-700">
+                            <h4 className="text-xs font-bold text-accent-secondary uppercase mb-4">
+                                {isCreating ? 'Preencha os dados do novo cliente' : 'Editando Dados Cadastrais'}
+                            </h4>
+                            <ClientForm 
+                                client={isCreating ? undefined : client!} 
+                                onSuccess={handleFormSuccess}
+                                showSubmitButton={false}
+                            />
                         </div>
-
-                        {/* 3. ÁREA DINÂMICA: LEITURA ou EDIÇÃO */}
-                        {/* Aqui fazemos a troca solicitada: Cards de Visualização OU Formulário */}
-                        
-                        {isEditing ? (
-                            // --- MODO EDIÇÃO: Formulário In-Place ---
-                            <div className="pt-2 border-t border-gray-700 animate-fade-in">
-                                <h4 className="text-xs font-bold text-accent-secondary uppercase mb-4">Editando Dados Cadastrais</h4>
-                                <ClientForm 
-                                    client={client} 
-                                    onSuccess={handleFormSuccess}
+                    </div>
+                ) : (
+                    // --- MODO VISUALIZAÇÃO ---
+                    <>
+                        {activeTab === 'OVERVIEW' && (
+                            <div className="space-y-6 animate-fade-in">
+                                
+                                {/* 1. Dossiê da IA */}
+                                <ExpandableInfoCard 
+                                    title="Dossiê Vivo (IA Memory)"
+                                    icon={FaBrain}
+                                    content={displayClient.aiSummary}
+                                    placeholder="Ainda não há um resumo gerado pela Inteligência Artificial."
                                 />
-                            </div>
-                        ) : (
-                            // --- MODO VISUALIZAÇÃO: Cards Originais ---
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* Contato */}
-                                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Contato</h4>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center text-sm text-gray-200">
-                                            <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400">
-                                                <FaEnvelope />
+
+                                {/* 2. Notas do Usuário (NOVO) */}
+                                <ExpandableInfoCard 
+                                    title="Notas Pessoais"
+                                    icon={FaStickyNote}
+                                    content={displayClient.userNotes}
+                                    placeholder="Nenhuma nota privada adicionada. Clique em editar para adicionar."
+                                />
+
+                                {/* 3. Dados Cadastrais */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Contato */}
+                                    <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                                        <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Contato</h4>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center text-sm text-gray-200">
+                                                <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400"><FaEnvelope /></div>
+                                                <span className="truncate">{displayClient.email || 'Não informado'}</span>
                                             </div>
-                                            <span className="truncate">{client.email || 'Não informado'}</span>
-                                        </div>
-                                        <div className="flex items-center text-sm text-gray-200">
-                                            <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400">
-                                                <FaPhone />
+                                            <div className="flex items-center text-sm text-gray-200">
+                                                <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400"><FaPhone /></div>
+                                                <span>{displayClient.phone || 'Não informado'}</span>
                                             </div>
-                                            <span>{client.phone || 'Não informado'}</span>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Endereço */}
-                                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Localização Principal</h4>
-                                    <div className="flex items-start text-sm text-gray-200">
-                                        <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400 flex-shrink-0">
-                                            <FaMapMarkerAlt />
+                                    {/* Endereço */}
+                                    <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                                        <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Localização Principal</h4>
+                                        <div className="flex items-start text-sm text-gray-200">
+                                            <div className="w-8 h-8 rounded bg-gray-700 flex items-center justify-center mr-3 text-gray-400 flex-shrink-0"><FaMapMarkerAlt /></div>
+                                            <span className="leading-relaxed">{addressText}</span>
                                         </div>
-                                        <span className="leading-relaxed">{addressText}</span>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                    </div>
+                        {activeTab === 'TIMELINE' && (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
+                                <InteractionTimeline clientId={displayClient.id} />
+                            </div>
+                        )}
+                    </>
                 )}
-
-                {activeTab === 'TIMELINE' && (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
-                        <InteractionTimeline clientId={client.id} />
-
-                    </div>
-                )}
-
             </div>
         </div>
-    );
-};
-
-
-// ===== FILE: src/features/crm/components/client-dashboard/ClientForm.tsx =====
-
-// src/features/crm/components/client-dashboard/ClientForm.tsx
-
-import React, { useState, useEffect } from 'react';
-import { FaMapMarkerAlt, FaExclamationTriangle } from 'react-icons/fa';
-import { useClientMutation } from '@/core/hooks/useClientMutation';
-import { Client, AddressType } from '@/core/types/client';
-
-interface ClientFormProps {
-    client: Client;
-    onSuccess: () => void;
-}
-
-/**
- * @component ClientForm
- * @description Formulário de Edição In-Place para o Dashboard do Cliente.
- * @note Este componente é controlado remotamente pelo botão "Salvar" do Header via ID do form.
- */
-export const ClientForm: React.FC<ClientFormProps> = ({ client, onSuccess }) => {
-    
-    const { updateClient, isLoading, error } = useClientMutation();
-
-    // --- ESTADO DO FORMULÁRIO ---
-    // Inicializamos diretamente com os dados do cliente passado via prop
-    const mainAddress = client.addresses?.find(a => a.type === AddressType.MAIN) || client.addresses?.[0];
-
-    const [formData, setFormData] = useState({
-        name: client.name,
-        document: client.document || '',
-        email: client.email || '',
-        phone: client.phone || '',
-        address: {
-            street: mainAddress?.street || '',
-            number: mainAddress?.number || '',
-            district: mainAddress?.district || '',
-            city: mainAddress?.city || '',
-            state: mainAddress?.state || '',
-            zipCode: mainAddress?.zipCode || ''
-        }
-    });
-
-    // Handlers de Input
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    };
-
-    const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData(prev => ({
-            ...prev,
-            address: {
-                ...prev.address,
-                [e.target.name]: e.target.value
-            }
-        }));
-    };
-
-    // Lógica de Submissão
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // Monta payload
-        const addressesToSend = formData.address.street.trim() ? [{
-            street: formData.address.street,
-            number: formData.address.number || 'S/N',
-            district: formData.address.district || 'Centro',
-            city: formData.address.city || 'Indefinida',
-            state: formData.address.state || 'UF',
-            zipCode: formData.address.zipCode || '00000000',
-            type: AddressType.MAIN
-        }] : undefined;
-
-        const payload = {
-            name: formData.name,
-            document: formData.document.trim() || undefined,
-            email: formData.email.trim() || undefined,
-            phone: formData.phone.trim() || undefined,
-            addresses: addressesToSend
-        };
-
-        try {
-            await updateClient(client.id, payload);
-            onSuccess(); // Avisa o pai que terminou
-        } catch (err) {
-            console.error("Erro no form:", err);
-            // O erro visual é tratado via variável 'error' do hook abaixo
-        }
-    };
-
-    return (
-        // ID é crucial para o botão do Header encontrar este form
-        <form id="client-edit-form" onSubmit={handleSubmit} className="space-y-5 animate-fade-in">
-            
-            {/* Feedback de Erro */}
-            {error && (
-                <div className="p-3 bg-red-900/30 border border-red-800 text-red-300 rounded-lg text-sm flex items-center">
-                    <FaExclamationTriangle className="mr-2" />
-                    {error}
-                </div>
-            )}
-
-            {/* --- BLOCO 1: DADOS BÁSICOS --- */}
-            <div className="space-y-4">
-                {/* Nome */}
-                <div>
-                    <label className="block text-[10px] font-bold text-accent-primary uppercase mb-1 tracking-wider">
-                        Nome Completo *
-                    </label>
-                    <input 
-                        type="text" name="name" value={formData.name} onChange={handleChange} required
-                        className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:ring-1 focus:ring-accent-secondary focus:border-accent-secondary focus:outline-none transition placeholder-gray-600" 
-                    />
-                </div>
-
-                {/* Contato (Grid) */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">
-                            E-mail
-                        </label>
-                        <input 
-                            type="email" name="email" value={formData.email} onChange={handleChange}
-                            className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition" 
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">
-                            Telefone
-                        </label>
-                        <input 
-                            type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="(00) 00000-0000"
-                            className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition" 
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* --- BLOCO 2: ENDEREÇO (CARD VISUAL) --- */}
-            <div className="bg-gray-800/40 p-4 rounded-xl border border-gray-700/50">
-                <label className="text-[10px] font-bold text-gray-300 uppercase mb-3 flex items-center tracking-wider">
-                    <FaMapMarkerAlt className="mr-1.5 text-accent-secondary" /> Endereço Principal
-                </label>
-                
-                <div className="grid grid-cols-4 gap-3">
-                    <div className="col-span-3">
-                        <input type="text" name="street" placeholder="Logradouro" value={formData.address.street} onChange={handleAddressChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
-                    </div>
-                    <div className="col-span-1">
-                        <input type="text" name="number" placeholder="Nº" value={formData.address.number} onChange={handleAddressChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
-                    </div>
-                    
-                    <div className="col-span-2">
-                        <input type="text" name="district" placeholder="Bairro" value={formData.address.district} onChange={handleAddressChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
-                    </div>
-                    <div className="col-span-2">
-                        <input type="text" name="city" placeholder="Cidade" value={formData.address.city} onChange={handleAddressChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
-                    </div>
-                    
-                    <div className="col-span-1">
-                        <input type="text" name="state" placeholder="UF" maxLength={2} value={formData.address.state} onChange={handleAddressChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white uppercase focus:border-accent-secondary focus:outline-none" />
-                    </div>
-                    <div className="col-span-3">
-                        <input type="text" name="zipCode" placeholder="CEP" value={formData.address.zipCode} onChange={handleAddressChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
-                    </div>
-                </div>
-            </div>
-
-            {/* --- BLOCO 3: DOCS --- */}
-            <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">
-                    CPF / CNPJ
-                </label>
-                <input 
-                    type="text" name="document" value={formData.document} onChange={handleChange}
-                    className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition font-mono" 
-                />
-            </div>
-
-            {/* Loading State (Visual apenas, pois o botão está no header, mas podemos mostrar algo aqui se demorar muito) */}
-            {isLoading && (
-                <p className="text-xs text-center text-accent-secondary animate-pulse">Salvando alterações...</p>
-            )}
-        </form>
     );
 };
 
@@ -13231,10 +13101,9 @@ import React, { useState } from 'react';
 import { FaUser, FaPlus, FaExclamationTriangle } from 'react-icons/fa';
 import { useClients } from '@/core/hooks/useClients';
 import { Client } from '@/core/types/client';
-import { ClientModal } from '@/core/components/client/ClientModal';
+// REMOVIDO: import { ClientModal } ... (O modal não deve mais existir aqui)
 import { ClientSearchInput } from './ClientSearchInput';
 import { ClientListItem } from './ClientListItem';
-// NOVO IMPORT: Hook de Mutação para o Delete
 import { useClientMutation } from '@/core/hooks/useClientMutation';
 
 interface ClientListWidgetProps {
@@ -13260,29 +13129,20 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
         refreshData 
     } = useClients(refreshTrigger);
 
-    // Hook de Mutação para ações destrutivas/edição
     const { deleteClient, updateClient, isLoading: isMutating } = useClientMutation();
-
     const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
     
-    
+    // REMOVIDO: Estado local do modal (isModalOpen) - A página pai gerencia isso agora.
+
     // --- HANDLERS ---
 
-    /**
-     * @method handleSelect
-     * @description Gerencia a seleção e "deseleção" (Toggle) de um cliente.
-     * @update Agora verifica se o ID já está selecionado para limpar o estado (Toggle).
-     */
     const handleSelect = (client: Client) => {
-        // Verifica se o cliente clicado JÁ É o que estava selecionado
         if (selectedClientId === client.id) {
-            // CENÁRIO: Desmarcar (Limpar Seleção)
             setSelectedClientId(null);
             if (onSelectClient) {
-                onSelectClient(null); // Avisa ao pai que não tem mais contexto
+                onSelectClient(null);
             }
         } else {
-            // CENÁRIO: Marcar Novo
             setSelectedClientId(client.id);
             if (onSelectClient) {
                 onSelectClient(client);
@@ -13290,22 +13150,15 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
         }
     };
 
-    const handleSuccessCreateOrUpdate = () => {
-        refreshData(); // Atualiza a lista
-    };
-
+    // Handler direto: Apenas repassa a intenção para o Pai (CRMPage)
     const handleNewClient = () => {
-        onNewClient();
+        onNewClient(); 
     };
 
     const handleEdit = (client: Client) => {
         onEditClient(client);
     };
 
-/**
-     * @method handleDelete
-     * @description Agora atua como um Toggle Inteligente (Ativar/Desativar).
-     */
     const handleDelete = async (client: Client) => {
         const isActive = client.isActive;
         const actionText = isActive ? 'mover para a lixeira' : 'reativar';
@@ -13314,14 +13167,11 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
         if (confirm(confirmText)) {
             try {
                 if (isActive) {
-                    // Se está ativo, desativa (Soft Delete)
                     await deleteClient(client.id);
                 } else {
-                    // Se está inativo, reativa (Update simples)
                     await updateClient(client.id, { isActive: true });
                 }
-                // Atualiza a lista visualmente
-                refreshData(); 
+                refreshData();
             } catch (error) {
                 console.error("Falha ao alterar status:", error);
                 alert(`Erro ao ${actionText} cliente.`);
@@ -13381,7 +13231,6 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
                         client={client}
                         onClick={handleSelect}
                         isSelected={selectedClientId === client.id}
-                        // NOVAS PROPS CONECTADAS
                         onEdit={handleEdit}
                         onDelete={handleDelete}
                     />
@@ -13392,6 +13241,7 @@ export const ClientListWidget: React.FC<ClientListWidgetProps> = ({
                 {clients.length} registro(s) carregado(s)
             </div>
 
+            {/* REMOVIDO: <ClientModal ... /> - Não renderizamos mais o modal aqui */}
         </div>
     );
 };
@@ -13587,6 +13437,646 @@ export const WhatsAppWidget: React.FC = () => {
 };
 
 
+// ===== FILE: src/features/crm/components/deals/DealForm.tsx =====
+
+// src/features/crm/components/deals/DealForm.tsx
+
+import React, { useState, useEffect } from 'react';
+import { FaSave, FaPlus, FaTrash, FaBox, FaWrench, FaExclamationTriangle } from 'react-icons/fa';
+import { useClients } from '@/core/hooks/useClients';
+import { useDeals } from '@/features/crm/hooks/useDeals';
+import { DealStatus, DealItemType, CRMDeal } from '@/features/crm/types';
+
+interface DealFormProps {
+    deal?: CRMDeal; // <--- NOVO: Dados para edição
+    initialStatus?: DealStatus;
+    onSuccess: () => void;
+    onCancel: () => void;
+}
+
+interface LocalItem {
+    id: string; // ID local ou do banco
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    type: DealItemType;
+}
+
+export const DealForm: React.FC<DealFormProps> = ({ deal, initialStatus, onSuccess, onCancel }) => {
+    
+    // Hooks
+    const { clients } = useClients(); 
+    const { createDeal, updateDeal, isLoading } = useDeals(); // <--- updateDeal importado
+
+    const isEditing = !!deal;
+
+    // Estados do Cabeçalho
+    const [title, setTitle] = useState('');
+    const [clientId, setClientId] = useState('');
+    const [status, setStatus] = useState<DealStatus>(initialStatus || DealStatus.NEW);
+    const [probability, setProbability] = useState(50);
+    
+    // Estados dos Itens (Grid)
+    const [items, setItems] = useState<LocalItem[]>([]);
+    const [error, setError] = useState<string | null>(null);
+
+    // Estado do "Novo Item" (Linha de input)
+    const [newItem, setNewItem] = useState<Partial<LocalItem>>({
+        description: '',
+        quantity: 1,
+        unitPrice: 0,
+        type: DealItemType.SERVICE
+    });
+
+    // --- EFEITO: HIDRATAÇÃO (EDIT MODE) ---
+    useEffect(() => {
+        if (deal) {
+            setTitle(deal.title);
+            setClientId(deal.clientId);
+            setStatus(deal.status);
+            setProbability(deal.probability);
+            
+            // Mapeia itens vindos do backend para o formato local
+            if (deal.items && deal.items.length > 0) {
+                setItems(deal.items.map(i => ({
+                    id: i.id,
+                    description: i.description,
+                    quantity: Number(i.quantity),
+                    unitPrice: Number(i.unitPrice),
+                    type: i.type
+                })));
+            } else {
+                setItems([]);
+            }
+        } else {
+            // Reset ou Default para Criação
+            setStatus(initialStatus || DealStatus.NEW);
+        }
+    }, [deal, initialStatus]);
+
+    // --- CÁLCULOS ---
+    const totalValue = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+
+    // --- HANDLERS DE ITEM ---
+    const handleAddItem = () => {
+        if (!newItem.description || newItem.unitPrice === undefined) return;
+        
+        setItems(prev => [...prev, {
+            id: Math.random().toString(36).substr(2, 9), // ID temporário
+            description: newItem.description!,
+            quantity: Number(newItem.quantity),
+            unitPrice: Number(newItem.unitPrice),
+            type: newItem.type || DealItemType.SERVICE
+        }]);
+
+        // Limpa input
+        setNewItem({ description: '', quantity: 1, unitPrice: 0, type: DealItemType.SERVICE });
+    };
+
+    const handleRemoveItem = (id: string) => {
+        setItems(prev => prev.filter(i => i.id !== id));
+    };
+
+    // --- SUBMIT ---
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+
+        if (!clientId) {
+            setError("Selecione um cliente para prosseguir.");
+            return;
+        }
+
+        const payload = {
+            title,
+            clientId,
+            status,
+            probability,
+            items: items.map(i => ({
+                // Não enviamos ID no create, e no update o backend pode decidir substituir tudo (strategy simples)
+                // ou podemos aprimorar o DTO de update para aceitar IDs. 
+                // Para o MVP, enviaremos os dados para recriação/atualização da lista.
+                description: i.description,
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                type: i.type
+            }))
+        };
+
+        try {
+            if (isEditing && deal) {
+                await updateDeal(deal.id, payload);
+            } else {
+                await createDeal(payload);
+            }
+            onSuccess();
+        } catch (err: any) {
+            console.error(err);
+            setError("Erro ao salvar oportunidade. Verifique os dados.");
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            
+            {/* --- ÁREA DE SCROLL --- */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-1 pr-2 space-y-6">
+                
+                {error && (
+                    <div className="p-3 bg-red-900/30 border border-red-800 text-red-300 rounded-lg text-xs flex items-center">
+                        <FaExclamationTriangle className="mr-2" /> {error}
+                    </div>
+                )}
+
+                {/* 1. CABEÇALHO DO NEGÓCIO */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                        <label className="block text-[10px] font-bold text-accent-primary uppercase mb-1">Título da Oportunidade *</label>
+                        <input 
+                            type="text" value={title} onChange={e => setTitle(e.target.value)} required
+                            className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-accent-secondary focus:outline-none"
+                            placeholder="Ex: Projeto Site Institucional"
+                        />
+                    </div>
+
+                    <div className="col-span-2 md:col-span-1">
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Cliente *</label>
+                        <select 
+                            value={clientId} onChange={e => setClientId(e.target.value)} required
+                            // Desabilita troca de cliente na edição para simplificar regras de negócio por enquanto
+                            disabled={isEditing} 
+                            className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-accent-secondary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <option value="">Selecione...</option>
+                            {clients.map(client => (
+                                <option key={client.id} value={client.id}>{client.name}</option>
+                            ))}
+                        </select>
+                        {clients.length === 0 && <div className="text-[10px] text-gray-500 mt-1">Carregando clientes...</div>}
+                    </div>
+
+                    <div className="col-span-1">
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Fase do Funil</label>
+                        <select 
+                            value={status} onChange={e => setStatus(e.target.value as DealStatus)}
+                            className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-accent-secondary focus:outline-none"
+                        >
+                            {Object.values(DealStatus).map(s => (
+                                <option key={s} value={s}>{s.replace('_', ' ')}</option>
+                            ))}
+                        </select>
+                    </div>
+                    
+                    <div className="col-span-1">
+                         <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Probabilidade (%)</label>
+                         <input 
+                            type="number" min="0" max="100" value={probability} onChange={e => setProbability(Number(e.target.value))}
+                            className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-accent-secondary focus:outline-none"
+                        />
+                    </div>
+                    
+                    <div className="col-span-1 flex flex-col justify-end pb-2">
+                        <div className="text-right">
+                            <span className="text-[10px] text-gray-500 uppercase font-bold">Valor Total Estimado</span>
+                            <div className="text-xl font-bold text-green-400">
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. GRID DE ITENS (Mestre-Detalhe) */}
+                <div className="border-t border-gray-700 pt-4">
+                    <h4 className="text-xs font-bold text-white mb-3 flex items-center">
+                        <span className="bg-accent-secondary/20 text-accent-secondary p-1 rounded mr-2"><FaBox size={10}/></span> 
+                        Itens do Negócio (Produtos/Serviços)
+                    </h4>
+
+                    {/* Tabela */}
+                    <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
+                        <table className="w-full text-left text-xs">
+                            <thead className="bg-gray-900 text-gray-400 uppercase font-bold">
+                                <tr>
+                                    <th className="px-3 py-2">Tipo</th>
+                                    <th className="px-3 py-2">Descrição</th>
+                                    <th className="px-3 py-2 w-20">Qtd</th>
+                                    <th className="px-3 py-2 w-28">Valor Unit.</th>
+                                    <th className="px-3 py-2 w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-700">
+                                {/* Lista de Itens Adicionados */}
+                                {items.map(item => (
+                                    <tr key={item.id} className="hover:bg-gray-700/50 transition">
+                                        <td className="px-3 py-2">
+                                            {item.type === DealItemType.SERVICE ? 
+                                                <FaWrench className="text-blue-400" title="Serviço" /> : 
+                                                <FaBox className="text-orange-400" title="Produto" />
+                                            }
+                                        </td>
+                                        <td className="px-3 py-2 text-white">{item.description}</td>
+                                        <td className="px-3 py-2 text-gray-300">{item.quantity}</td>
+                                        <td className="px-3 py-2 text-gray-300">
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.unitPrice)}
+                                        </td>
+                                        <td className="px-3 py-2 text-center">
+                                            <button type="button" onClick={() => handleRemoveItem(item.id)} className="text-red-500 hover:text-red-400">
+                                                <FaTrash />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+
+                                {/* Linha de Input (Adicionar Novo) */}
+                                <tr className="bg-gray-800/80">
+                                    <td className="px-2 py-2">
+                                        <select 
+                                            value={newItem.type} 
+                                            onChange={e => setNewItem({...newItem, type: e.target.value as DealItemType})}
+                                            className="bg-gray-900 border border-gray-600 rounded px-1 py-1 text-white text-[10px] w-full focus:outline-none"
+                                        >
+                                            <option value={DealItemType.SERVICE}>Serv.</option>
+                                            <option value={DealItemType.PRODUCT}>Prod.</option>
+                                        </select>
+                                    </td>
+                                    <td className="px-2 py-2">
+                                        <input 
+                                            type="text" 
+                                            placeholder="Descrição do item..."
+                                            value={newItem.description}
+                                            onChange={e => setNewItem({...newItem, description: e.target.value})}
+                                            className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white w-full focus:border-accent-primary focus:outline-none"
+                                        />
+                                    </td>
+                                    <td className="px-2 py-2">
+                                        <input 
+                                            type="number" min="1"
+                                            value={newItem.quantity}
+                                            onChange={e => setNewItem({...newItem, quantity: Number(e.target.value)})}
+                                            className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white w-full focus:border-accent-primary focus:outline-none"
+                                        />
+                                    </td>
+                                    <td className="px-2 py-2">
+                                        <input 
+                                            type="number" min="0" step="0.01"
+                                            value={newItem.unitPrice}
+                                            onChange={e => setNewItem({...newItem, unitPrice: Number(e.target.value)})}
+                                            className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white w-full focus:border-accent-primary focus:outline-none"
+                                        />
+                                    </td>
+                                    <td className="px-2 py-2 text-center">
+                                        <button 
+                                            type="button" 
+                                            onClick={handleAddItem}
+                                            className="bg-accent-primary hover:bg-orange-600 text-base-dark p-1.5 rounded shadow transition"
+                                            title="Adicionar Item"
+                                        >
+                                            <FaPlus size={10} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    {items.length === 0 && (
+                        <p className="text-[10px] text-gray-500 mt-2 text-center italic">
+                            Adicione itens para compor o valor do negócio.
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            {/* --- RODAPÉ (AÇÕES) --- */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-700 mt-4">
+                <button 
+                    type="button" 
+                    onClick={onCancel}
+                    className="px-4 py-2 rounded-lg text-sm font-bold text-gray-400 hover:text-white hover:bg-gray-700 transition"
+                >
+                    Cancelar
+                </button>
+                <button 
+                    type="submit"
+                    disabled={isLoading}
+                    className="px-6 py-2 rounded-lg text-sm font-bold text-base-dark bg-accent-secondary hover:bg-violet-500 shadow-lg transition transform active:scale-95 flex items-center"
+                >
+                    {isLoading ? 'Salvando...' : <><FaSave className="mr-2" /> {isEditing ? 'Salvar Alterações' : 'Criar Oportunidade'}</>}
+                </button>
+            </div>
+        </form>
+    );
+};
+
+
+// ===== FILE: src/features/crm/components/deals/DealModal.tsx =====
+
+// src/features/crm/components/deals/DealModal.tsx
+
+import React from 'react';
+import { FaTimes, FaHandshake } from 'react-icons/fa';
+import { DealForm } from './DealForm';
+import { DealStatus, CRMDeal } from '@/features/crm/types';
+
+interface DealModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+    defaultStatus?: DealStatus;
+    currentDeal?: CRMDeal; // <--- NOVO
+}
+
+export const DealModal: React.FC<DealModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    onSuccess,
+    defaultStatus,
+    currentDeal // <--- NOVO
+}) => {
+    
+    if (!isOpen) return null;
+
+    const isEditing = !!currentDeal;
+
+    return (
+        <div className="fixed inset-0 bg-base-dark/70 backdrop-blur-sm z-[9999] flex items-center justify-center transition-all animate-fade-in p-4">
+            
+            <div 
+                className="bg-base-metallic w-full max-w-2xl rounded-xl shadow-2xl border border-gray-600 flex flex-col max-h-[90vh] transform scale-100 transition-all"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex justify-between items-center p-5 border-b border-gray-700 bg-gray-800/50 rounded-t-xl">
+                    <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-accent-secondary/20 rounded-lg text-accent-secondary">
+                            <FaHandshake size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-white">
+                                {isEditing ? 'Editar Oportunidade' : 'Nova Oportunidade'}
+                            </h2>
+                            <p className="text-xs text-gray-400">Defina os detalhes e itens do negócio.</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-white hover:bg-gray-700 p-2 rounded-full transition"
+                    >
+                        <FaTimes />
+                    </button>
+                </div>
+
+                {/* Corpo */}
+                <div className="flex-1 overflow-hidden p-6">
+                    <DealForm 
+                        deal={currentDeal} // <--- Passa o deal
+                        initialStatus={defaultStatus}
+                        onSuccess={() => { onSuccess(); onClose(); }}
+                        onCancel={onClose}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+// ===== FILE: src/features/crm/components/kanban/DealCard.tsx =====
+
+// src/features/crm/components/kanban/DealCard.tsx
+
+import React from 'react';
+import { Draggable } from '@hello-pangea/dnd';
+import { CRMDeal } from '@/features/crm/types';
+import { FaBuilding } from 'react-icons/fa';
+
+interface DealCardProps {
+    deal: CRMDeal;
+    index: number;
+    onEdit: (deal: CRMDeal) => void; // <--- NOVO
+}
+
+export const DealCard: React.FC<DealCardProps> = ({ deal, index, onEdit }) => {
+    
+    const formattedValue = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    }).format(Number(deal.value));
+
+    return (
+        <Draggable draggableId={deal.id} index={index}>
+            {(provided, snapshot) => (
+                <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    // --- AÇÃO DE CLIQUE DUPLO PARA EDITAR ---
+                    onDoubleClick={() => onEdit(deal)} 
+                    className={`
+                        bg-gray-800 p-3 rounded-lg border border-gray-700 shadow-sm mb-3
+                        hover:border-accent-secondary/50 transition-all group cursor-pointer
+                        ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-accent-primary rotate-2 z-50' : ''}
+                    `}
+                    style={{
+                        ...provided.draggableProps.style,
+                    }}
+                    title="Clique duas vezes para editar"
+                >
+                    {/* Título e Probabilidade */}
+                    <div className="flex justify-between items-start mb-2">
+                        <h4 className="text-sm font-bold text-white line-clamp-2 leading-tight">
+                            {deal.title}
+                        </h4>
+                        {deal.probability > 0 && (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded 
+                                ${deal.probability >= 70 ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'}
+                            `}>
+                                {deal.probability}%
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Cliente */}
+                    <div className="flex items-center text-xs text-gray-400 mb-3">
+                        <FaBuilding className="mr-1.5 w-3 h-3 opacity-50" />
+                        <span className="truncate max-w-[150px]">
+                            {deal.client?.name || 'Cliente Desconhecido'}
+                        </span>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex justify-between items-center border-t border-gray-700/50 pt-2">
+                        <div className="text-xs font-bold text-gray-200 flex items-center">
+                            <span className="text-green-500 mr-1">$</span> {formattedValue}
+                        </div>
+                        
+                        <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-[10px] text-white border border-gray-600">
+                            <span className="font-bold">V</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </Draggable>
+    );
+};
+
+
+// ===== FILE: src/features/crm/components/kanban/KanbanBoard.tsx =====
+
+// src/features/crm/components/kanban/KanbanBoard.tsx
+
+import React, { useEffect, useState } from 'react';
+import { DragDropContext, DropResult } from '@hello-pangea/dnd';
+import { CRMDeal, DealStatus } from '@/features/crm/types';
+import { KanbanColumn } from './KanbanColumn';
+
+interface KanbanBoardProps {
+    deals: CRMDeal[];
+    onDealMove: (dealId: string, newStatus: DealStatus) => void;
+    onAddDeal: (status: DealStatus) => void;
+    onEditDeal: (deal: CRMDeal) => void; // <--- NOVO
+}
+
+const COLUMNS: { id: DealStatus; label: string }[] = [
+    { id: DealStatus.NEW, label: 'Novos Leads' },
+    { id: DealStatus.QUALIFIED, label: 'Qualificados' },
+    { id: DealStatus.PROPOSAL, label: 'Proposta Enviada' },
+    { id: DealStatus.NEGOTIATION, label: 'Em Negociação' },
+    { id: DealStatus.WON, label: 'Fechado (Ganho)' },
+];
+
+export const KanbanBoard: React.FC<KanbanBoardProps> = ({ deals, onDealMove, onAddDeal, onEditDeal }) => {
+    
+    const [isBrowser, setIsBrowser] = useState(false);
+    useEffect(() => { setIsBrowser(true); }, []);
+
+    const handleDragEnd = (result: DropResult) => {
+        const { destination, source, draggableId } = result;
+        if (!destination) return;
+        if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+        const newStatus = destination.droppableId as DealStatus;
+        const oldStatus = source.droppableId as DealStatus;
+
+        if (newStatus !== oldStatus) {
+            onDealMove(draggableId, newStatus);
+        }
+    };
+
+    if (!isBrowser) return <div className="flex h-full items-center justify-center text-gray-500">Carregando Kanban...</div>;
+
+    return (
+        <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="flex h-full space-x-4 overflow-x-auto pb-4 px-2">
+                {COLUMNS.map(col => {
+                    const columnDeals = deals.filter(d => d.status === col.id);
+                    const totalValue = columnDeals.reduce((sum, d) => sum + Number(d.value), 0);
+
+                    return (
+                        <KanbanColumn 
+                            key={col.id}
+                            status={col.id}
+                            title={col.label}
+                            deals={columnDeals}
+                            totalValue={totalValue}
+                            onAddDeal={() => onAddDeal(col.id)}
+                            onEditDeal={onEditDeal} // <--- Repassa
+                        />
+                    );
+                })}
+            </div>
+        </DragDropContext>
+    );
+};
+
+
+// ===== FILE: src/features/crm/components/kanban/KanbanColumn.tsx =====
+
+// src/features/crm/components/kanban/KanbanColumn.tsx
+
+import React from 'react';
+import { Droppable } from '@hello-pangea/dnd';
+import { CRMDeal, DealStatus } from '@/features/crm/types';
+import { DealCard } from './DealCard';
+import { FaPlus } from 'react-icons/fa';
+
+interface KanbanColumnProps {
+    status: DealStatus;
+    title: string;
+    deals: CRMDeal[];
+    totalValue: number;
+    onAddDeal: () => void; // <--- NOVO: Callback para adicionar nesta coluna
+    onEditDeal: (deal: CRMDeal) => void; // <--- NOVO
+}
+
+export const KanbanColumn: React.FC<KanbanColumnProps> = ({ 
+    status, 
+    title, 
+    deals, 
+    totalValue,
+    onAddDeal,
+    onEditDeal
+}) => {
+    
+    const formattedTotal = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        notation: 'compact', 
+    }).format(totalValue);
+
+    return (
+        <div className="flex flex-col h-full w-80 min-w-[320px] bg-base-metallic/30 rounded-xl border border-gray-700/50 flex-shrink-0">
+            
+            {/* Header da Coluna */}
+            <div className="p-3 border-b border-gray-700/50 bg-gray-800/40 rounded-t-xl flex justify-between items-center">
+                <div className="flex items-center space-x-2">
+                    <span className="text-xs font-bold text-gray-300 uppercase tracking-wider">
+                        {title}
+                    </span>
+                    <span className="bg-gray-700 text-gray-400 text-[10px] px-1.5 py-0.5 rounded-full font-mono">
+                        {deals.length}
+                    </span>
+                </div>
+                <div className="text-xs font-bold text-accent-primary">
+                    {formattedTotal}
+                </div>
+            </div>
+
+            {/* Área de Drop */}
+            <Droppable droppableId={status}>
+                {(provided, snapshot) => (
+                    <div
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className={`flex-1 p-2 overflow-y-auto custom-scrollbar transition-colors flex flex-col ${
+                            snapshot.isDraggingOver ? 'bg-gray-800/50' : ''
+                        }`}
+                    >
+                        {deals.map((deal, index) => (
+                            <DealCard 
+                                key={deal.id} 
+                                deal={deal} 
+                                index={index} 
+                                onEdit={onEditDeal}
+                            />
+                        ))}
+                        {provided.placeholder}
+
+                        {/* Botão de Adicionar Rápido (No corpo da coluna) */}
+                        <button 
+                            onClick={onAddDeal}
+                            className="mt-2 flex items-center justify-center w-full py-2 border border-dashed border-gray-600 rounded-lg text-gray-500 hover:text-white hover:border-accent-secondary hover:bg-accent-secondary/10 transition group"
+                        >
+                            <FaPlus className="w-3 h-3 mr-1 group-hover:scale-110 transition-transform" /> 
+                            <span className="text-xs font-bold">Novo Deal</span>
+                        </button>
+                    </div>
+                )}
+            </Droppable>
+        </div>
+    );
+};
+
+
 // ===== FILE: src/features/crm/hooks/useCRMIntelligence.ts =====
 
 // src/features/crm/hooks/useCRMIntelligence.ts
@@ -13705,6 +14195,139 @@ export function useClientTimeline(clientId: string | null) {
 }
 
 
+// ===== FILE: src/features/crm/hooks/useDeals.ts =====
+
+// src/features/crm/hooks/useDeals.ts
+
+import { useState, useEffect, useCallback } from 'react';
+import { api } from '@/core/services/api';
+import { CRMDeal, DealStatus } from '../types';
+// Importamos tipos genéricos, assumindo que o DTO de update seja um Partial do Create ou similar
+// Ajuste conforme sua estrutura real de DTOs no frontend se tiver definido interfaces específicas
+
+export function useDeals() {
+    
+    const [deals, setDeals] = useState<CRMDeal[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // --- FETCHING ---
+    
+    const fetchDeals = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            // Rota criada no Backend: GET /crm/deals
+            const response = await api.get<CRMDeal[]>('/crm/deals'); 
+            setDeals(response.data);
+        } catch (err: any) {
+            console.error("Erro ao buscar negócios:", err);
+            const msg = err.response?.data?.message || "Falha ao carregar o pipeline de vendas.";
+            setError(msg);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // Carrega na montagem
+    useEffect(() => {
+        fetchDeals();
+    }, [fetchDeals]);
+
+    // --- ACTIONS (MUTAÇÕES) ---
+
+    /**
+     * @method updateDealStatus
+     * @description Move um card de uma coluna para outra (Atualiza Status).
+     * Aplica Optimistic Update para sensação de instantaneidade.
+     */
+    const updateDealStatus = async (dealId: string, newStatus: DealStatus) => {
+        // 1. Snapshot do estado anterior (para rollback em caso de erro)
+        const previousDeals = [...deals];
+
+        // 2. Atualização Otimista (Frontend reflete mudança na hora)
+        setDeals(currentDeals => currentDeals.map(deal => {
+            if (deal.id === dealId) {
+                return { ...deal, status: newStatus };
+            }
+            return deal;
+        }));
+
+        // 3. Chamada API
+        try {
+            await api.patch(`/crm/deals/${dealId}`, { status: newStatus });
+        } catch (err) {
+            console.error("Falha ao atualizar status do deal:", err);
+            // Rollback silencioso ou com toast (aqui apenas revertemos a lista)
+            setDeals(previousDeals);
+            // Opcional: setar um erro temporário
+            alert("Não foi possível mover o card. Tente novamente.");
+        }
+    };
+
+    /**
+     * @method updateDeal
+     * @description Atualização completa dos dados do negócio (Edição via Modal).
+     */
+    const updateDeal = async (dealId: string, data: any): Promise<CRMDeal> => {
+        try {
+            const response = await api.patch<CRMDeal>(`/crm/deals/${dealId}`, data);
+            const updatedDeal = response.data;
+
+            // Atualiza a lista local com os dados novos vindos do servidor
+            setDeals(prev => prev.map(d => d.id === dealId ? updatedDeal : d));
+            
+            return updatedDeal;
+        } catch (err: any) {
+            console.error("Erro ao atualizar negócio:", err);
+            throw err;
+        }
+    };
+
+    /**
+     * @method createDeal
+     * @description Cria um novo negócio e o adiciona à lista local.
+     */
+    const createDeal = async (data: any): Promise<void> => {
+        try {
+            const response = await api.post<CRMDeal>('/crm/deals', data);
+            const newDeal = response.data;
+            
+            // Adiciona à lista local
+            setDeals(prev => [newDeal, ...prev]);
+            return;
+        } catch (err: any) {
+            console.error("Erro ao criar negócio:", err);
+            throw err;
+        }
+    };
+
+    // --- HELPERS ---
+
+    const getDealsByStatus = (status: DealStatus) => {
+        return deals.filter(deal => deal.status === status);
+    };
+
+    const getColumnTotal = (status: DealStatus) => {
+        return deals
+            .filter(deal => deal.status === status)
+            .reduce((sum, deal) => sum + Number(deal.value), 0);
+    };
+
+    return {
+        deals,
+        isLoading,
+        error,
+        refreshDeals: fetchDeals,
+        updateDealStatus,
+        updateDeal, // <--- NOVO EXPORT
+        createDeal,
+        getDealsByStatus,
+        getColumnTotal
+    };
+}
+
+
 // ===== FILE: src/features/crm/hooks/useInteractionMutation.ts =====
 
 // src/features/crm/hooks/useInteractionMutation.ts
@@ -13768,11 +14391,494 @@ export function useInteractionMutation() {
 }
 
 
+// ===== FILE: src/features/crm/presentation/CRMContainer.tsx =====
+
+// src/features/crm/presentation/CRMContainer.tsx
+
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { api } from '@/core/services/api';
+import { FaColumns, FaStream } from 'react-icons/fa';
+
+// Hooks
+import { useCRMIntelligence } from '@/features/crm/hooks/useCRMIntelligence';
+import { useDeals } from '@/features/crm/hooks/useDeals'; // <--- NOVO
+
+// Tipos e Componentes
+import { Client } from '@/core/types/client';
+import { DashboardMode } from '@/features/crm/components/client-dashboard/ClientDashboard';
+import { CRMWorkstation } from './CRMWorkstation';
+import { CRMKanbanView } from './CRMKanbanView'; // <--- NOVO
+
+// Tipo para as abas principais
+type CRMView = 'WORKSTATION' | 'KANBAN';
+
+/**
+ * @component CRMContainer
+ * @description Container Lógico (Smart Component) do módulo CRM.
+ * Gerencia estados, regras de negócio e orquestração de abas (Workstation vs Kanban).
+ */
+export const CRMContainer: React.FC = () => {
+    
+    // --- 0. NAVEGAÇÃO (ABAS) ---
+    const [activeView, setActiveView] = useState<CRMView>('WORKSTATION');
+
+    // --- 1. LÓGICA DE DEALS (KANBAN) ---
+    const { 
+        deals, 
+        isLoading: loadingDeals, 
+        error: dealsError, 
+        updateDealStatus, 
+        refreshDeals 
+    } = useDeals();
+
+    // --- 2. LÓGICA DE IA ---
+    const { analyzeText, isAnalyzing, analysisResult, error: aiError, clearAnalysis } = useCRMIntelligence();
+    const [aiInputText, setAiInputText] = useState('');
+    const [originalText, setOriginalText] = useState('');
+
+    // --- 3. LÓGICA DE CONTEXTO E CLIENTES ---
+    const [contextClient, setContextClient] = useState<Client | null>(null);
+    const [refreshListTrigger, setRefreshListTrigger] = useState(0);
+    const [dashboardMode, setDashboardMode] = useState<DashboardMode>('VIEW');
+
+    // --- 4. LÓGICA DE UI (CHAT) ---
+    const [activeChatTab, setActiveChatTab] = useState<'WA' | 'TG'>('WA');
+
+    // --- HANDLERS DE CLIENTE ---
+
+    const handleOpenNewClient = () => {
+        setContextClient(null);
+        setDashboardMode('CREATE');
+    };
+
+    const handleOpenEditClient = (client: Client) => {
+        setContextClient(client);
+        setDashboardMode('EDIT');
+    };
+
+    const handleClientSelect = (client: Client | null) => {
+        setContextClient(client);
+        setDashboardMode('VIEW');
+        if (analysisResult) clearAnalysis();
+    };
+
+    const handleUpdateSuccess = async () => {
+        setRefreshListTrigger(prev => prev + 1);
+        setDashboardMode('VIEW');
+        if (contextClient?.id) {
+            try {
+                const res = await api.get<Client>(`/client/${contextClient.id}`);
+                setContextClient(res.data);
+            } catch (err) {
+                console.error("Erro refresh client:", err);
+            }
+        }
+    };
+
+    // --- HANDLERS DE IA ---
+
+    const handleAnalyzeRequest = async (text: string) => {
+        setOriginalText(text);
+        await analyzeText(text, contextClient?.id);
+    };
+
+    const handleAnalysisSuccess = async () => {
+        setRefreshListTrigger(prev => prev + 1);
+        clearAnalysis();
+        setAiInputText('');
+        setOriginalText('');
+        if (contextClient?.id) {
+            try {
+                const res = await api.get<Client>(`/client/${contextClient.id}`);
+                setContextClient(res.data);
+            } catch (err) { console.error(err); }
+        }
+    };
+
+    return (
+        <div className="flex flex-col h-[calc(100vh-2rem)]">
+            
+            {/* --- HEADER DE NAVEGAÇÃO (ABAS GLOBAIS) --- */}
+            <div className="flex items-center space-x-1 bg-base-metallic/50 p-1 rounded-lg w-fit mb-2 border border-gray-700/50 self-start mx-0 mt-0">
+                <button
+                    onClick={() => setActiveView('WORKSTATION')}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
+                        activeView === 'WORKSTATION' 
+                        ? 'bg-accent-secondary text-white shadow-md' 
+                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                    }`}
+                >
+                    <FaStream /> <span>Workstation</span>
+                </button>
+                <button
+                    onClick={() => setActiveView('KANBAN')}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
+                        activeView === 'KANBAN' 
+                        ? 'bg-accent-secondary text-white shadow-md' 
+                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                    }`}
+                >
+                    <FaColumns /> <span>Kanban (Deals)</span>
+                </button>
+            </div>
+
+            {/* --- CONTEÚDO PRINCIPAL --- */}
+            <div className="flex-1 min-h-0 px-0 pb-0">
+                
+                {activeView === 'WORKSTATION' ? (
+                    <CRMWorkstation
+                        // Dados
+                        contextClient={contextClient}
+                        dashboardMode={dashboardMode}
+                        refreshListTrigger={refreshListTrigger}
+                        aiInputText={aiInputText}
+                        originalText={originalText}
+                        isAnalyzing={isAnalyzing}
+                        analysisResult={analysisResult}
+                        aiError={aiError}
+                        activeChatTab={activeChatTab}
+
+                        // Ações
+                        onAiInputChange={setAiInputText}
+                        onAnalyzeRequest={handleAnalyzeRequest}
+                        onClearAnalysis={clearAnalysis}
+                        onAnalysisSuccess={handleAnalysisSuccess}
+                        onSelectClient={handleClientSelect}
+                        onOpenNewClient={handleOpenNewClient}
+                        onOpenEditClient={handleOpenEditClient}
+                        onModeChange={setDashboardMode}
+                        onUpdateSuccess={handleUpdateSuccess}
+                        onTabChange={setActiveChatTab}
+                    />
+                ) : (
+                    <CRMKanbanView 
+                        deals={deals}
+                        isLoading={loadingDeals}
+                        error={dealsError}
+                        onDealMove={updateDealStatus}
+                        onRefresh={refreshDeals}
+                    />
+                )}
+
+            </div>
+        </div>
+    );
+};
+
+
+// ===== FILE: src/features/crm/presentation/CRMKanbanView.tsx =====
+
+// src/features/crm/presentation/CRMKanbanView.tsx
+
+import React, { useState } from 'react';
+import { KanbanBoard } from '../components/kanban/KanbanBoard';
+import { CRMDeal, DealStatus } from '../types';
+import { FaSync, FaExclamationTriangle, FaPlus } from 'react-icons/fa';
+import { DealModal } from '../components/deals/DealModal'; // <--- Import do Modal Suave
+
+interface CRMKanbanViewProps {
+    deals: CRMDeal[];
+    isLoading: boolean;
+    error: string | null;
+    onDealMove: (dealId: string, newStatus: DealStatus) => void;
+    onRefresh: () => void;
+}
+
+export const CRMKanbanView: React.FC<CRMKanbanViewProps> = ({ 
+    deals, 
+    isLoading, 
+    error, 
+    onDealMove,
+    onRefresh 
+}) => {
+    
+    // --- ESTADOS DO MODAL ---
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [defaultStatus, setDefaultStatus] = useState<DealStatus | undefined>(undefined);
+    const [dealToEdit, setDealToEdit] = useState<CRMDeal | undefined>(undefined);
+
+    // --- HANDLERS ---
+    const handleOpenNewDeal = (status?: DealStatus) => {
+        setDefaultStatus(status); // Se vier de uma coluna, já vem preenchido
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEditDeal = (deal: CRMDeal) => {
+        setDealToEdit(deal); // Seta o deal para edição
+        setDefaultStatus(undefined);
+        setIsModalOpen(true);
+    };
+    
+    const handleSuccess = () => {
+        onRefresh(); // Recarrega o Kanban
+        // O modal fecha automaticamente via props do DealModal
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                <FaSync className="w-8 h-8 animate-spin text-accent-primary mb-3" />
+                <p className="text-sm font-medium">Carregando Pipeline...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-red-400">
+                <div className="bg-red-900/20 p-6 rounded-xl border border-red-900/50 text-center max-w-md">
+                    <FaExclamationTriangle className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                    <h3 className="text-lg font-bold mb-2">Erro ao carregar negócios</h3>
+                    <p className="text-sm mb-4">{error}</p>
+                    <button 
+                        onClick={onRefresh}
+                        className="px-4 py-2 bg-red-900/50 hover:bg-red-800 text-white rounded-lg text-sm font-bold transition"
+                    >
+                        Tentar Novamente
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="h-full flex flex-col relative">
+            
+            {/* Header Interno do Kanban */}
+            <div className="flex justify-between items-center mb-4 px-1 flex-shrink-0">
+                <div className="flex items-baseline space-x-3">
+                    <h2 className="text-xl font-bold text-white">Pipeline de Vendas</h2>
+                    <div className="text-xs text-gray-500">
+                        {deals.length} oportunidades ativas
+                    </div>
+                </div>
+
+                {/* Botão Global de Novo Deal */}
+                <button 
+                    onClick={() => handleOpenNewDeal()} // Sem status = Status Default (NEW)
+                    className="flex items-center space-x-2 px-4 py-2 bg-accent-primary text-base-dark font-bold rounded-lg hover:bg-orange-500 transition shadow-lg transform active:scale-95"
+                >
+                    <FaPlus />
+                    <span>Novo Deal</span>
+                </button>
+            </div>
+
+            {/* O Board ocupa o resto da altura */}
+            <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
+                <KanbanBoard 
+                    deals={deals} 
+                    onDealMove={onDealMove} 
+                    onAddDeal={handleOpenNewDeal}
+                    onEditDeal={handleOpenEditDeal}
+                />
+            </div>
+
+            {/* --- MODAL DE CRIAÇÃO --- */}
+            <DealModal 
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={handleSuccess}
+                defaultStatus={defaultStatus}
+            />
+        </div>
+    );
+};
+
+
+// ===== FILE: src/features/crm/presentation/CRMWorkstation.tsx =====
+
+// src/features/crm/presentation/CRMWorkstation.tsx
+
+import React from 'react';
+import { FaWhatsapp, FaTelegram, FaPaperPlane } from 'react-icons/fa';
+
+// --- COMPONENTES ---
+import { ClientListWidget } from '@/features/crm/components/client-widget/ClientListWidget';
+import { AIInputWidget } from '@/features/crm/components/ai-widget/AIInputWidget';
+import { AnalysisActionCard } from '@/features/crm/components/AnalysisActionCard';
+import { ClientDashboard, DashboardMode } from '@/features/crm/components/client-dashboard/ClientDashboard';
+import { WhatsAppWidget } from '@/features/crm/components/communication/WhatsAppWidget';
+
+// --- TIPOS ---
+import { Client } from '@/core/types/client';
+import { InteractionAnalysis } from '@/features/crm/types';
+
+/**
+ * Interface de Props: Tudo que a View precisa para renderizar
+ */
+interface CRMWorkstationProps {
+    // Estados de Dados
+    contextClient: Client | null;
+    dashboardMode: DashboardMode;
+    refreshListTrigger: number;
+    
+    // Estados de IA
+    aiInputText: string;
+    isAnalyzing: boolean;
+    analysisResult: InteractionAnalysis | null;
+    aiError: string | null;
+    originalText: string;
+
+    // Estados de UI
+    activeChatTab: 'WA' | 'TG';
+
+    // Handlers (Ações)
+    onAiInputChange: (text: string) => void;
+    onAnalyzeRequest: (text: string) => void;
+    onClearAnalysis: () => void;
+    onAnalysisSuccess: () => void;
+    
+    onSelectClient: (client: Client | null) => void;
+    onOpenNewClient: () => void;
+    onOpenEditClient: (client: Client) => void;
+    onModeChange: (mode: DashboardMode) => void;
+    onUpdateSuccess: () => void;
+    
+    onTabChange: (tab: 'WA' | 'TG') => void;
+}
+
+export const CRMWorkstation: React.FC<CRMWorkstationProps> = ({
+    // Desestruturação das props para uso no JSX
+    contextClient, dashboardMode, refreshListTrigger,
+    aiInputText, isAnalyzing, analysisResult, aiError, originalText,
+    activeChatTab,
+    onAiInputChange, onAnalyzeRequest, onClearAnalysis, onAnalysisSuccess,
+    onSelectClient, onOpenNewClient, onOpenEditClient, onModeChange, onUpdateSuccess,
+    onTabChange
+}) => {
+    return (
+        <div className="h-full w-full">
+            
+            <div className="grid grid-cols-12 gap-2 h-full">
+                {/* ================================================================
+                  COLUNA 1 (ESQUERDA): GESTÃO & INPUT
+                  Span: 3
+                  ================================================================*/}
+                <div className="col-span-3 flex flex-col gap-1 h-full">
+                    
+                    {/* 1.1 Lista de Clientes */}
+                    <div className="flex-1 min-h-0 overflow-hidden rounded-xl shadow-lg border border-gray-700 bg-base-metallic">
+                        <ClientListWidget 
+                            onSelectClient={onSelectClient} 
+                            refreshTrigger={refreshListTrigger}
+                            onNewClient={onOpenNewClient}
+                            onEditClient={onOpenEditClient}
+                        />
+                    </div>
+
+                    {/* 1.2 Console de IA */}
+                    <div className="h-64 flex-shrink-0 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
+                        <AIInputWidget 
+                            value={aiInputText}
+                            onChange={onAiInputChange}
+                            onAnalyze={onAnalyzeRequest}
+                            isAnalyzing={isAnalyzing}
+                        />
+                    </div>
+                </div>
+
+                {/* ================================================================
+                  COLUNA 2 (CENTRO): O PALCO (DASHBOARD UNIFICADO)
+                  Span: 6
+                  ================================================================*/}
+                <div className="col-span-6 h-full flex flex-col gap-4">
+                    
+                    {/* ÁREA DE ERRO (GLOBAL DA IA) */}
+                    {aiError && (
+                        <div className="bg-red-900/40 border border-red-500/50 p-3 rounded-lg text-sm text-red-200 flex items-center justify-between animate-fade-in">
+                            <span><strong>Erro na IA:</strong> {aiError}</span>
+                            <button onClick={onClearAnalysis} className="text-xs underline hover:text-white">Fechar</button>
+                        </div>
+                    )}
+
+                    {/* CONTEÚDO DINÂMICO */}
+                    {analysisResult ? (
+                        // MODO AÇÃO IA
+                        <div className="flex-1 overflow-y-auto pr-1">
+                            <AnalysisActionCard 
+                                analysis={analysisResult}
+                                content={originalText}
+                                contextClient={contextClient}
+                                onSuccess={onAnalysisSuccess}
+                            />
+                        </div>
+                    ) : (
+                        // MODO DASHBOARD
+                        <div className="flex-1 h-full">
+                            <ClientDashboard 
+                                client={contextClient}
+                                mode={dashboardMode} 
+                                onModeChange={onModeChange} 
+                                onUpdateSuccess={onUpdateSuccess} 
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* ================================================================
+                  COLUNA 3 (DIREITA): COMUNICAÇÃO (OMNICHANNEL)
+                  Span: 3
+                  ================================================================*/}
+                <div className="col-span-3 bg-base-metallic rounded-xl border border-gray-700 flex flex-col overflow-hidden shadow-lg h-full">
+                    
+                    {/* Header de Abas */}
+                    <div className="flex border-b border-gray-700 bg-gray-800">
+                        <button 
+                            onClick={() => onTabChange('WA')}
+                            className={`flex-1 py-3 text-xs font-bold flex items-center justify-center space-x-2 transition ${activeChatTab === 'WA' ? 'bg-green-900/20 text-green-400 border-b-2 border-green-400' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'}`}
+                        >
+                            <FaWhatsapp className="w-4 h-4" /> <span>WhatsApp</span>
+                        </button>
+                        <button 
+                            onClick={() => onTabChange('TG')}
+                            className={`flex-1 py-3 text-xs font-bold flex items-center justify-center space-x-2 transition ${activeChatTab === 'TG' ? 'bg-blue-900/20 text-blue-400 border-b-2 border-blue-400' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'}`}
+                        >
+                            <FaTelegram className="w-4 h-4" /> <span>Telegram</span>
+                        </button>
+                    </div>
+
+                    {/* Área de Chat */}
+                    <div className="flex-1 overflow-hidden relative bg-gray-900/50">
+                        {activeChatTab === 'WA' ? (
+                            <WhatsAppWidget />
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-600 opacity-60 p-4">
+                                <FaTelegram className="w-12 h-12 mb-3" />
+                                <p className="text-xs text-center">Integração com Telegram em desenvolvimento.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Input de Chat */}
+                    <div className="p-3 border-t border-gray-700 bg-gray-800">
+                        <div className="flex items-center space-x-2">
+                            <input 
+                                type="text" 
+                                placeholder={contextClient ? `Mensagem para ${contextClient.name.split(' ')[0]}...` : "Selecione um cliente..."}
+                                className="flex-1 bg-gray-900 text-xs text-white px-3 py-2.5 rounded-lg border border-gray-600 focus:outline-none focus:border-gray-500 disabled:opacity-50"
+                                disabled={!contextClient}
+                            />
+                            <button className="p-2.5 bg-gray-700 text-gray-400 rounded-lg cursor-not-allowed hover:bg-gray-600 disabled:opacity-50">
+                                <FaPaperPlane className="w-3 h-3" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 // ===== FILE: src/features/crm/types.ts =====
 
 // src/features/crm/types.ts
 
 import { Client } from '@/core/types/client';
+
+// --- ENUMS ---
 
 export enum DealStatus {
     NEW = 'NEW',
@@ -13783,6 +14889,20 @@ export enum DealStatus {
     LOST = 'LOST',
 }
 
+export enum DealSource {
+    MANUAL = 'MANUAL',
+    WHATSAPP = 'WHATSAPP',
+    INSTAGRAM = 'INSTAGRAM',
+    WEB_SITE = 'WEB_SITE',
+    ADS = 'ADS',
+    INDICATION = 'INDICATION'
+}
+
+export enum DealItemType {
+    PRODUCT = 'PRODUCT',
+    SERVICE = 'SERVICE'
+}
+
 export enum InteractionType {
     NOTE = 'NOTE',
     AUDIO = 'AUDIO',
@@ -13790,9 +14910,8 @@ export enum InteractionType {
     MEETING = 'MEETING',
 }
 
-// --- NOVO: Interface para o Endereço Extraído pela IA ---
-// Porquê: Define a estrutura que esperamos receber do backend (via Zod/LLM).
-// Todos os campos são anuláveis (nullable) pois a IA pode não encontrar todos os detalhes no texto.
+// --- SUB-ENTIDADES ---
+
 export interface ExtractedAddress {
     street: string | null;
     number: string | null;
@@ -13801,52 +14920,62 @@ export interface ExtractedAddress {
     city: string | null;
     state: string | null;
     zipCode: string | null;
-    // Tipo literal compatível com o Enum do backend
     type: "MAIN" | "BILLING" | "SHIPPING" | null;
 }
 
-/**
- * @interface InteractionAnalysis
- * @description Estrutura exata do JSON retornado pelo endpoint /crm/analyze (Backend).
- * @update Adicionado suporte a lista de endereços extraídos (extractedAddresses).
- */
 export interface InteractionAnalysis {
     summary: string;
     sentiment: "POSITIVE" | "NEUTRAL" | "NEGATIVE" | "TENSE";
     tags: string[];
     actionItems: string[];
     dealProbability?: number;
-    
+    updatedClientSummary?: string | null; // Campo novo (Evolução IA)
     extractedIdentity?: {
         personName: string | null;
         companyName: string | null;
-        // Campos granulares de contato
         email: string | null;
         phone: string | null;
-        
-        // --- NOVO: Lista de Endereços identificados ---
         extractedAddresses?: ExtractedAddress[];
-
         intentType: "NEW_BUSINESS" | "SUPPORT" | "FOLLOW_UP" | "UNKNOWN";
     };
 }
 
-// --- ENTIDADES DO CRM ---
+export interface CRMDealItem {
+    id: string;
+    dealId: string;
+    type: DealItemType;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// --- ENTIDADES PRINCIPAIS ---
 
 export interface CRMDeal {
     id: string;
     tenantId: string;
     clientId: string;
+    ownerId: string | null; // Novo
+    
     title: string;
     status: DealStatus;
+    source: DealSource; // Novo
+    lossReason: string | null; // Novo
+    
     value: number;
     probability: number;
-    expectedCloseDate?: string; 
+    expectedCloseDate?: string;
+    
     createdAt: string;
     updatedAt: string;
-    
-    // Relação (Hidratada se necessário)
+
+    // Relações (Hidratadas conforme necessidade)
     client?: Client;
+    items?: CRMDealItem[];
+    // owner?: User; // Futuro
 }
 
 export interface CRMInteraction {
@@ -13856,8 +14985,6 @@ export interface CRMInteraction {
     type: InteractionType;
     content: string;
     mediaUrl?: string;
-    
-    // A Inteligência Anexada
     aiAnalysis?: InteractionAnalysis;
     createdAt: string;
 }
