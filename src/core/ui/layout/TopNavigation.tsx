@@ -4,26 +4,26 @@
 
 import React from 'react';
 import { useParams } from 'next/navigation';
-import { FaUserCircle, FaBell } from 'react-icons/fa';
-import { useAuth } from '@/contexts/AuthContext';
-// IMPORTAÇÃO DO NOVO COMPONENTE
+import { FaBell } from 'react-icons/fa';
+// IMPORTAÇÃO DOS COMPONENTES
 import { TenantSelector } from '@/core/components/tenant/TenantSelector';
+import { UserMenu } from '@/core/ui/layout/UserMenu'; // --- NOVO ---
 
 /**
  * @component TopNavigation
  * @description Cabeçalho global da área do Dashboard.
- * @update Integrado com TenantSelector para troca de contexto.
+ * @update Integrado com TenantSelector e UserMenu para ações de conta.
  */
 export const TopNavigation: React.FC = () => {
     
-    const { user } = useAuth();
     const params = useParams();
     
     // Captura o ID do tenant da URL para o Seletor
     const currentTenantId = params?.tenantId as string;
 
     return (
-        <header className="h-16 bg-base-metallic border-b border-gray-700 flex items-center justify-between px-6 shadow-md">
+        // Adicionado z-20 para garantir hierarquia visual correta com o conteúdo abaixo
+        <header className="h-16 bg-base-metallic border-b border-gray-700 flex items-center justify-between px-6 shadow-md relative z-20">
             
             {/* Lado Esquerdo: Seletor de Contexto (Tenant) */}
             <div className="flex items-center">
@@ -35,7 +35,7 @@ export const TopNavigation: React.FC = () => {
                 )}
             </div>
 
-            {/* Lado Direito: Ações e Perfil (Mantido) */}
+            {/* Lado Direito: Ações e Perfil */}
             <div className="flex items-center space-x-6">
                 
                 {/* Notificações (Placeholder) */}
@@ -47,20 +47,8 @@ export const TopNavigation: React.FC = () => {
                 {/* Divisor Vertical */}
                 <div className="h-6 w-px bg-gray-700"></div>
 
-                {/* Perfil do Usuário */}
-                <div className="flex items-center space-x-3">
-                    <div className="text-right hidden sm:block">
-                        <div className="text-sm font-medium text-white">
-                            {user?.email}
-                        </div>
-                        <div className="text-xs text-gray-500 uppercase">
-                            {user?.role?.replace('_', ' ')}
-                        </div>
-                    </div>
-                    <div className="h-9 w-9 rounded-full bg-gray-700 flex items-center justify-center text-gray-300 border border-gray-600">
-                        <FaUserCircle className="w-6 h-6" />
-                    </div>
-                </div>
+                {/* Perfil do Usuário e Menu Dropdown */}
+                <UserMenu />
             </div>
         </header>
     );
