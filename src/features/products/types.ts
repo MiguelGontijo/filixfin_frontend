@@ -79,7 +79,7 @@ export interface DigitalMetadata {
     requirements_os?: string;
 }
 
-// --- ENTIDADE PRINCIPAL ---
+// --- ENTIDADE PRINCIPAL (Interface do Objeto que vem da API) ---
 
 export interface Product {
     id: string;
@@ -87,7 +87,8 @@ export interface Product {
     
     // Identificação
     title: string;
-    description: string | null;
+    shortDescription: string | null;
+    longDescription: string | null;
     brand: string | null;
     
     // Mídia e Taxonomia
@@ -122,14 +123,15 @@ export interface Product {
     updatedAt: string;
 }
 
-// --- INPUTS PARA FORMULÁRIOS (ATUALIZADO) ---
+// --- INPUTS PARA FORMULÁRIOS (Payload para envio) ---
 
 export interface ProductFormData {
     title: string;
-    description: string;
+    shortDescription: string;
+    longDescription: string;
     brand: string;
     
-    // --- Novos Campos de Marketplace ---
+    // Novos Campos de Marketplace
     categoryPath?: string;
     gtin?: string;
     mpn?: string;

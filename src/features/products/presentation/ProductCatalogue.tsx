@@ -64,7 +64,7 @@ export const ProductCatalogue: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col gap-6 h-full min-h-0 animate-fade-in">
+        <div className="flex flex-col gap-2 h-full min-h-0 animate-fade-in">
             
             {/* --- CABEÇALHO DA VIEW (Ações Específicas do Catálogo) --- */}
             <div className="flex justify-between items-end flex-shrink-0">
@@ -121,7 +121,7 @@ export const ProductCatalogue: React.FC = () => {
             </div>
 
             {/* --- SEÇÃO INFERIOR: DETALHES (MASTER-DETAIL) --- */}
-            <div id="product-form-container" className="flex-1 min-h-[450px] flex flex-col transition-all duration-500 pb-4">
+            <div id="product-form-container" className="flex-1 min-h-[450px] flex flex-col transition-all duration-500 pb-1">
                 {showForm ? (
                     <div className="h-full flex flex-col animate-fade-in-up">
                         {/* Indicador Visual de Conexão */}
