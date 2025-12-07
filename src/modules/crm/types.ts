@@ -1,4 +1,4 @@
-// src/features/crm/types.ts
+// src/modules/crm/types.ts
 
 import { Client } from '@/core/types/client';
 
@@ -53,7 +53,7 @@ export interface InteractionAnalysis {
     tags: string[];
     actionItems: string[];
     dealProbability?: number;
-    updatedClientSummary?: string | null; // Campo novo (Evolução IA)
+    updatedClientSummary?: string | null; 
     extractedIdentity?: {
         personName: string | null;
         companyName: string | null;
@@ -67,6 +67,15 @@ export interface InteractionAnalysis {
 export interface CRMDealItem {
     id: string;
     dealId: string;
+    
+    // --- NOVO: Vínculo com Produto ---
+    productId?: string | null; 
+    product?: {  // Dados do produto para exibição (snapshot ou join)
+        title: string;
+        sku: string | null;
+    };
+    // ---------------------------------
+
     type: DealItemType;
     description: string;
     quantity: number;
@@ -82,12 +91,12 @@ export interface CRMDeal {
     id: string;
     tenantId: string;
     clientId: string;
-    ownerId: string | null; // Novo
+    ownerId: string | null;
     
     title: string;
     status: DealStatus;
-    source: DealSource; // Novo
-    lossReason: string | null; // Novo
+    source: DealSource;
+    lossReason: string | null;
     
     value: number;
     probability: number;
@@ -96,10 +105,8 @@ export interface CRMDeal {
     createdAt: string;
     updatedAt: string;
 
-    // Relações (Hidratadas conforme necessidade)
     client?: Client;
     items?: CRMDealItem[];
-    // owner?: User; // Futuro
 }
 
 export interface CRMInteraction {
