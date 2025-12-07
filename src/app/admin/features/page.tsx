@@ -1,7 +1,7 @@
 // src/app/admin/features/page.tsx (INTEGRAÇÃO DA TABELA)
 
 import React from 'react';
-import { FeatureTable } from '@/features/admin/components/FeatureTable';
+import { FeatureTable } from '@/modules/admin/components/FeatureTable';
 
 /**
  * @component AdminFeaturesPage

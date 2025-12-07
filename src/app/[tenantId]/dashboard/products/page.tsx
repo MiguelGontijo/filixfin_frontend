@@ -3,7 +3,7 @@
 "use client";
 
 import React from 'react';
-import { ProductContainer } from '@/features/products/presentation/ProductContainer';
+import { ProductContainer } from '@/modules/products/presentation/ProductContainer';
 
 /**
  * @component ProductsPage

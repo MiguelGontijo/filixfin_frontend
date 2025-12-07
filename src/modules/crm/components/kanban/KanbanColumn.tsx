@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Droppable } from '@hello-pangea/dnd';
-import { CRMDeal, DealStatus } from '@/features/crm/types';
+import { CRMDeal, DealStatus } from '@/modules/crm/types';
 import { DealCard } from './DealCard';
 import { FaPlus } from 'react-icons/fa';
 

@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { useFeatures } from '@/core/hooks/useFeatures';
 import { FaEdit, FaTrash, FaPlus, FaTag, FaCalculator } from 'react-icons/fa';
 import { Feature } from '@/core/types/acl';
-import { FeatureModal } from '@/features/admin/components/FeatureModal';
+import { FeatureModal } from '@/modules/admin/components/FeatureModal';
 import { useFeatureMutation } from '@/core/hooks/useFeatureMutation';
 import { FeatureType } from '@/core/types/acl';
 

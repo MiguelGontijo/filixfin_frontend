@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { FaSave, FaPlus, FaTrash, FaBox, FaWrench, FaExclamationTriangle } from 'react-icons/fa';
 import { useClients } from '@/core/hooks/useClients';
-import { useDeals } from '@/features/crm/hooks/useDeals';
-import { DealStatus, DealItemType, CRMDeal } from '@/features/crm/types';
+import { useDeals } from '@/modules/crm/hooks/useDeals';
+import { DealStatus, DealItemType, CRMDeal } from '@/modules/crm/types';
 
 interface DealFormProps {
     deal?: CRMDeal; // <--- NOVO: Dados para edição

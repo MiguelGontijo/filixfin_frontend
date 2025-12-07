@@ -7,12 +7,12 @@ import { api } from '@/core/services/api';
 import { FaColumns, FaStream } from 'react-icons/fa';
 
 // Hooks
-import { useCRMIntelligence } from '@/features/crm/hooks/useCRMIntelligence';
-import { useDeals } from '@/features/crm/hooks/useDeals'; // <--- NOVO
+import { useCRMIntelligence } from '@/modules/crm/hooks/useCRMIntelligence';
+import { useDeals } from '@/modules/crm/hooks/useDeals'; // <--- NOVO
 
 // Tipos e Componentes
 import { Client } from '@/core/types/client';
-import { DashboardMode } from '@/features/crm/components/client-dashboard/ClientDashboard';
+import { DashboardMode } from '@/modules/crm/components/client-dashboard/ClientDashboard';
 import { CRMWorkstation } from './CRMWorkstation';
 import { CRMKanbanView } from './CRMKanbanView'; // <--- NOVO
 

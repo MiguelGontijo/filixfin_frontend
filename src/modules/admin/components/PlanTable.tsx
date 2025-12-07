@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { usePlans } from '@/core/hooks/usePlans';
 import { FaEdit, FaTrash, FaCheckCircle, FaTimesCircle, FaDollarSign, FaPlus } from 'react-icons/fa';
 import { Plan } from '@/core/types/acl'; 
-import { PlanModal } from '@/features/admin/components/PlanModal';
+import { PlanModal } from '@/modules/admin/components/PlanModal';
 
 /**
  * @component PlanTable

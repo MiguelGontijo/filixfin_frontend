@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { FaBoxOpen, FaPlus, FaSearch } from 'react-icons/fa';
-import { useProducts } from '@/features/products/hooks/useProducts';
-import { ProductListGrid } from '@/features/products/components/ProductListGrid';
-import { ProductForm } from '@/features/products/components/ProductForm';
-import { Product } from '@/features/products/types';
+import { useProducts } from '@/modules/products/hooks/useProducts';
+import { ProductListGrid } from '@/modules/products/components/ProductListGrid';
+import { ProductForm } from '@/modules/products/components/ProductForm';
+import { Product } from '@/modules/products/types';
 
 /**
  * @component ProductCatalogue

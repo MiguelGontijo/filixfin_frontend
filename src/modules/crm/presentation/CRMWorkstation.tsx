@@ -4,15 +4,15 @@ import React from 'react';
 import { FaWhatsapp, FaTelegram, FaPaperPlane } from 'react-icons/fa';
 
 // --- COMPONENTES ---
-import { ClientListWidget } from '@/features/crm/components/client-widget/ClientListWidget';
-import { AIInputWidget } from '@/features/crm/components/ai-widget/AIInputWidget';
-import { AnalysisActionCard } from '@/features/crm/components/AnalysisActionCard';
-import { ClientDashboard, DashboardMode } from '@/features/crm/components/client-dashboard/ClientDashboard';
-import { WhatsAppWidget } from '@/features/crm/components/communication/WhatsAppWidget';
+import { ClientListWidget } from '@/modules/crm/components/client-widget/ClientListWidget';
+import { AIInputWidget } from '@/modules/crm/components/ai-widget/AIInputWidget';
+import { AnalysisActionCard } from '@/modules/crm/components/AnalysisActionCard';
+import { ClientDashboard, DashboardMode } from '@/modules/crm/components/client-dashboard/ClientDashboard';
+import { WhatsAppWidget } from '@/modules/crm/components/communication/WhatsAppWidget';
 
 // --- TIPOS ---
 import { Client } from '@/core/types/client';
-import { InteractionAnalysis } from '@/features/crm/types';
+import { InteractionAnalysis } from '@/modules/crm/types';
 
 /**
  * Interface de Props: Tudo que a View precisa para renderizar

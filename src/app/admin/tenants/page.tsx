@@ -3,7 +3,7 @@
 import React from 'react';
 import { AuthGuard } from '@/core/components/auth/AuthGuard';
 import { UserRole } from '@/core/types/user';
-import { TenantTable } from '@/features/admin/components/TenantTable';
+import { TenantTable } from '@/modules/admin/components/TenantTable';
 
 /**
  * @component AdminTenantsPage
