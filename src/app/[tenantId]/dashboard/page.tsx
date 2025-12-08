@@ -44,7 +44,8 @@ export default function DashboardPage() {
 
     return (
         <AuthGuard allowedRoles={allowedRoles}>
-            <div className="p-8 space-y-8 min-h-screen">
+            {/* CORREÇÃO: h-full e overflow-y-auto para rolar internamente */}
+            <div className="p-8 space-y-8 h-full overflow-y-auto custom-scrollbar">
                 
                 <h1 className="text-4xl font-extrabold text-white border-l-4 border-accent-secondary pl-4">
                     Bem-vindo, {user?.email}

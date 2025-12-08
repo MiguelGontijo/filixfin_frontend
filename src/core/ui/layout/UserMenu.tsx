@@ -11,7 +11,7 @@ import { useNavigation } from '@/core/hooks/useNavigation';
 /**
  * @component UserMenu
  * @description Componente de menu dropdown do usuário no cabeçalho.
- * @funcionalidade Exibe informações do usuário e ações de conta (Configurações, Logout).
+ * @update Correção de fundo sólido (bg-gray-900) e rota dinâmica.
  */
 export const UserMenu: React.FC = () => {
     
@@ -36,9 +36,14 @@ export const UserMenu: React.FC = () => {
     }, []);
 
     const handleLogout = () => {
-        logout(); // Limpa estado e cookie
-        toLogin(); // Redireciona
+        logout(); 
+        toLogin(); 
     };
+
+    // Link dinâmico para configurações
+    const settingsLink = user?.tenantId 
+        ? `/${user.tenantId}/dashboard/settings`
+        : '/admin/settings';
 
     return (
         <div className="relative" ref={menuRef}>
@@ -69,9 +74,9 @@ export const UserMenu: React.FC = () => {
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-base-metallic rounded-xl shadow-2xl border border-gray-700 py-2 z-50 animate-fade-in origin-top-right">
+                // CORREÇÃO AQUI: Alterado de bg-base-metallic para bg-gray-900 (Sólido Escuro)
+                <div className="absolute right-0 mt-2 w-56 bg-gray-900 rounded-xl shadow-2xl border border-gray-700 py-2 z-50 animate-fade-in origin-top-right">
                     
-                    {/* Cabeçalho Mobile (Só aparece se o nome estiver oculto no trigger principal, opcional) */}
                     <div className="px-4 py-3 border-b border-gray-700 sm:hidden">
                         <p className="text-sm text-white font-bold truncate">{user?.email}</p>
                         <p className="text-xs text-gray-500 truncate">{user?.role}</p>
@@ -80,8 +85,8 @@ export const UserMenu: React.FC = () => {
                     {/* Itens do Menu */}
                     <div className="py-1">
                         <Link 
-                            href="/settings" 
-                            className="flex items-center px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors group"
+                            href={settingsLink} 
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors group"
                             onClick={() => setIsOpen(false)}
                         >
                             <FaCog className="mr-3 text-gray-500 group-hover:text-accent-secondary transition-colors" />

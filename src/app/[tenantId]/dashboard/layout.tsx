@@ -23,18 +23,20 @@ export default function DashboardLayout({
 
     return (
         <AuthGuard allowedRoles={allowedRoles}>
-            <div className="flex min-h-screen bg-base-dark text-white">
+            {/* CORREÇÃO: h-screen e overflow-hidden para travar a janela */}
+            <div className="flex h-screen bg-base-dark text-white overflow-hidden">
                 
-                {/* 1. Sidebar do Cliente (Esquerda) */}
+                {/* 1. Sidebar */}
                 <ClientSidebar />
                 
-                {/* 2. Área de Conteúdo (Direita) */}
+                {/* 2. Área de Conteúdo */}
                 <div className="flex-1 flex flex-col min-w-0">
                     
-                    {/* 2.1 Header Global com Contexto */}
+                    {/* 2.1 Header */}
                     <TopNavigation />
                     
-                    {/* 2.2 Conteúdo Principal da Página */}
+                    {/* 2.2 Conteúdo Principal */}
+                    {/* O main ocupa o resto e esconde o que vazar. O filho deve rolar se precisar. */}
                     <main className="flex-1 p-2 overflow-hidden relative">
                         {children}
                     </main>
