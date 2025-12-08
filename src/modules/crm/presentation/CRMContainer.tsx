@@ -1,20 +1,20 @@
-// src/features/crm/presentation/CRMContainer.tsx
+// src/modules/crm/presentation/CRMContainer.tsx
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/core/services/api';
 import { FaColumns, FaStream } from 'react-icons/fa';
 
 // Hooks
 import { useCRMIntelligence } from '@/modules/crm/hooks/useCRMIntelligence';
-import { useDeals } from '@/modules/crm/hooks/useDeals'; // <--- NOVO
+import { useDeals } from '@/modules/crm/hooks/useDeals';
 
 // Tipos e Componentes
 import { Client } from '@/core/types/client';
 import { DashboardMode } from '@/modules/crm/components/client-dashboard/ClientDashboard';
 import { CRMWorkstation } from './CRMWorkstation';
-import { CRMKanbanView } from './CRMKanbanView'; // <--- NOVO
+import { CRMKanbanView } from './CRMKanbanView';
 
 // Tipo para as abas principais
 type CRMView = 'WORKSTATION' | 'KANBAN';
@@ -49,7 +49,8 @@ export const CRMContainer: React.FC = () => {
     const [dashboardMode, setDashboardMode] = useState<DashboardMode>('VIEW');
 
     // --- 4. LÓGICA DE UI (CHAT) ---
-    const [activeChatTab, setActiveChatTab] = useState<'WA' | 'TG'>('WA');
+    // CORREÇÃO: Adicionado 'AGENDA' ao tipo do estado
+    const [activeChatTab, setActiveChatTab] = useState<'WA' | 'TG' | 'AGENDA'>('WA');
 
     // --- HANDLERS DE CLIENTE ---
 
@@ -138,6 +139,7 @@ export const CRMContainer: React.FC = () => {
                         contextClient={contextClient}
                         dashboardMode={dashboardMode}
                         refreshListTrigger={refreshListTrigger}
+                        
                         aiInputText={aiInputText}
                         originalText={originalText}
                         isAnalyzing={isAnalyzing}

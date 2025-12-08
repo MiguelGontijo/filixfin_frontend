@@ -11,13 +11,14 @@ import {
     FaChartPie, 
     FaBox, 
     FaChevronLeft, 
-    FaChevronRight 
+    FaChevronRight,
+    FaCalendarAlt
 } from 'react-icons/fa';
 
 /**
  * @component ClientSidebar
  * @description Barra de navegação lateral estruturada por contexto (Módulos vs Cadastros).
- * @update Removidos Admin e Logout. Reorganizado em seções lógicas.
+ * @update Adicionado link para o módulo de Agenda (Scheduler).
  */
 export const ClientSidebar: React.FC = () => {
     
@@ -42,6 +43,13 @@ export const ClientSidebar: React.FC = () => {
             name: 'CRM', 
             href: `/dashboard/crm`, 
             icon: FaChartPie,
+            exact: false 
+        },
+        // --- NOVO ITEM DE MENU ---
+        { 
+            name: 'Agenda', 
+            href: `/dashboard/schedule`, 
+            icon: FaCalendarAlt, 
             exact: false 
         }
     ];
@@ -77,7 +85,7 @@ export const ClientSidebar: React.FC = () => {
 
     return (
         <div 
-            className={`relative flex flex-col min-h-screen bg-base-metallic border-r border-gray-700 transition-all duration-300 ease-in-out ${sidebarWidth}`}
+            className={`relative flex flex-col min-h-screen bg-gray-900 border-r border-gray-700 transition-all duration-300 ease-in-out ${sidebarWidth}`}
         >
             
             {/* Botão de Toggle (Colapso) */}
@@ -115,7 +123,7 @@ export const ClientSidebar: React.FC = () => {
                         href={`/${tenantId}${item.href}`}
                         className={`flex items-center space-x-3 py-3 mx-2 rounded-lg transition duration-150 group ${
                             isActive(item.href, item.exact) 
-                            ? 'bg-gray-700 text-white shadow-sm border-l-4 border-accent-primary' 
+                            ? 'bg-gray-800 text-white shadow-sm border-l-4 border-accent-primary' 
                             : 'text-gray-400 hover:bg-gray-800 hover:text-white border-l-4 border-transparent'
                         } ${linkPadding}`}
                         title={item.name}
@@ -137,7 +145,7 @@ export const ClientSidebar: React.FC = () => {
                         href={`/${tenantId}${item.href}`}
                         className={`flex items-center space-x-3 py-3 mx-2 rounded-lg transition duration-150 group ${
                             isActive(item.href) 
-                            ? 'bg-gray-700 text-white shadow-sm' 
+                            ? 'bg-gray-800 text-white shadow-sm' 
                             : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                         } ${linkPadding}`}
                         title={item.name}
