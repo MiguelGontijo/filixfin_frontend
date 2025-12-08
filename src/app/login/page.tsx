@@ -5,18 +5,12 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginDto } from '@/core/types/auth';
 import React, { useState } from 'react';
-// CORREÇÃO: Adicionar Link para navegação
-import Link from 'next/link'; 
+import Link from 'next/link';
+import { GoogleAuthButton } from '@/core/ui/auth/GoogleAuthButton';
 
-/**
- * @component LoginPage
- * @description Interface de Login.
- * @update Adicionado link para cadastro de novos Tenants.
- */
 export default function LoginPage() {
     
     const auth = useAuth();
-    
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -65,7 +59,6 @@ export default function LoginPage() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    
                     <div className="space-y-4">
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-300">
@@ -75,6 +68,7 @@ export default function LoginPage() {
                                 id="email"
                                 name="email"
                                 type="email"
+                                autoComplete="username" // Ajuda o navegador
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -91,6 +85,7 @@ export default function LoginPage() {
                                 id="password"
                                 name="password"
                                 type="password"
+                                autoComplete="current-password" // Ajuda o navegador
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -109,7 +104,19 @@ export default function LoginPage() {
                     </button>
                 </form>
 
-                {/* --- NOVO: Link de Registro --- */}
+                {/* Divisor */}
+                <div className="relative py-2">
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-600"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-base-metallic text-gray-400">Ou continue com</span>
+                    </div>
+                </div>
+
+                {/* Botão Google Centralizado */}
+                <GoogleAuthButton />
+
                 <div className="pt-4 border-t border-gray-700 text-center">
                     <p className="text-sm text-gray-400">
                         Ainda não tem uma conta?{' '}
@@ -121,7 +128,6 @@ export default function LoginPage() {
                         </Link>
                     </p>
                 </div>
-                {/* ----------------------------- */}
 
             </div>
         </div>

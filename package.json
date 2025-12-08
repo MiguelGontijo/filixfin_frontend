@@ -1,5 +1,5 @@
 {
-  "name": "filixfin_frontend",
+  "name": "filix_control_frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
+    "@react-oauth/google": "^0.12.2",
     "axios": "^1.13.2",
     "jsonwebtoken": "^9.0.2",
     "next": "^16.0.7",

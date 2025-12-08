@@ -96,7 +96,7 @@ export const ClientSidebar: React.FC = () => {
                 ) : (
                     <div className="flex flex-col">
                         <span className="text-xl font-bold text-accent-secondary uppercase tracking-wider whitespace-nowrap">
-                            FilixFin
+                            filix_control
                         </span>
                         <span className="text-[10px] text-gray-500 uppercase tracking-widest">Workspace</span>
                     </div>
