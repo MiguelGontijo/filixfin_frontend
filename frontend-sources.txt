@@ -7617,12 +7617,24 @@ import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget'
 
 /**
  * @page SchedulePage
- * @description Página dedicada para a gestão completa de agenda (Visão Macro).
+ * @description Rota da Visão GLOBAL da Agenda (Acessada via Sidebar).
+ * Exibe todos os agendamentos do Tenant, sem filtros de cliente.
  */
 export default function SchedulePage() {
     return (
-        <div className="h-full p-2">
-            <SchedulerWidget mode="FULL" />
+        <div className="h-full flex flex-col">
+             <div className="mb-4 flex-shrink-0">
+                <h1 className="text-2xl font-extrabold text-white tracking-tight">
+                    Agenda Global
+                </h1>
+                <p className="text-sm text-gray-400">
+                    Visão completa de serviços, reuniões e bloqueios de toda a equipe.
+                </p>
+            </div>
+            
+            <div className="flex-1 min-h-0 bg-base-metallic rounded-xl border border-gray-700 shadow-lg p-2">
+                <SchedulerWidget mode="FULL" />
+            </div>
         </div>
     );
 }
@@ -14910,7 +14922,7 @@ export function useInteractionMutation() {
 
 import React, { useState } from 'react';
 import { api } from '@/core/services/api';
-import { FaColumns, FaStream } from 'react-icons/fa';
+import { FaColumns, FaStream, FaCalendarAlt } from 'react-icons/fa'; // <--- Adicionado Ícone Calendar
 
 // Hooks
 import { useCRMIntelligence } from '@/modules/crm/hooks/useCRMIntelligence';
@@ -14921,14 +14933,15 @@ import { Client } from '@/core/types/client';
 import { DashboardMode } from '@/modules/crm/components/client-dashboard/ClientDashboard';
 import { CRMWorkstation } from './CRMWorkstation';
 import { CRMKanbanView } from './CRMKanbanView';
+import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget'; // <--- Importação do Widget
 
 // Tipo para as abas principais
-type CRMView = 'WORKSTATION' | 'KANBAN';
+type CRMView = 'WORKSTATION' | 'KANBAN' | 'AGENDA'; // <--- Adicionado AGENDA
 
 /**
  * @component CRMContainer
  * @description Container Lógico (Smart Component) do módulo CRM.
- * Gerencia estados, regras de negócio e orquestração de abas (Workstation vs Kanban).
+ * Gerencia estados, regras de negócio e orquestração de abas.
  */
 export const CRMContainer: React.FC = () => {
     
@@ -14955,7 +14968,6 @@ export const CRMContainer: React.FC = () => {
     const [dashboardMode, setDashboardMode] = useState<DashboardMode>('VIEW');
 
     // --- 4. LÓGICA DE UI (CHAT) ---
-    // CORREÇÃO: Adicionado 'AGENDA' ao tipo do estado
     const [activeChatTab, setActiveChatTab] = useState<'WA' | 'TG' | 'AGENDA'>('WA');
 
     // --- HANDLERS DE CLIENTE ---
@@ -15024,6 +15036,7 @@ export const CRMContainer: React.FC = () => {
                 >
                     <FaStream /> <span>Workstation</span>
                 </button>
+                
                 <button
                     onClick={() => setActiveView('KANBAN')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
@@ -15032,14 +15045,26 @@ export const CRMContainer: React.FC = () => {
                         : 'text-gray-400 hover:text-white hover:bg-gray-700'
                     }`}
                 >
-                    <FaColumns /> <span>Kanban (Deals)</span>
+                    <FaColumns /> <span>Kanban</span>
+                </button>
+
+                {/* --- NOVA ABA: AGENDA --- */}
+                <button
+                    onClick={() => setActiveView('AGENDA')}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
+                        activeView === 'AGENDA' 
+                        ? 'bg-accent-secondary text-white shadow-md' 
+                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                    }`}
+                >
+                    <FaCalendarAlt /> <span>Agenda</span>
                 </button>
             </div>
 
             {/* --- CONTEÚDO PRINCIPAL --- */}
             <div className="flex-1 min-h-0 px-0 pb-0">
                 
-                {activeView === 'WORKSTATION' ? (
+                {activeView === 'WORKSTATION' && (
                     <CRMWorkstation
                         // Dados
                         contextClient={contextClient}
@@ -15065,7 +15090,9 @@ export const CRMContainer: React.FC = () => {
                         onUpdateSuccess={handleUpdateSuccess}
                         onTabChange={setActiveChatTab}
                     />
-                ) : (
+                )}
+
+                {activeView === 'KANBAN' && (
                     <CRMKanbanView 
                         deals={deals}
                         isLoading={loadingDeals}
@@ -15073,6 +15100,13 @@ export const CRMContainer: React.FC = () => {
                         onDealMove={updateDealStatus}
                         onRefresh={refreshDeals}
                     />
+                )}
+
+                {/* --- RENDERIZAÇÃO DA AGENDA (VISÃO 2) --- */}
+                {activeView === 'AGENDA' && (
+                     <div className="h-full p-2 bg-base-metallic rounded-xl border border-gray-700 shadow-lg">
+                        <SchedulerWidget mode="FULL" />
+                     </div>
                 )}
 
             </div>
@@ -15205,7 +15239,7 @@ export const CRMKanbanView: React.FC<CRMKanbanViewProps> = ({
 // src/modules/crm/presentation/CRMWorkstation.tsx
 
 import React from 'react';
-import { FaWhatsapp, FaTelegram, FaPaperPlane, FaCalendarAlt } from 'react-icons/fa'; // <--- Import Ícone
+import { FaWhatsapp, FaTelegram, FaPaperPlane, FaCalendarAlt } from 'react-icons/fa';
 
 // --- COMPONENTES ---
 import { ClientListWidget } from '@/modules/crm/components/client-widget/ClientListWidget';
@@ -15213,7 +15247,7 @@ import { AIInputWidget } from '@/modules/crm/components/ai-widget/AIInputWidget'
 import { AnalysisActionCard } from '@/modules/crm/components/AnalysisActionCard';
 import { ClientDashboard, DashboardMode } from '@/modules/crm/components/client-dashboard/ClientDashboard';
 import { WhatsAppWidget } from '@/modules/crm/components/communication/WhatsAppWidget';
-import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget'; // <--- Import Widget
+import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget';
 
 // --- TIPOS ---
 import { Client } from '@/core/types/client';
@@ -15298,7 +15332,7 @@ export const CRMWorkstation: React.FC<CRMWorkstationProps> = ({
                   Span: 6
                   ================================================================*/}
                 <div className="col-span-6 h-full flex flex-col gap-4">
-                    
+
                     {/* ÁREA DE ERRO (GLOBAL DA IA) */}
                     {aiError && (
                         <div className="bg-red-900/40 border border-red-500/50 p-3 rounded-lg text-sm text-red-200 flex items-center justify-between animate-fade-in">
@@ -15373,7 +15407,10 @@ export const CRMWorkstation: React.FC<CRMWorkstationProps> = ({
                         {/* WIDGET DE AGENDA COMPACTO */}
                         {activeChatTab === 'AGENDA' && (
                             <div className="h-full p-2 bg-gray-800">
-                                <SchedulerWidget mode="MINI" />
+                                <SchedulerWidget 
+                                    mode="MINI" 
+                                    clientId={contextClient?.id} // <--- ATUALIZAÇÃO AQUI: Passamos o contexto!
+                                />
                             </div>
                         )}
                     </div>
@@ -17430,47 +17467,342 @@ export interface ProductFormData {
 }
 
 
+// ===== FILE: src/modules/scheduler/components/AppointmentModal.tsx =====
+
+// src/modules/scheduler/components/AppointmentModal.tsx
+
+import React, { useState, useEffect } from 'react';
+import { FaTimes, FaCalendarPlus, FaClock, FaAlignLeft, FaTag, FaSave } from 'react-icons/fa';
+import { format } from 'date-fns';
+
+interface AppointmentModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    /**
+     * Datas pré-selecionadas ao clicar no calendário (Slot)
+     */
+    initialSlot?: { start: Date; end: Date };
+    currentAppointment?: any; // Recebe o objeto do evento clicado (modo edição)
+    /**
+     * Callback para salvar (será conectado ao hook no próximo passo)
+     */
+    onConfirm: (data: { title: string; description: string; start: Date; end: Date }) => Promise<void>;
+}
+
+/**
+ * @component AppointmentModal
+ * @description Modal compacto e elegante para criação rápida de agendamentos.
+ * Usa backdrop-blur para não perder o contexto do fundo.
+ */
+export const AppointmentModal: React.FC<AppointmentModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    initialSlot,
+    currentAppointment,
+    onConfirm 
+}) => {
+    
+    // --- ESTADOS DO FORMULÁRIO ---
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    
+    // Armazenamos como string para o input type="datetime-local"
+    const [startStr, setStartStr] = useState('');
+    const [endStr, setEndStr] = useState('');
+    
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Sincroniza o formulário quando o slot inicial muda
+    useEffect(() => {
+        if (isOpen) {
+            if (currentAppointment) {
+                // MODO EDIÇÃO: Preenche com dados do agendamento existente
+                setTitle(currentAppointment.title);
+                setDescription(currentAppointment.description || '');
+                
+                // Converte as datas (que podem vir como string ISO do banco) para objeto Date
+                const startDate = new Date(currentAppointment.startTime);
+                const endDate = new Date(currentAppointment.endTime);
+
+                setStartStr(format(startDate, "yyyy-MM-dd'T'HH:mm"));
+                setEndStr(format(endDate, "yyyy-MM-dd'T'HH:mm"));
+            } 
+            else if (initialSlot) {
+                // MODO CRIAÇÃO: Preenche com o slot clicado (vazio)
+                setStartStr(format(initialSlot.start, "yyyy-MM-dd'T'HH:mm"));
+                setEndStr(format(initialSlot.end, "yyyy-MM-dd'T'HH:mm"));
+                setTitle('');
+                setDescription('');
+            }
+        }
+    }, [isOpen, initialSlot, currentAppointment]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (!title.trim() || !startStr || !endStr) return;
+
+        setIsSaving(true);
+        try {
+            await onConfirm({
+                title,
+                description,
+                start: new Date(startStr),
+                end: new Date(endStr)
+            });
+            onClose();
+        } catch (error) {
+            console.error("Erro ao salvar:", error);
+            // O tratamento de erro ideal seria um toast/alert aqui
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        // OVERLAY: Fundo escuro translúcido com Blur (Suave)
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 transition-all duration-300">
+            
+            {/* CONTAINER: Compacto, Sombra Suave, Bordas Arredondadas */}
+            <div 
+                className="bg-base-metallic w-full max-w-md rounded-2xl shadow-2xl border border-gray-700 transform scale-100 transition-all flex flex-col overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+            >
+                
+                {/* HEADER: Minimalista */}
+                <div className="px-6 py-4 border-b border-gray-700 bg-gray-800/50 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-accent-secondary/20 text-accent-secondary rounded-lg">
+                            <FaCalendarPlus className="w-4 h-4" />
+                        </div>
+                        <h2 className="text-lg font-bold text-white tracking-tight">
+                            {currentAppointment ? 'Editar Agendamento' : 'Novo Agendamento'}
+                        </h2>
+                    </div>
+                    <button 
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-white hover:bg-gray-700/50 p-2 rounded-full transition"
+                    >
+                        <FaTimes />
+                    </button>
+                </div>
+
+                {/* BODY: Formulário Clean */}
+                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    
+                    {/* Título */}
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
+                            <FaTag className="text-xs" />
+                        </div>
+                        <input
+                            type="text"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Título do compromisso (Ex: Reunião de Alinhamento)"
+                            className="w-full bg-gray-900 border border-gray-600 text-white text-sm rounded-xl pl-9 pr-4 py-3 focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary placeholder-gray-600 transition-all"
+                            required
+                            autoFocus
+                        />
+                    </div>
+
+                    {/* Datas (Grid Lado a Lado) */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-[10px] uppercase font-bold text-gray-400 mb-1.5 flex items-center">
+                                <FaClock className="mr-1.5" /> Início
+                            </label>
+                            <input
+                                type="datetime-local"
+                                value={startStr}
+                                onChange={(e) => setStartStr(e.target.value)}
+                                className="w-full bg-gray-900 border border-gray-600 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent-primary"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] uppercase font-bold text-gray-400 mb-1.5 flex items-center">
+                                <FaClock className="mr-1.5" /> Fim
+                            </label>
+                            <input
+                                type="datetime-local"
+                                value={endStr}
+                                onChange={(e) => setEndStr(e.target.value)}
+                                className="w-full bg-gray-900 border border-gray-600 text-white text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-accent-primary"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    {/* Descrição */}
+                    <div>
+                        <label className="text-[10px] uppercase font-bold text-gray-400 mb-1.5 flex items-center">
+                            <FaAlignLeft className="mr-1.5" /> Detalhes (Opcional)
+                        </label>
+                        <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            rows={3}
+                            className="w-full bg-gray-900 border border-gray-600 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary resize-none placeholder-gray-600 scrollbar-thin scrollbar-thumb-gray-700"
+                            placeholder="Adicione notas, pauta ou observações..."
+                        />
+                    </div>
+
+                    {/* FOOTER: Botões de Ação */}
+                    <div className="pt-2 flex justify-end gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-5 py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-gray-800 border border-transparent hover:border-gray-600 transition"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSaving}
+                            className="px-6 py-2.5 rounded-xl text-xs font-bold text-base-dark bg-accent-secondary hover:bg-violet-500 shadow-lg shadow-violet-900/20 transition transform active:scale-95 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSaving ? (
+                                'Salvando...'
+                            ) : (
+                                <>
+                                    <FaSave className="mr-2" /> 
+                                    {currentAppointment ? 'Salvar Alterações' : 'Agendar'}
+                                </>
+                            )}
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    );
+};
+
+
 // ===== FILE: src/modules/scheduler/components/SchedulerWidget.tsx =====
 
 // src/modules/scheduler/components/SchedulerWidget.tsx
 
-import React from 'react';
-import { Calendar, View, Views } from 'react-big-calendar';
+import React, { useState, useCallback } from 'react';
+import { Calendar, View, Views, SlotInfo } from 'react-big-calendar';
 import { FaSync, FaCalendarAlt } from 'react-icons/fa';
-import { localizer } from '../utils/calendarLocalizer'; // O arquivo que criamos no passo anterior
+import { localizer } from '../utils/calendarLocalizer';
 import { useScheduler } from '../hooks/useScheduler';
 import { AppointmentType } from '../types';
+import { AppointmentModal } from './AppointmentModal'; // <--- Importação do Modal
 
-// Importa o CSS customizado (Se Next.js reclamar, mova para globals.css)
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../styles/calendar.css'; 
 
 interface SchedulerWidgetProps {
     mode?: 'FULL' | 'COMPACT' | 'MINI';
     height?: number | string;
+    clientId?: string; 
 }
 
 export const SchedulerWidget: React.FC<SchedulerWidgetProps> = ({ 
     mode = 'FULL',
-    height = '100%' 
+    height = '100%',
+    clientId
 }) => {
     
-    const { events, isLoading, isSyncing, syncGoogle } = useScheduler();
+    // Agora desestruturamos também o createAppointment do hook
+    const { events, isLoading, isSyncing, syncGoogle, createAppointment, updateAppointment } = useScheduler({ clientId });
+    const [appointmentToEdit, setAppointmentToEdit] = useState<any | undefined>(undefined);
 
-    // Configurações baseadas no Modo (Camaleão)
-    const defaultView = mode === 'FULL' ? Views.MONTH : Views.AGENDA;
+    // --- ESTADOS DE CONTROLE ---
+    const [view, setView] = useState<View>(mode === 'FULL' ? Views.MONTH : Views.AGENDA);
+    const [date, setDate] = useState(new Date());
+
+    // --- ESTADOS DO MODAL (NOVO) ---
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedSlot, setSelectedSlot] = useState<{ start: Date; end: Date } | undefined>(undefined);
+
     const availableViews: View[] = mode === 'FULL' 
         ? [Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]
         : [Views.AGENDA];
     
     const showToolbar = mode !== 'MINI';
 
-    // Estilização condicional de eventos (Bloqueio vs Normal)
+    // --- HANDLERS ---
+
+    const handleNavigate = useCallback((newDate: Date) => {
+        setDate(newDate);
+    }, []);
+
+    const handleViewChange = useCallback((newView: View) => {
+        setView(newView);
+    }, []);
+
+    // ADICIONE ESTA FUNÇÃO:
+    const handleDoubleClickEvent = useCallback((calendarEvent: any) => {
+        // O 'resource' contém o objeto Appointment original que veio da API
+        const originalAppointment = calendarEvent.resource;
+        
+        setAppointmentToEdit(originalAppointment); // Guarda os dados para o form
+        setIsModalOpen(true); // Abre o mesmo modal de criação
+    }, []);
+
+    // AJUSTE NO HANDLE DO MODAL (Para limpar o estado ao fechar):
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setAppointmentToEdit(undefined); // Limpa para não abrir "sujo" na próxima
+        setSelectedSlot(undefined);
+    };
+
+    /**
+     * Disparado quando o usuário clica ou arrasta em um espaço vazio da agenda.
+     */
+    const handleSelectSlot = useCallback((slotInfo: SlotInfo) => {
+        // Define o slot selecionado e abre o modal
+        setSelectedSlot({
+            start: slotInfo.start,
+            end: slotInfo.end
+        });
+        setIsModalOpen(true);
+    }, []);
+
+    /**
+     * Callback de sucesso do Modal.
+     * Chama o hook para persistir no backend.
+     */
+    const handleSaveAppointment = async (data: { title: string; description: string; start: Date; end: Date }) => {
+    try {
+        if (appointmentToEdit) {
+            // MODO EDIÇÃO
+            await updateAppointment({
+                id: appointmentToEdit.id,
+                title: data.title,
+                description: data.description,
+                start: data.start,
+                end: data.end
+            });
+        } else {
+            // MODO CRIAÇÃO
+            await createAppointment({
+                title: data.title,
+                description: data.description,
+                start: data.start,
+                end: data.end
+            });
+        }
+        // O modal fecha sozinho após o sucesso (via props do modal) ou você fecha manualmente aqui se preferir
+    } catch (error: any) {
+        const msg = error.response?.data?.message || 'Erro ao salvar agendamento.';
+        alert(msg);
+        throw error;
+    }
+};
+
     const eventStyleGetter = (event: any) => {
         const isBlock = event.resource?.type === AppointmentType.BLOCK;
         const style = {
-            backgroundColor: isBlock ? '#374151' : '#8B5CF6', // Gray-700 (Block) vs Violet (Service)
+            backgroundColor: isBlock ? '#374151' : '#8B5CF6', 
             borderRadius: '4px',
-            opacity: 0.8,
+            opacity: 0.9,
             color: 'white',
             border: '0px',
             display: 'block'
@@ -17479,14 +17811,15 @@ export const SchedulerWidget: React.FC<SchedulerWidgetProps> = ({
     };
 
     return (
-        <div className="flex flex-col h-full bg-base-metallic rounded-xl border border-gray-700 shadow-lg overflow-hidden">
+        <div className="flex flex-col h-full bg-base-metallic rounded-xl border border-gray-700 shadow-lg overflow-hidden relative">
             
-            {/* Header / Toolbar Customizada */}
             {mode === 'FULL' && (
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-800">
                     <div className="flex items-center space-x-2">
                         <FaCalendarAlt className="text-accent-primary" />
-                        <h2 className="text-lg font-bold text-white">Agenda de Serviços</h2>
+                        <h2 className="text-lg font-bold text-white">
+                            {clientId ? 'Agenda do Cliente' : 'Agenda de Serviços'}
+                        </h2>
                     </div>
                     
                     <button 
@@ -17500,33 +17833,59 @@ export const SchedulerWidget: React.FC<SchedulerWidgetProps> = ({
                 </div>
             )}
 
-            <div className="flex-1 p-4" style={{ minHeight: 500 }}>
-                {/* O Calendário Real */}
-                <Calendar
-                    localizer={localizer}
-                    events={events}
-                    startAccessor="start"
-                    endAccessor="end"
-                    style={{ height: '100%' }}
-                    defaultView={defaultView}
-                    views={availableViews}
-                    toolbar={showToolbar}
-                    eventPropGetter={eventStyleGetter}
-                    messages={{
-                        today: 'Hoje',
-                        previous: 'Anterior',
-                        next: 'Próximo',
-                        month: 'Mês',
-                        week: 'Semana',
-                        day: 'Dia',
-                        agenda: 'Lista',
-                        date: 'Data',
-                        time: 'Hora',
-                        event: 'Evento',
-                        noEventsInRange: 'Nenhum agendamento neste período.'
-                    }}
-                />
+            <div className="flex-1 p-4 bg-gray-900" style={{ minHeight: mode === 'MINI' ? 200 : 500 }}>
+                {isLoading ? (
+                    <div className="h-full flex items-center justify-center text-gray-500">
+                        <FaSync className="animate-spin mr-2" /> Carregando agenda...
+                    </div>
+                ) : (
+                    <Calendar
+                        localizer={localizer}
+                        events={events}
+                        startAccessor="start"
+                        endAccessor="end"
+                        style={{ height: '100%' }}
+                        
+                        view={view}
+                        date={date}
+                        onView={handleViewChange}
+                        onNavigate={handleNavigate}
+                        onDoubleClickEvent={handleDoubleClickEvent}
+                        
+                        // --- INTERATIVIDADE ---
+                        selectable={true} // Habilita seleção
+                        onSelectSlot={handleSelectSlot} // Handler do clique
+                        scrollToTime={new Date(1970, 1, 1, 8)} // Rola para 08:00
+                        longPressThreshold={10} // Melhor resposta no mobile
+                        
+                        views={availableViews}
+                        toolbar={showToolbar}
+                        eventPropGetter={eventStyleGetter}
+                        messages={{
+                            today: 'Hoje',
+                            previous: 'Anterior',
+                            next: 'Próximo',
+                            month: 'Mês',
+                            week: 'Semana',
+                            day: 'Dia',
+                            agenda: 'Lista',
+                            date: 'Data',
+                            time: 'Hora',
+                            event: 'Evento',
+                            noEventsInRange: 'Nenhum agendamento neste período.'
+                        }}
+                    />
+                )}
             </div>
+
+            {/* --- RENDERIZAÇÃO DO MODAL --- */}
+            <AppointmentModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                initialSlot={selectedSlot}
+                currentAppointment={appointmentToEdit}
+                onConfirm={handleSaveAppointment}
+            />
         </div>
     );
 };
@@ -17540,7 +17899,29 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/core/services/api';
 import { Appointment, CalendarEvent, AppointmentType } from '../types';
 
-export function useScheduler() {
+export interface UseSchedulerProps {
+    clientId?: string;
+    resourceId?: string;
+}
+
+// Interface para Criação
+interface CreateAppointmentInput {
+    title: string;
+    description?: string;
+    start: Date;
+    end: Date;
+}
+
+// Interface para Edição (ID é obrigatório)
+interface UpdateAppointmentInput {
+    id: string;
+    title: string;
+    description?: string;
+    start: Date;
+    end: Date;
+}
+
+export function useScheduler({ clientId, resourceId }: UseSchedulerProps = {}) {
     
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -17559,31 +17940,74 @@ export function useScheduler() {
     const fetchAppointments = useCallback(async () => {
         try {
             setIsLoading(true);
-            // TODO: Receber filtros de data (start/end)
-            // Por enquanto, busca tudo (assumindo que o backend filtra por tenant)
-            const response = await api.get('/scheduler/appointments'); // Precisamos criar essa rota GET depois
             
-            // Mock temporário se a rota não existir ainda, para não quebrar a UI
-            // const data = response.data || []; 
-            const data: Appointment[] = []; 
+            const params: Record<string, string> = {};
+            if (clientId) params.clientId = clientId;
+            if (resourceId) params.resourceId = resourceId;
+
+            const response = await api.get('/scheduler/appointments', { params });
+            const data = response.data as Appointment[];
 
             setEvents(data.map(mapToCalendarEvent));
         } catch (error) {
             console.error("Erro ao buscar agenda:", error);
+            setEvents([]);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [clientId, resourceId]);
+
+    /**
+     * Cria um novo agendamento.
+     */
+    const createAppointment = async (input: CreateAppointmentInput) => {
+        try {
+            await api.post('/scheduler/appointments', {
+                title: input.title,
+                description: input.description,
+                startTime: input.start.toISOString(),
+                endTime: input.end.toISOString(),
+                clientId: clientId || undefined, 
+                resourceId: resourceId || undefined
+            });
+
+            await fetchAppointments();
+        } catch (error: any) {
+            console.error("Erro ao criar agendamento:", error);
+            throw error;
+        }
+    };
+
+    /**
+     * @method updateAppointment
+     * @description Atualiza um agendamento existente via PATCH.
+     */
+    const updateAppointment = async (input: UpdateAppointmentInput) => {
+        try {
+            // Rota PATCH que criamos no Backend
+            await api.patch(`/scheduler/appointments/${input.id}`, {
+                title: input.title,
+                description: input.description,
+                startTime: input.start.toISOString(),
+                endTime: input.end.toISOString(),
+            });
+
+            // Recarrega para refletir a mudança
+            await fetchAppointments();
+
+        } catch (error: any) {
+            console.error("Erro ao atualizar agendamento:", error);
+            throw error; // Lança para o componente tratar (ex: exibir erro de conflito)
+        }
+    };
 
     const syncGoogle = async () => {
         try {
             setIsSyncing(true);
             await api.post('/scheduler/sync');
-            await fetchAppointments(); // Recarrega após sync
-            alert("Agenda sincronizada com sucesso!");
+            await fetchAppointments(); 
         } catch (error) {
             console.error("Erro no sync:", error);
-            alert("Falha ao sincronizar com Google.");
         } finally {
             setIsSyncing(false);
         }
@@ -17598,6 +18022,8 @@ export function useScheduler() {
         isLoading,
         isSyncing,
         syncGoogle,
+        createAppointment,
+        updateAppointment, // <--- Nova função exposta
         refresh: fetchAppointments
     };
 }
@@ -17607,77 +18033,229 @@ export function useScheduler() {
 
 /* src/modules/scheduler/styles/calendar.css */
 
-/* Customização Dark Mode para React Big Calendar */
+/* --- 0. VARIÁVEIS LOCAIS (Para consistência) --- */
+.rbc-calendar {
+    --rbc-border-color: rgba(255, 255, 255, 0.1); /* Suave, quase imperceptível */
+    --rbc-bg-dark: #111827;      /* gray-900 */
+    --rbc-bg-metallic: #1f2937;  /* gray-800 */
+    --rbc-text-main: #e5e7eb;    /* gray-200 */
+    --rbc-text-muted: #9ca3af;   /* gray-400 */
+    --rbc-accent: #f97316;       /* orange-500 */
+    --rbc-today-bg: rgba(249, 115, 22, 0.05); /* Laranja muito sutil */
+}
+
+/* --- 1. CONTAINER GERAL --- */
 .rbc-calendar {
     font-family: inherit;
-    color: #e5e7eb; /* text-gray-200 */
+    color: var(--rbc-text-main) !important;
+    background-color: var(--rbc-bg-dark);
+    padding: 4px; /* Pequeno respiro interno */
+    min-height: 500px; /* Garante altura mínima para não quebrar layout */
 }
 
-.rbc-header {
-    border-bottom: 1px solid #374151 !important; /* gray-700 */
-    padding: 12px 0;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    font-weight: 700;
-    color: #9ca3af; /* gray-400 */
-}
-
-.rbc-month-view, .rbc-time-view, .rbc-agenda-view {
-    border: 1px solid #374151 !important; /* gray-700 */
-    background-color: #1f2937; /* base-metallic */
+/* --- 2. TOOLBAR (Botões) --- */
+.rbc-toolbar {
+    margin-bottom: 16px !important;
+    padding: 8px;
+    background-color: var(--rbc-bg-metallic);
     border-radius: 0.75rem;
+    border: 1px solid var(--rbc-border-color);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
 }
 
+.rbc-toolbar-label {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffffff;
+    text-transform: capitalize;
+}
+
+/* Reset nos botões padrão */
+.rbc-btn-group {
+    display: inline-flex;
+    background-color: #111827; /* Fundo do grupo */
+    border-radius: 0.5rem;
+    padding: 2px;
+    border: 1px solid var(--rbc-border-color);
+}
+
+.rbc-btn-group button {
+    color: var(--rbc-text-muted) !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-radius: 0.375rem !important; /* rounded-md */
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    padding: 6px 12px !important;
+    margin: 0 1px !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.rbc-btn-group button:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Botão Ativo */
+.rbc-btn-group button.rbc-active {
+    background-color: var(--rbc-accent) !important;
+    color: #111827 !important; /* Texto escuro no fundo laranja para contraste */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+}
+
+.rbc-btn-group button:focus {
+    outline: none !important;
+}
+
+/* --- 3. LINHAS DE GRADE (A Mágica da Suavidade) --- */
+/* Sobrescreve TODAS as bordas brancas padrão por nossa cor sutil */
+
+.rbc-month-view, 
+.rbc-time-view, 
+.rbc-agenda-view,
+.rbc-header, 
+.rbc-month-row, 
+.rbc-day-bg,
+.rbc-time-header-content,
+.rbc-time-content,
+.rbc-timeslot-group,
+.rbc-time-gutter,
+.rbc-agenda-view table.rbc-agenda-table,
+.rbc-agenda-view table.rbc-agenda-table thead > tr > th,
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+    border-color: var(--rbc-border-color) !important;
+}
+
+/* Remove bordas duplas/desnecessárias para limpar o visual */
+.rbc-month-view {
+    border: 1px solid var(--rbc-border-color) !important;
+    border-radius: 0.5rem;
+}
+.rbc-header {
+    border-bottom: 1px solid var(--rbc-border-color) !important;
+}
+.rbc-header + .rbc-header {
+    border-left: 1px solid var(--rbc-border-color) !important;
+}
 .rbc-day-bg + .rbc-day-bg {
-    border-left: 1px solid #374151 !important;
+    border-left: 1px solid var(--rbc-border-color) !important;
 }
-
-.rbc-off-range-bg {
-    background-color: #111827 !important; /* base-dark */
-}
-
-.rbc-today {
-    background-color: rgba(249, 115, 22, 0.1) !important; /* accent-primary/10 */
-}
-
-.rbc-event {
-    background-color: #8b5cf6 !important; /* accent-secondary */
-    border-radius: 4px !important;
-}
-
-.rbc-toolbar button {
-    color: #e5e7eb !important;
-    border: 1px solid #4b5563 !important;
-}
-
-.rbc-toolbar button:hover {
-    background-color: #374151 !important;
-}
-
-.rbc-toolbar button.rbc-active {
-    background-color: #f97316 !important; /* accent-primary */
-    border-color: #f97316 !important;
-    color: #111827 !important;
-}
-
-/* Linhas de grade */
 .rbc-month-row + .rbc-month-row {
-    border-top: 1px solid #374151 !important;
-}
-.rbc-day-bg + .rbc-day-bg {
-    border-left: 1px solid #374151 !important;
-}
-.rbc-time-header-content {
-    border-left: 1px solid #374151 !important;
-}
-.rbc-time-content {
-    border-top: 1px solid #374151 !important;
+    border-top: 1px solid var(--rbc-border-color) !important;
 }
 .rbc-time-content > * + * > * {
-    border-left: 1px solid #374151 !important;
+    border-left: 1px solid var(--rbc-border-color) !important;
 }
+.rbc-time-view {
+    border: 1px solid var(--rbc-border-color) !important;
+    border-radius: 0.5rem;
+}
+
+/* --- 4. CORES DE FUNDO E TEXTO --- */
+
+/* Cabeçalho dos dias */
+.rbc-header {
+    background-color: var(--rbc-bg-metallic);
+    padding: 8px 0 !important;
+    color: var(--rbc-text-muted);
+}
+
+/* Fundo dos dias */
+.rbc-day-bg {
+    background-color: var(--rbc-bg-metallic); /* Cinza levemente mais claro que o fundo */
+}
+
+/* Dias fora do mês (Off-range) */
+.rbc-off-range-bg {
+    background-color: var(--rbc-bg-dark) !important; /* Mais escuro para "sumir" */
+    opacity: 0.6;
+}
+
+/* Dia de HOJE */
+.rbc-today {
+    background-color: var(--rbc-today-bg) !important;
+}
+
+/* Texto das datas */
+.rbc-date-cell {
+    padding: 6px 8px !important;
+    font-size: 0.85rem;
+    font-weight: 500;
+    opacity: 0.8;
+}
+.rbc-button-link {
+    color: inherit !important;
+}
+.rbc-now .rbc-button-link {
+    color: var(--rbc-accent) !important; /* Data de hoje em laranja */
+    font-weight: 800;
+}
+
+/* --- 5. EVENTOS --- */
+.rbc-event {
+    background-color: #8b5cf6 !important; /* Padrão roxo se não vier do styleGetter */
+    border: none !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    padding: 2px 6px !important;
+}
+
+.rbc-event-content {
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+/* --- 6. VISÃO DE SEMANA/DIA (Gutter e Slots) --- */
+.rbc-time-gutter .rbc-timeslot-group {
+    border-bottom: 1px solid var(--rbc-border-color) !important;
+    background-color: var(--rbc-bg-dark); /* Coluna de horas mais escura */
+}
+
+.rbc-label {
+    color: var(--rbc-text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.rbc-day-slot .rbc-time-slot {
+    border-top: 1px solid rgba(255, 255, 255, 0.03) !important; /* Linhas de meia-hora ultra-sutis */
+}
+
+/* Linha de hora cheia */
 .rbc-timeslot-group {
-    border-bottom: 1px solid #374151 !important;
+    border-bottom: 1px solid var(--rbc-border-color) !important;
+}
+
+/* Marcador de Hora Atual (Linha Vermelha/Laranja) */
+.rbc-current-time-indicator {
+    background-color: var(--rbc-accent) !important;
+    height: 2px !important;
+}
+
+/* --- 7. VISÃO AGENDA (LISTA) --- */
+.rbc-agenda-view table.rbc-agenda-table {
+    border: none !important;
+}
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+    padding: 12px !important;
+    vertical-align: middle;
+}
+.rbc-agenda-date-cell {
+    font-weight: 700;
+    color: #fff;
+}
+.rbc-agenda-time-cell {
+    color: var(--rbc-text-muted);
+    font-size: 0.8rem;
+    text-transform: lowercase;
 }
 
 

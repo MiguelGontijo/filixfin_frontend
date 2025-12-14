@@ -4,7 +4,29 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/core/services/api';
 import { Appointment, CalendarEvent, AppointmentType } from '../types';
 
-export function useScheduler() {
+export interface UseSchedulerProps {
+    clientId?: string;
+    resourceId?: string;
+}
+
+// Interface para Criação
+interface CreateAppointmentInput {
+    title: string;
+    description?: string;
+    start: Date;
+    end: Date;
+}
+
+// Interface para Edição (ID é obrigatório)
+interface UpdateAppointmentInput {
+    id: string;
+    title: string;
+    description?: string;
+    start: Date;
+    end: Date;
+}
+
+export function useScheduler({ clientId, resourceId }: UseSchedulerProps = {}) {
     
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -23,31 +45,74 @@ export function useScheduler() {
     const fetchAppointments = useCallback(async () => {
         try {
             setIsLoading(true);
-            // TODO: Receber filtros de data (start/end)
-            // Por enquanto, busca tudo (assumindo que o backend filtra por tenant)
-            const response = await api.get('/scheduler/appointments'); // Precisamos criar essa rota GET depois
             
-            // Mock temporário se a rota não existir ainda, para não quebrar a UI
-            // const data = response.data || []; 
-            const data: Appointment[] = []; 
+            const params: Record<string, string> = {};
+            if (clientId) params.clientId = clientId;
+            if (resourceId) params.resourceId = resourceId;
+
+            const response = await api.get('/scheduler/appointments', { params });
+            const data = response.data as Appointment[];
 
             setEvents(data.map(mapToCalendarEvent));
         } catch (error) {
             console.error("Erro ao buscar agenda:", error);
+            setEvents([]);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [clientId, resourceId]);
+
+    /**
+     * Cria um novo agendamento.
+     */
+    const createAppointment = async (input: CreateAppointmentInput) => {
+        try {
+            await api.post('/scheduler/appointments', {
+                title: input.title,
+                description: input.description,
+                startTime: input.start.toISOString(),
+                endTime: input.end.toISOString(),
+                clientId: clientId || undefined, 
+                resourceId: resourceId || undefined
+            });
+
+            await fetchAppointments();
+        } catch (error: any) {
+            console.error("Erro ao criar agendamento:", error);
+            throw error;
+        }
+    };
+
+    /**
+     * @method updateAppointment
+     * @description Atualiza um agendamento existente via PATCH.
+     */
+    const updateAppointment = async (input: UpdateAppointmentInput) => {
+        try {
+            // Rota PATCH que criamos no Backend
+            await api.patch(`/scheduler/appointments/${input.id}`, {
+                title: input.title,
+                description: input.description,
+                startTime: input.start.toISOString(),
+                endTime: input.end.toISOString(),
+            });
+
+            // Recarrega para refletir a mudança
+            await fetchAppointments();
+
+        } catch (error: any) {
+            console.error("Erro ao atualizar agendamento:", error);
+            throw error; // Lança para o componente tratar (ex: exibir erro de conflito)
+        }
+    };
 
     const syncGoogle = async () => {
         try {
             setIsSyncing(true);
             await api.post('/scheduler/sync');
-            await fetchAppointments(); // Recarrega após sync
-            alert("Agenda sincronizada com sucesso!");
+            await fetchAppointments(); 
         } catch (error) {
             console.error("Erro no sync:", error);
-            alert("Falha ao sincronizar com Google.");
         } finally {
             setIsSyncing(false);
         }
@@ -62,6 +127,8 @@ export function useScheduler() {
         isLoading,
         isSyncing,
         syncGoogle,
+        createAppointment,
+        updateAppointment, // <--- Nova função exposta
         refresh: fetchAppointments
     };
 }

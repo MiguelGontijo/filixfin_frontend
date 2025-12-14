@@ -1,7 +1,7 @@
 // src/modules/crm/presentation/CRMWorkstation.tsx
 
 import React from 'react';
-import { FaWhatsapp, FaTelegram, FaPaperPlane, FaCalendarAlt } from 'react-icons/fa'; // <--- Import Ícone
+import { FaWhatsapp, FaTelegram, FaPaperPlane, FaCalendarAlt } from 'react-icons/fa';
 
 // --- COMPONENTES ---
 import { ClientListWidget } from '@/modules/crm/components/client-widget/ClientListWidget';
@@ -9,7 +9,7 @@ import { AIInputWidget } from '@/modules/crm/components/ai-widget/AIInputWidget'
 import { AnalysisActionCard } from '@/modules/crm/components/AnalysisActionCard';
 import { ClientDashboard, DashboardMode } from '@/modules/crm/components/client-dashboard/ClientDashboard';
 import { WhatsAppWidget } from '@/modules/crm/components/communication/WhatsAppWidget';
-import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget'; // <--- Import Widget
+import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget';
 
 // --- TIPOS ---
 import { Client } from '@/core/types/client';
@@ -94,7 +94,7 @@ export const CRMWorkstation: React.FC<CRMWorkstationProps> = ({
                   Span: 6
                   ================================================================*/}
                 <div className="col-span-6 h-full flex flex-col gap-4">
-                    
+
                     {/* ÁREA DE ERRO (GLOBAL DA IA) */}
                     {aiError && (
                         <div className="bg-red-900/40 border border-red-500/50 p-3 rounded-lg text-sm text-red-200 flex items-center justify-between animate-fade-in">
@@ -169,7 +169,10 @@ export const CRMWorkstation: React.FC<CRMWorkstationProps> = ({
                         {/* WIDGET DE AGENDA COMPACTO */}
                         {activeChatTab === 'AGENDA' && (
                             <div className="h-full p-2 bg-gray-800">
-                                <SchedulerWidget mode="MINI" />
+                                <SchedulerWidget 
+                                    mode="MINI" 
+                                    clientId={contextClient?.id} // <--- ATUALIZAÇÃO AQUI: Passamos o contexto!
+                                />
                             </div>
                         )}
                     </div>

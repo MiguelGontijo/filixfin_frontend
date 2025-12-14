@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { api } from '@/core/services/api';
-import { FaColumns, FaStream } from 'react-icons/fa';
+import { FaColumns, FaStream, FaCalendarAlt } from 'react-icons/fa'; // <--- Adicionado Ícone Calendar
 
 // Hooks
 import { useCRMIntelligence } from '@/modules/crm/hooks/useCRMIntelligence';
@@ -15,14 +15,15 @@ import { Client } from '@/core/types/client';
 import { DashboardMode } from '@/modules/crm/components/client-dashboard/ClientDashboard';
 import { CRMWorkstation } from './CRMWorkstation';
 import { CRMKanbanView } from './CRMKanbanView';
+import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget'; // <--- Importação do Widget
 
 // Tipo para as abas principais
-type CRMView = 'WORKSTATION' | 'KANBAN';
+type CRMView = 'WORKSTATION' | 'KANBAN' | 'AGENDA'; // <--- Adicionado AGENDA
 
 /**
  * @component CRMContainer
  * @description Container Lógico (Smart Component) do módulo CRM.
- * Gerencia estados, regras de negócio e orquestração de abas (Workstation vs Kanban).
+ * Gerencia estados, regras de negócio e orquestração de abas.
  */
 export const CRMContainer: React.FC = () => {
     
@@ -49,7 +50,6 @@ export const CRMContainer: React.FC = () => {
     const [dashboardMode, setDashboardMode] = useState<DashboardMode>('VIEW');
 
     // --- 4. LÓGICA DE UI (CHAT) ---
-    // CORREÇÃO: Adicionado 'AGENDA' ao tipo do estado
     const [activeChatTab, setActiveChatTab] = useState<'WA' | 'TG' | 'AGENDA'>('WA');
 
     // --- HANDLERS DE CLIENTE ---
@@ -118,6 +118,7 @@ export const CRMContainer: React.FC = () => {
                 >
                     <FaStream /> <span>Workstation</span>
                 </button>
+                
                 <button
                     onClick={() => setActiveView('KANBAN')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
@@ -126,14 +127,26 @@ export const CRMContainer: React.FC = () => {
                         : 'text-gray-400 hover:text-white hover:bg-gray-700'
                     }`}
                 >
-                    <FaColumns /> <span>Kanban (Deals)</span>
+                    <FaColumns /> <span>Kanban</span>
+                </button>
+
+                {/* --- NOVA ABA: AGENDA --- */}
+                <button
+                    onClick={() => setActiveView('AGENDA')}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
+                        activeView === 'AGENDA' 
+                        ? 'bg-accent-secondary text-white shadow-md' 
+                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                    }`}
+                >
+                    <FaCalendarAlt /> <span>Agenda</span>
                 </button>
             </div>
 
             {/* --- CONTEÚDO PRINCIPAL --- */}
             <div className="flex-1 min-h-0 px-0 pb-0">
                 
-                {activeView === 'WORKSTATION' ? (
+                {activeView === 'WORKSTATION' && (
                     <CRMWorkstation
                         // Dados
                         contextClient={contextClient}
@@ -159,7 +172,9 @@ export const CRMContainer: React.FC = () => {
                         onUpdateSuccess={handleUpdateSuccess}
                         onTabChange={setActiveChatTab}
                     />
-                ) : (
+                )}
+
+                {activeView === 'KANBAN' && (
                     <CRMKanbanView 
                         deals={deals}
                         isLoading={loadingDeals}
@@ -167,6 +182,13 @@ export const CRMContainer: React.FC = () => {
                         onDealMove={updateDealStatus}
                         onRefresh={refreshDeals}
                     />
+                )}
+
+                {/* --- RENDERIZAÇÃO DA AGENDA (VISÃO 2) --- */}
+                {activeView === 'AGENDA' && (
+                     <div className="h-full p-2 bg-base-metallic rounded-xl border border-gray-700 shadow-lg">
+                        <SchedulerWidget mode="FULL" />
+                     </div>
                 )}
 
             </div>
