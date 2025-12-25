@@ -5,12 +5,53 @@ const projectRoot = process.cwd();
 const outputFile = path.join(projectRoot, 'frontend-sources.txt');
 const srcDir = path.join(projectRoot, 'src');
 
+// Pastas que NÃO queremos ver na árvore para não poluir
+const ignoredFolders = ['.git', 'node_modules', 'dist', 'build', '.next', 'coverage'];
+
 console.log('Iniciando coleta de arquivos...');
 
 let output = '';
 let fileCount = 0;
 // Centralizei as extensões permitidas
 const allowedExtensions = ['.ts', '.yml', '.json', '.tsx', '.md', '.mjs', '.css', '.ico'];
+
+// --- NOVA FUNÇÃO: Gera a árvore de diretórios ---
+function generateTree(dir: string, prefix: string = ''): string {
+  let treeResult = '';
+  
+  // Lê o diretório
+  let items = fs.readdirSync(dir);
+  
+  // Filtra itens ignorados
+  items = items.filter(item => !ignoredFolders.includes(item));
+
+  // Ordena: pastas primeiro, depois arquivos (opcional, mas fica mais bonito)
+  items.sort((a, b) => {
+    const statA = fs.statSync(path.join(dir, a));
+    const statB = fs.statSync(path.join(dir, b));
+    if (statA.isDirectory() && !statB.isDirectory()) return -1;
+    if (!statA.isDirectory() && statB.isDirectory()) return 1;
+    return a.localeCompare(b);
+  });
+
+  items.forEach((item, index) => {
+    const fullPath = path.join(dir, item);
+    const stat = fs.statSync(fullPath);
+    const isLast = index === items.length - 1;
+    
+    // Define os caracteres do desenho da árvore
+    const marker = isLast ? '└── ' : '├── ';
+    treeResult += `${prefix}${marker}${item}\n`;
+
+    if (stat.isDirectory()) {
+      // Recursão com indentação ajustada
+      const newPrefix = prefix + (isLast ? '    ' : '│   ');
+      treeResult += generateTree(fullPath, newPrefix);
+    }
+  });
+
+  return treeResult;
+}
 
 // --- Helper para adicionar o conteúdo ao output ---
 function addFileToOutput(fullPath: string) {
@@ -24,8 +65,9 @@ function addFileToOutput(fullPath: string) {
 }
 
 // --- 1. Sua função original para ler 'src' recursivamente ---
-// (Renomeei para clareza)
 function processSrcRecursive(directory: string) {
+  if (!fs.existsSync(directory)) return; // Segurança caso src não exista
+
   const files = fs.readdirSync(directory);
   
   files.forEach(file => {
@@ -57,6 +99,16 @@ function processRootFiles(directory: string) {
 }
 
 try {
+  // ETAPA 0: Gerar a Árvore de Pastas
+  console.log('Gerando árvore de diretórios...');
+  const treeStructure = generateTree(projectRoot);
+  
+  output += '// ==============================\n';
+  output += '// PROJECT STRUCTURE (Tree View)\n';
+  output += '// ==============================\n';
+  output += treeStructure;
+  output += '\n\n\n';
+
   // ETAPA 1: Processa os arquivos da raiz (ex: package.json)
   processRootFiles(projectRoot);
 
@@ -64,7 +116,7 @@ try {
   processSrcRecursive(srcDir);
   
   fs.writeFileSync(outputFile, output);
-  console.log(`✅ Sucesso! ${fileCount} arquivos copiados para backendLeaf-sources.txt`);
+  console.log(`✅ Sucesso! Árvore gerada e ${fileCount} arquivos copiados para ${outputFile}`);
 } catch (error) {
   console.error('❌ Erro:', error);
 }

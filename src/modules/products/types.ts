@@ -1,6 +1,6 @@
 // src/features/products/types.ts
 
-// --- ENUMS (Espelho do Backend) ---
+// --- ENUMS (Mantidos do Original) ---
 
 export enum ProductType {
     PHYSICAL = 'PHYSICAL',
@@ -23,7 +23,7 @@ export enum ProductAvailability {
     BACKORDER = 'backorder'
 }
 
-// --- TIPOS DE METADATA (Especificidades do JSONB) ---
+// --- TIPOS DE METADATA (Mantidos do Original) ---
 
 export interface PhysicalMetadata {
     weight_kg?: number;
@@ -91,9 +91,17 @@ export interface Product {
     longDescription: string | null;
     brand: string | null;
     
-    // Mídia e Taxonomia
+    // Mídia
     images: string[] | null; // URLs
-    categoryPath: string | null;
+    
+    // --- VÍNCULOS E INTEGRAÇÕES (Alterado) ---
+    // Substituído categoryPath por IDs relacionais
+    categoryId: string;       // Vínculo obrigatório com Módulo de Categorias
+    fiscalGroupId: string;    // Vínculo obrigatório com Módulo Fiscal
+    
+    // --- ESTOQUE (Novo) ---
+    minStock: number;         // Ponto de pedido (alerta)
+    currentStock: number;     // Saldo atual (apenas leitura ou via movimentação)
 
     // Códigos
     sku: string | null;
@@ -131,8 +139,16 @@ export interface ProductFormData {
     longDescription: string;
     brand: string;
     
-    // Novos Campos de Marketplace
-    categoryPath?: string;
+    // --- VÍNCULOS E INTEGRAÇÕES (Alterado) ---
+    // Novos campos de seleção
+    categoryId: string;
+    fiscalGroupId: string;
+    
+    // Estoque inicial na criação
+    minStock: number;
+    currentStock: number;
+    
+    // Campos de Marketplace
     gtin?: string;
     mpn?: string;
     

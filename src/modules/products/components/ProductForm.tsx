@@ -1,16 +1,24 @@
-// src/features/products/components/ProductForm.tsx
+// src/modules/products/components/ProductForm.tsx
 
 import React, { useState, useEffect } from 'react';
 import { 
-    FaSave, FaTimes, FaImage, FaTrash, FaPlus, 
-    FaTag, FaBarcode, FaCube, FaInfoCircle, FaListUl 
+    FaSave, FaTimes, FaImage, FaTrash, 
+    FaPlus, FaTag, FaBarcode, FaCube, 
+    FaInfoCircle, FaListUl, FaBoxes, FaBalanceScale 
 } from 'react-icons/fa';
+
+// Imports de Tipos e Hooks do Módulo de Produtos
 import { 
-    Product, ProductType, ProductCondition, ProductAvailability, ProductFormData 
+    Product, ProductType, ProductCondition, 
+    ProductAvailability, ProductFormData 
 } from '../types';
 import { useProductMutation } from '../hooks/useProductMutation';
 
-// Importação dos Sub-Formulários Específicos
+// --- INTEGRAÇÕES (Novos Hooks) ---
+import { useCategories } from '@/modules/categories/hooks/useCategories';
+import { useFiscal } from '@/modules/fiscal/hooks/useFiscal';
+
+// Importação dos Sub-Formulários Específicos (Polimorfismo)
 import { ServiceFields } from './metadata-forms/ServiceFields';
 import { VehicleFields } from './metadata-forms/VehicleFields';
 import { DigitalFields } from './metadata-forms/DigitalFields';
@@ -28,20 +36,26 @@ type FormTab = 'BASIC' | 'SPECS';
 /**
  * @component ProductForm
  * @description Formulário Mestre com sistema de Abas e Renderização Polimórfica.
+ * @update Integrado com Categorias, Fiscal e Estoque Básico.
  */
 export const ProductForm: React.FC<ProductFormProps> = ({ 
     product, 
     onSuccess, 
     onCancel 
 }) => {
-    
+    // Hooks de Mutação
     const { createProduct, updateProduct, isLoading, error } = useProductMutation();
+    
+    // --- HOOKS DE REFERÊNCIA (Dados Auxiliares) ---
+    const { categories, isLoading: loadingCats } = useCategories();
+    const { fiscalGroups, isLoading: loadingFiscal } = useFiscal();
+
     const isEditing = !!product;
 
     // --- ESTADOS ---
     const [activeTab, setActiveTab] = useState<FormTab>('BASIC');
-    
-    // Campos Comuns
+
+    // Estado do Formulário (Tipado com Partial para inicialização)
     const [formData, setFormData] = useState<Partial<ProductFormData>>({
         title: '',
         shortDescription: '',
@@ -55,16 +69,23 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         condition: ProductCondition.NEW,
         availability: ProductAvailability.IN_STOCK,
         type: ProductType.PHYSICAL,
-        categoryPath: '',
-        images: []
+        images: [],
+        
+        // Novos Campos Relacionais
+        categoryId: '',
+        fiscalGroupId: '',
+        
+        // Novos Campos de Estoque
+        minStock: 0,
+        currentStock: 0
     });
 
     const [imageUrlInput, setImageUrlInput] = useState('');
-
-    // Metadata (Campos Específicos)
+    
+    // Metadata (Campos Específicos JSONB)
     const [metadata, setMetadata] = useState<any>({});
 
-    // --- HIDRATAÇÃO ---
+    // --- HIDRATAÇÃO (Carregar dados na edição) ---
     useEffect(() => {
         if (product) {
             setFormData({
@@ -80,15 +101,20 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 condition: product.condition,
                 availability: product.availability,
                 type: product.type,
-                categoryPath: product.categoryPath || '',
-                images: product.images || []
+                images: product.images || [],
+                
+                // Mapeamento dos novos campos
+                categoryId: product.categoryId || '',
+                fiscalGroupId: product.fiscalGroupId || '',
+                minStock: product.minStock || 0,
+                currentStock: product.currentStock || 0
             });
             setMetadata(product.metadata || {});
         }
     }, [product]);
 
     // --- HANDLERS ---
-
+    
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         setFormData(prev => ({
@@ -125,6 +151,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
+        // Validação Básica
+        if (!formData.fiscalGroupId) {
+            alert('Por favor, selecione um Grupo Fiscal.');
+            return;
+        }
+        if (!formData.categoryId) {
+            alert('Por favor, selecione uma Categoria.');
+            return;
+        }
+
         const payload: ProductFormData = {
             ...formData as ProductFormData,
             metadata: metadata
@@ -142,7 +178,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         }
     };
 
-    // --- RENDERIZAÇÃO DO FORMULÁRIO DINÂMICO ---
+    // --- RENDERIZAÇÃO DO FORMULÁRIO DINÂMICO (Polimorfismo) ---
     const renderMetadataForm = () => {
         switch (formData.type) {
             case ProductType.SERVICE:
@@ -161,7 +197,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     };
 
     const tabClass = (tab: FormTab) => `
-        flex-1 py-3 text-xs font-bold uppercase tracking-wider text-center transition-colors border-b-2 
+        flex-1 py-3 text-xs font-bold uppercase tracking-wider text-center transition-colors border-b-2
         ${activeTab === tab 
             ? 'border-accent-secondary text-white bg-gray-800/50' 
             : 'border-transparent text-gray-500 hover:text-gray-300 hover:bg-gray-800/30'}
@@ -176,10 +212,18 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                     {isEditing ? <><FaSave className="mr-2 text-accent-secondary" /> Editar Produto</> : <><FaPlus className="mr-2 text-accent-primary" /> Novo Cadastro</>}
                 </h3>
                 <div className="flex space-x-2">
-                    <button type="button" onClick={onCancel} className="px-3 py-1.5 text-xs font-bold text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded border border-gray-600 transition">
+                    <button 
+                        type="button" 
+                        onClick={onCancel}
+                        className="px-3 py-1.5 text-xs font-bold text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded border border-gray-600 transition"
+                    >
                         Cancelar
                     </button>
-                    <button type="submit" disabled={isLoading} className="px-4 py-1.5 text-xs font-bold text-base-dark bg-accent-primary hover:bg-orange-500 rounded shadow-lg transition transform active:scale-95 disabled:opacity-50">
+                    <button 
+                        type="submit" 
+                        disabled={isLoading}
+                        className="px-4 py-1.5 text-xs font-bold text-base-dark bg-accent-primary hover:bg-orange-500 rounded shadow-lg transition transform active:scale-95 disabled:opacity-50"
+                    >
                         {isLoading ? 'Salvando...' : 'Salvar Produto'}
                     </button>
                 </div>
@@ -208,20 +252,27 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 {activeTab === 'BASIC' && (
                     <div className="space-y-6 animate-fade-in">
                         
-                        {/* Identificação */}
+                        {/* Identificação Principal */}
                         <div className="grid grid-cols-12 gap-4">
-                            <div className="col-span-8">
+                            <div className="col-span-12 md:col-span-8">
                                 <label className="block text-[10px] uppercase font-bold text-accent-primary mb-1">Título *</label>
-                                <input 
-                                    type="text" name="title" required value={formData.title} onChange={handleChange}
+                                <input
+                                    type="text"
+                                    name="title"
+                                    required
+                                    value={formData.title}
+                                    onChange={handleChange}
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-accent-primary focus:outline-none"
                                     placeholder="Nome do produto ou serviço"
                                 />
                             </div>
-                            <div className="col-span-4">
+                            <div className="col-span-12 md:col-span-4">
                                 <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Tipo *</label>
-                                <select 
-                                    name="type" value={formData.type} onChange={handleTypeChange} disabled={isEditing}
+                                <select
+                                    name="type"
+                                    value={formData.type}
+                                    onChange={handleTypeChange}
+                                    disabled={isEditing}
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-accent-secondary focus:outline-none disabled:opacity-50"
                                 >
                                     {Object.values(ProductType).map(t => (
@@ -231,51 +282,161 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                             </div>
                         </div>
 
-                        {/* Descrições (Novo) */}
+                        {/* Descrições */}
                         <div className="grid grid-cols-1 gap-4">
                             <div>
                                 <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Descrição Curta (SEO/Cards)</label>
-                                <input 
-                                    type="text" name="shortDescription" value={formData.shortDescription || ''} onChange={handleChange} maxLength={500}
+                                <input
+                                    type="text"
+                                    name="shortDescription"
+                                    value={formData.shortDescription || ''}
+                                    onChange={handleChange}
+                                    maxLength={500}
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-accent-primary focus:outline-none"
                                     placeholder="Breve resumo para listagens..."
                                 />
                             </div>
                             <div>
                                 <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Descrição Detalhada</label>
-                                <textarea 
-                                    name="longDescription" value={formData.longDescription || ''} onChange={handleChange} rows={4}
+                                <textarea
+                                    name="longDescription"
+                                    value={formData.longDescription || ''}
+                                    onChange={handleChange}
+                                    rows={4}
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-accent-primary focus:outline-none resize-y"
                                     placeholder="Detalhes completos, especificações técnicas, etc."
                                 />
                             </div>
                         </div>
 
+                        {/* Classificação e Fiscal (NOVO) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-900/30 p-4 rounded-lg border border-gray-700/50">
+                            {/* Categoria */}
+                            <div>
+                                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1 flex items-center">
+                                    <FaTag className="mr-1" /> Categoria
+                                </label>
+                                <select
+                                    name="categoryId"
+                                    value={formData.categoryId || ''}
+                                    onChange={handleChange}
+                                    disabled={loadingCats}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white text-xs focus:border-accent-primary focus:outline-none"
+                                >
+                                    <option value="">Selecione uma Categoria...</option>
+                                    {categories.map(cat => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Grupo Fiscal */}
+                            <div>
+                                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1 flex items-center">
+                                    <FaBalanceScale className="mr-1" /> Grupo Fiscal (Tributação) *
+                                </label>
+                                <select
+                                    name="fiscalGroupId"
+                                    value={formData.fiscalGroupId || ''}
+                                    onChange={handleChange}
+                                    disabled={loadingFiscal}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white text-xs focus:border-accent-primary focus:outline-none"
+                                    required
+                                >
+                                    <option value="">Selecione a Regra Fiscal...</option>
+                                    {fiscalGroups.map(group => (
+                                        <option key={group.id} value={group.id}>
+                                            {group.name} (NCM: {group.ncmDefault})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
                         {/* Preços e Estoque */}
-                        <div className="grid grid-cols-4 gap-4 bg-gray-900/30 p-4 rounded-lg border border-gray-700/50">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-900/30 p-4 rounded-lg border border-gray-700/50">
+                            {/* Preço */}
                             <div className="col-span-1">
                                 <label className="block text-[10px] uppercase font-bold text-green-400 mb-1">Preço (R$)</label>
-                                <input 
-                                    type="number" name="price" min="0" step="0.01" required value={formData.price} onChange={handleChange}
+                                <input
+                                    type="number"
+                                    name="price"
+                                    min="0"
+                                    step="0.01"
+                                    required
+                                    value={formData.price}
+                                    onChange={handleChange}
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-green-500 focus:outline-none font-mono"
                                 />
                             </div>
+                            
+                            {/* Promoção */}
                             <div className="col-span-1">
                                 <label className="block text-[10px] uppercase font-bold text-yellow-400 mb-1">Promoção (R$)</label>
-                                <input 
-                                    type="number" name="promotionalPrice" min="0" step="0.01" value={formData.promotionalPrice} onChange={handleChange}
+                                <input
+                                    type="number"
+                                    name="promotionalPrice"
+                                    min="0"
+                                    step="0.01"
+                                    value={formData.promotionalPrice}
+                                    onChange={handleChange}
                                     className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-yellow-500 focus:outline-none font-mono"
                                 />
                             </div>
+
+                            {/* Estoque Atual (NOVO) */}
+                            <div className="col-span-1">
+                                <label className="block text-[10px] uppercase font-bold text-blue-400 mb-1 flex items-center">
+                                    <FaBoxes className="mr-1" /> Saldo Atual
+                                </label>
+                                <input
+                                    type="number"
+                                    name="currentStock"
+                                    min="0"
+                                    value={formData.currentStock}
+                                    onChange={handleChange}
+                                    // Bloqueia edição direta se for atualização (idealmente usa-se movimentações)
+                                    disabled={isEditing} 
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-blue-500 focus:outline-none font-mono disabled:opacity-50"
+                                    title={isEditing ? "Use o módulo de inventário para ajustar o saldo" : "Saldo inicial"}
+                                />
+                            </div>
+
+                            {/* Estoque Mínimo (NOVO) */}
+                            <div className="col-span-1">
+                                <label className="block text-[10px] uppercase font-bold text-red-400 mb-1">Estoque Mínimo</label>
+                                <input
+                                    type="number"
+                                    name="minStock"
+                                    min="0"
+                                    value={formData.minStock}
+                                    onChange={handleChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:border-red-500 focus:outline-none font-mono"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Dados de Controle */}
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="col-span-1">
                                 <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Condição</label>
-                                <select name="condition" value={formData.condition} onChange={handleChange} className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white text-xs">
+                                <select
+                                    name="condition"
+                                    value={formData.condition}
+                                    onChange={handleChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white text-xs"
+                                >
                                     {Object.values(ProductCondition).map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                             </div>
                             <div className="col-span-1">
                                 <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Disponibilidade</label>
-                                <select name="availability" value={formData.availability} onChange={handleChange} className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white text-xs">
+                                <select
+                                    name="availability"
+                                    value={formData.availability}
+                                    onChange={handleChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white text-xs"
+                                >
                                     {Object.values(ProductAvailability).map(a => <option key={a} value={a}>{a.replace('_', ' ')}</option>)}
                                 </select>
                             </div>
@@ -286,25 +447,27 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                             <label className="block text-[10px] uppercase font-bold text-gray-400 mb-2 flex items-center">
                                 <FaImage className="mr-1" /> Galeria de Imagens (URLs)
                             </label>
-                            
                             <div className="flex gap-2 mb-3">
-                                <input 
-                                    type="text" 
-                                    value={imageUrlInput} 
+                                <input
+                                    type="text"
+                                    value={imageUrlInput}
                                     onChange={(e) => setImageUrlInput(e.target.value)}
-                                    placeholder="Cole a URL da imagem aqui..." 
+                                    placeholder="Cole a URL da imagem aqui..."
                                     className="flex-1 bg-gray-800 border border-gray-600 rounded px-3 py-1.5 text-xs text-white focus:border-accent-primary focus:outline-none"
                                 />
-                                <button onClick={handleAddImage} type="button" className="bg-gray-700 hover:bg-accent-primary text-white px-3 py-1.5 rounded transition text-xs font-bold">
+                                <button
+                                    onClick={handleAddImage}
+                                    type="button"
+                                    className="bg-gray-700 hover:bg-accent-primary text-white px-3 py-1.5 rounded transition text-xs font-bold"
+                                >
                                     Adicionar
                                 </button>
                             </div>
-
                             <div className="flex flex-wrap gap-3">
                                 {formData.images?.map((url, idx) => (
                                     <div key={idx} className="relative group w-20 h-20 rounded border border-gray-600 overflow-hidden bg-black">
                                         <img src={url} alt={`Img ${idx}`} className="w-full h-full object-cover" />
-                                        <button 
+                                        <button
                                             onClick={() => handleRemoveImage(idx)}
                                             className="absolute top-0 right-0 bg-red-600/80 text-white p-1 opacity-0 group-hover:opacity-100 transition"
                                         >
@@ -319,27 +482,37 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                             </div>
                         </div>
 
-                        {/* Códigos e Categoria */}
+                        {/* Códigos (SKU/GTIN) */}
                         <div className="grid grid-cols-3 gap-4 border-t border-gray-700 pt-4">
-                            <div className="col-span-3">
-                                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Categoria (Google Taxonomy)</label>
-                                <input 
-                                    type="text" name="categoryPath" value={formData.categoryPath || ''} onChange={handleChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white text-xs"
-                                    placeholder="Ex: Vestuário > Roupas Masculinas > Camisetas"
+                            <div>
+                                <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1 flex items-center"><FaBarcode className="mr-1"/> SKU</label>
+                                <input
+                                    type="text"
+                                    name="sku"
+                                    value={formData.sku || ''}
+                                    onChange={handleChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-white text-xs"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1 flex items-center"><FaBarcode className="mr-1"/> SKU</label>
-                                <input type="text" name="sku" value={formData.sku || ''} onChange={handleChange} className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-white text-xs" />
-                            </div>
-                            <div>
                                 <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">GTIN / EAN</label>
-                                <input type="text" name="gtin" value={formData.gtin || ''} onChange={handleChange} className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-white text-xs" />
+                                <input
+                                    type="text"
+                                    name="gtin"
+                                    value={formData.gtin || ''}
+                                    onChange={handleChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-white text-xs"
+                                />
                             </div>
                             <div>
                                 <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Marca</label>
-                                <input type="text" name="brand" value={formData.brand || ''} onChange={handleChange} className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-white text-xs" />
+                                <input
+                                    type="text"
+                                    name="brand"
+                                    value={formData.brand || ''}
+                                    onChange={handleChange}
+                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-white text-xs"
+                                />
                             </div>
                         </div>
                     </div>
@@ -352,14 +525,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                             <FaCube className="mr-2" />
                             <h4 className="text-sm font-bold uppercase">Detalhes Técnicos: {formData.type}</h4>
                         </div>
-                        
                         {/* A "Mágica" da Renderização Condicional */}
                         <div className="bg-gray-900/30 p-4 rounded-lg border border-gray-700/50 min-h-[300px]">
                             {renderMetadataForm()}
                         </div>
                     </div>
                 )}
-
             </div>
         </form>
     );

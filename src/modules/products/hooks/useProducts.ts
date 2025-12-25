@@ -1,25 +1,25 @@
-// src/features/products/hooks/useProducts.ts
-
 import { useState, useEffect, useCallback } from 'react';
-import { api } from '@/core/services/api';
+// Ajuste o import da API conforme sua estrutura real (se for @/services/api ou @/core/services/api)
+import { api } from '@/core/services/api'; 
 import { Product } from '../types';
 
 /**
  * @hook useProducts
  * @description Gerencia a listagem, busca e estado de carregamento dos Produtos.
- * Integra-se ao endpoint de busca híbrida do Backend.
+ * Local: src/modules/products/hooks/useProducts.ts
  */
 export function useProducts(refreshTrigger: number = 0) {
     
+    // Estados de Dados
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // --- CONTROLE DE BUSCA ---
+    // Estados de Busca
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedTerm, setDebouncedTerm] = useState('');
 
-    // 1. Efeito de Debounce: Aguarda o usuário parar de digitar por 500ms
+    // 1. Debounce: Aguarda 500ms após parar de digitar
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedTerm(searchTerm);
@@ -28,28 +28,29 @@ export function useProducts(refreshTrigger: number = 0) {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    // 2. Função de Fetching (Memoized)
+    // 2. Função de Fetching
     const fetchProducts = useCallback(async () => {
         try {
             setIsLoading(true);
             setError(null);
 
-            // Se houver termo, envia query param 'q' para ativar a busca híbrida no Backend
+            // Monta os parâmetros (query string ?q=...)
             const params = debouncedTerm ? { q: debouncedTerm } : {};
 
+            // Ajuste a rota se necessário (ex: '/products' ou '/product')
             const response = await api.get('/product', { params });
 
             setProducts(response.data as Product[]);
         } catch (err: any) {
             console.error("Erro ao buscar produtos:", err);
-            const errorMessage = err.response?.data?.message || "Falha ao carregar o catálogo de produtos.";
+            const errorMessage = err.response?.data?.message || "Falha ao carregar produtos.";
             setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
     }, [debouncedTerm]);
 
-    // 3. Disparador de Efeito (Recarrega se a busca ou o trigger mudarem)
+    // 3. Recarrega quando muda o termo (debounced) ou o trigger externo
     useEffect(() => {
         fetchProducts();
     }, [fetchProducts, refreshTrigger]);
@@ -58,8 +59,8 @@ export function useProducts(refreshTrigger: number = 0) {
         products,
         isLoading,
         error,
-        searchTerm,
-        setSearchTerm,
-        refreshData: fetchProducts
+        searchTerm,      // Exposto para o Input value
+        setSearchTerm,   // Exposto para o onChange
+        refreshProducts: fetchProducts // Exposto com o nome que o ProductSelector espera
     };
 }

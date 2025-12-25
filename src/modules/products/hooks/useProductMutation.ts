@@ -1,33 +1,36 @@
-// src/features/products/hooks/useProductMutation.ts
-
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/core/services/api';
-import { Product, ProductFormData } from '../types';
+
+// Import corrigido para modules conforme sua instrução
+import { Product, ProductFormData } from '@/modules/products/types';
 
 /**
- * @hook useProductMutation
- * @description Gerencia as operações de escrita (CUD) para o módulo de Produtos.
- * Centraliza o envio de dados para a API e tratamento de erros.
+ * Hook de Mutação para Produtos.
+ * * Responsabilidade:
+ * - Enviar dados de criação (POST) e atualização (PUT).
+ * - Gerenciar estados de loading e erro da operação.
+ * - Redirecionar após sucesso.
  */
 export function useProductMutation() {
-    
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
 
     /**
-     * @method createProduct
-     * @description Envia o payload (incluindo metadata dinâmico) para criar um produto.
+     * Cria um novo produto.
+     * O payload (data) já vem tipado e formatado do ProductForm.
      */
-    const createProduct = async (data: ProductFormData): Promise<Product> => {
+    const createProduct = async (data: ProductFormData): Promise<Product | null> => {
         setIsLoading(true);
         setError(null);
         try {
-            // POST /product
-            const response = await api.post('/product', data);
-            return response.data as Product;
+            // O backend espera exatamente essa estrutura agora (com categoryId, fiscalGroupId, etc)
+            const response = await api.post<Product>('/products', data);
+            return response.data;
         } catch (err: any) {
-            console.error("Erro ao criar produto:", err);
-            const msg = err.response?.data?.message || "Falha ao cadastrar o produto.";
+            console.error('❌ Erro ao criar produto:', err);
+            const msg = err.response?.data?.message || 'Falha ao criar produto. Verifique os dados.';
             setError(msg);
             throw err;
         } finally {
@@ -36,22 +39,21 @@ export function useProductMutation() {
     };
 
     /**
-     * @method updateProduct
-     * @description Atualiza dados parciais de um produto.
-     * @param id ID do produto.
-     * @param data Dados parciais (Partial<ProductFormData>).
+     * Atualiza um produto existente.
      */
-    const updateProduct = async (id: string, data: Partial<ProductFormData>): Promise<Product> => {
+    const updateProduct = async (id: string, data: Partial<ProductFormData>): Promise<Product | null> => {
         setIsLoading(true);
         setError(null);
         try {
-            // PATCH /product/:id (Implementaremos o endpoint de update no backend em breve,
-            // mas já deixamos o hook pronto no front)
-            const response = await api.patch(`/product/${id}`, data);
-            return response.data as Product;
+            const response = await api.put<Product>(`/products/${id}`, data);
+            
+            // Opcional: Forçar refresh da rota para atualizar dados em cache do Next.js
+            router.refresh();
+            
+            return response.data;
         } catch (err: any) {
-            console.error("Erro ao atualizar produto:", err);
-            const msg = err.response?.data?.message || "Falha ao atualizar o produto.";
+            console.error('❌ Erro ao atualizar produto:', err);
+            const msg = err.response?.data?.message || 'Falha ao salvar alterações.';
             setError(msg);
             throw err;
         } finally {
@@ -60,20 +62,19 @@ export function useProductMutation() {
     };
 
     /**
-     * @method deleteProduct
-     * @description Remove um produto do catálogo.
+     * Remove um produto.
      */
-    const deleteProduct = async (id: string): Promise<void> => {
+    const deleteProduct = async (id: string): Promise<boolean> => {
         setIsLoading(true);
         setError(null);
         try {
-            // DELETE /product/:id
-            await api.delete(`/product/${id}`);
+            await api.delete(`/products/${id}`);
+            return true;
         } catch (err: any) {
-            console.error("Erro ao deletar produto:", err);
-            const msg = err.response?.data?.message || "Falha ao remover o produto.";
+            console.error('❌ Erro ao excluir produto:', err);
+            const msg = err.response?.data?.message || 'Não foi possível excluir o produto. Verifique se há movimentações.';
             setError(msg);
-            throw err;
+            return false;
         } finally {
             setIsLoading(false);
         }

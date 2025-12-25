@@ -1,15 +1,10 @@
-// src/app/[tenantId]/dashboard/products/page.tsx
-
-"use client";
-
-import React from 'react';
-import { ProductContainer } from '@/modules/products/presentation/ProductContainer';
+import { ProductList } from '@/modules/products/components/ProductList';
 
 /**
- * @component ProductsPage
- * @description Rota principal do módulo de Produtos (Wrapper).
- * Delega a lógica para o ProductContainer (Smart Component) que gerencia as abas.
+ * Rota Principal de Produtos.
+ * * URL: /[tenantId]/dashboard/products
+ * * Padrão: Thin Page (A lógica está isolada em ProductList).
  */
 export default function ProductsPage() {
-    return <ProductContainer />;
+    return <ProductList />;
 }
