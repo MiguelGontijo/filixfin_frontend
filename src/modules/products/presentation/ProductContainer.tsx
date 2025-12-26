@@ -15,10 +15,11 @@ import { OverviewTab } from '../components/tabs/OverviewTab';
 import { CatalogTab } from '../components/tabs/CatalogTab';
 import { MovementsTab } from '../components/tabs/MovementsTab';
 import { WarehousesTab } from '../components/tabs/WarehousesTab';
+import { CategoriesTab } from '../components/tabs/CategoriesTab'; // Novo Componente
 
 // --- Imports Cross-Module (Reutilização de Componentes Existentes) ---
-import { CategoryList } from '../../categories/components/CategoryList';
 import { FiscalList } from '../../fiscal/components/FiscalList';
+import { useAIContextInjector } from '@/core/ai/hooks/useAIContextInjector';
 
 export type ProductViewType = 
     | 'OVERVIEW'
@@ -40,6 +41,8 @@ interface ProductContainerProps {
 export const ProductContainer: React.FC<ProductContainerProps> = ({ 
     initialView = 'CATALOG' 
 }) => {
+    
+    useAIContextInjector('SUPPLY_CHAIN');
     
     const [activeView, setActiveView] = useState<ProductViewType>(initialView);
 
@@ -65,20 +68,15 @@ export const ProductContainer: React.FC<ProductContainerProps> = ({
             case 'CATALOG':
                 return <CatalogTab />;
             case 'MOVEMENTS':
-                // O componente MovementsTab (MovementsContainer/List) já deve cuidar do seu próprio card
                 return <MovementsTab />;
             case 'WAREHOUSES':
                 return <WarehousesTab />;
             case 'CATEGORIES':
-                return (
-                    // Wrapper estilizado com tema Metálico para listas externas
-                    <div className="bg-base-metallic rounded-xl shadow-lg border border-gray-700 overflow-hidden min-h-[500px]">
-                        <CategoryList />
-                    </div>
-                );
+                // Nova implementação: Componente nativo do módulo Products
+                return <CategoriesTab />;
             case 'FISCAL':
                 return (
-                    // Wrapper estilizado com tema Metálico para listas externas
+                    // Wrapper estilizado com tema Metálico para listas externas (Fiscal ainda é legado)
                     <div className="bg-base-metallic rounded-xl shadow-lg border border-gray-700 overflow-hidden min-h-[500px]">
                         <FiscalList />
                     </div>

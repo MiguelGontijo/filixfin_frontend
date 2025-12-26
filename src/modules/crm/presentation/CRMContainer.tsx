@@ -16,6 +16,7 @@ import { DashboardMode } from '@/modules/crm/components/client-dashboard/ClientD
 import { CRMWorkstation } from './CRMWorkstation';
 import { CRMKanbanView } from './CRMKanbanView';
 import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget'; // <--- Importação do Widget
+import { useAIContextInjector } from '@/core/ai/hooks/useAIContextInjector';
 
 // Tipo para as abas principais
 type CRMView = 'WORKSTATION' | 'KANBAN' | 'AGENDA'; // <--- Adicionado AGENDA
@@ -27,6 +28,8 @@ type CRMView = 'WORKSTATION' | 'KANBAN' | 'AGENDA'; // <--- Adicionado AGENDA
  */
 export const CRMContainer: React.FC = () => {
     
+    useAIContextInjector('CRM');
+
     // --- 0. NAVEGAÇÃO (ABAS) ---
     const [activeView, setActiveView] = useState<CRMView>('WORKSTATION');
 

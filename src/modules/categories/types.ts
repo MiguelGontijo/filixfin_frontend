@@ -20,6 +20,7 @@ export interface ICategory {
     tenantId: string;
     createdAt: string;
     updatedAt: string;
+    isActive: boolean;
     // Opcional: Para visualização em árvore
     children?: ICategory[];
 }
@@ -43,6 +44,7 @@ export interface Category {
     tenantId: string;
     createdAt: string;
     updatedAt: string;
+    isActive: boolean;
     // Opcional: Se o backend retornar a árvore montada
     children?: Category[]; 
 }
@@ -50,6 +52,7 @@ export interface Category {
 export interface CreateCategoryDto {
     name: string;
     parentId?: string;
+    isActive: boolean;
 }
 
 export interface UpdateCategoryDto extends Partial<CreateCategoryDto> {}
