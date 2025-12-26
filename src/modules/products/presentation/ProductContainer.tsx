@@ -1,79 +1,145 @@
-// src/features/products/presentation/ProductContainer.tsx
+'use client';
 
-"use client";
+import React, { useState, useEffect } from 'react';
+import { 
+    FaChartPie, 
+    FaBox, 
+    FaExchangeAlt, 
+    FaWarehouse, 
+    FaTags, 
+    FaFileInvoiceDollar 
+} from 'react-icons/fa';
 
-import React, { useState } from 'react';
-import { FaStream, FaMagic, FaFileImport } from 'react-icons/fa';
-import { ProductCatalogue } from './ProductCatalogue';
+// --- Imports de Componentes Locais (Módulo Products) ---
+import { OverviewTab } from '../components/tabs/OverviewTab';
+import { CatalogTab } from '../components/tabs/CatalogTab';
+import { MovementsTab } from '../components/tabs/MovementsTab';
+import { WarehousesTab } from '../components/tabs/WarehousesTab';
 
-// Definição das Visões Disponíveis
-type ProductView = 'CATALOGUE' | 'INTELLIGENCE';
+// --- Imports Cross-Module (Reutilização de Componentes Existentes) ---
+import { CategoryList } from '../../categories/components/CategoryList';
+import { FiscalList } from '../../fiscal/components/FiscalList';
+
+export type ProductViewType = 
+    | 'OVERVIEW'
+    | 'CATALOG'
+    | 'MOVEMENTS'
+    | 'WAREHOUSES'
+    | 'CATEGORIES'
+    | 'FISCAL';
+
+interface ProductContainerProps {
+    initialView?: ProductViewType;
+}
 
 /**
  * @component ProductContainer
- * @description Container Lógico (Smart Component) do módulo de Produtos.
- * Gerencia a navegação por abas e o estado global da seção.
+ * @description Hub Principal de Supply Chain.
+ * @style Dark/Metallic (Seguindo Design System)
  */
-export const ProductContainer: React.FC = () => {
+export const ProductContainer: React.FC<ProductContainerProps> = ({ 
+    initialView = 'CATALOG' 
+}) => {
     
-    // Estado de Navegação
-    const [activeView, setActiveView] = useState<ProductView>('CATALOGUE');
+    const [activeView, setActiveView] = useState<ProductViewType>(initialView);
+
+    useEffect(() => {
+        if (initialView) {
+            setActiveView(initialView);
+        }
+    }, [initialView]);
+
+    const tabs = [
+        { id: 'OVERVIEW', label: 'Visão Geral', icon: FaChartPie },
+        { id: 'CATALOG', label: 'Catálogo', icon: FaBox },
+        { id: 'MOVEMENTS', label: 'Movimentações', icon: FaExchangeAlt },
+        { id: 'WAREHOUSES', label: 'Depósitos', icon: FaWarehouse },
+        { id: 'CATEGORIES', label: 'Categorias', icon: FaTags },
+        { id: 'FISCAL', label: 'Fiscal', icon: FaFileInvoiceDollar },
+    ];
+
+    const renderContent = () => {
+        switch (activeView) {
+            case 'OVERVIEW':
+                return <OverviewTab />;
+            case 'CATALOG':
+                return <CatalogTab />;
+            case 'MOVEMENTS':
+                // O componente MovementsTab (MovementsContainer/List) já deve cuidar do seu próprio card
+                return <MovementsTab />;
+            case 'WAREHOUSES':
+                return <WarehousesTab />;
+            case 'CATEGORIES':
+                return (
+                    // Wrapper estilizado com tema Metálico para listas externas
+                    <div className="bg-base-metallic rounded-xl shadow-lg border border-gray-700 overflow-hidden min-h-[500px]">
+                        <CategoryList />
+                    </div>
+                );
+            case 'FISCAL':
+                return (
+                    // Wrapper estilizado com tema Metálico para listas externas
+                    <div className="bg-base-metallic rounded-xl shadow-lg border border-gray-700 overflow-hidden min-h-[500px]">
+                        <FiscalList />
+                    </div>
+                );
+            default:
+                return <OverviewTab />;
+        }
+    };
 
     return (
-        <div className="flex flex-col h-full">
+        // BASE: Fundo Escuro (#111827) e Texto Claro (#F3F4F6)
+        <div className="flex flex-col h-full w-full bg-base-dark text-base-text">
             
-            {/* --- HEADER DE NAVEGAÇÃO (ABAS) --- */}
-            <div className="flex items-center space-x-1 bg-base-metallic/50 p-1 rounded-lg w-fit mb-2 border border-gray-700/50 self-start mx-0 mt-0">
-                
-                {/* Aba 1: Catálogo (Default) */}
-                <button
-                    onClick={() => setActiveView('CATALOGUE')}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
-                        activeView === 'CATALOGUE' 
-                        ? 'bg-accent-secondary text-white shadow-md' 
-                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                    }`}
-                >
-                    <FaStream /> <span>Catálogo</span>
-                </button>
-                
-                {/* Aba 2: Inteligência & Importação (Futuro) */}
-                <button
-                    onClick={() => setActiveView('INTELLIGENCE')}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
-                        activeView === 'INTELLIGENCE' 
-                        ? 'bg-accent-secondary text-white shadow-md' 
-                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                    }`}
-                >
-                    <FaMagic /> <span>IA & Importação</span>
-                </button>
-            </div>
-
-            {/* --- CONTEÚDO PRINCIPAL --- */}
-            <div className="flex-1 min-h-0 px-0 pb-0 bg-base-metallic rounded-xl border border-gray-700 shadow-xl overflow-hidden">
-                
-                {activeView === 'CATALOGUE' ? (
-                    // Renderiza a tela Master-Detail que criamos
-                    <div className="h-full p-4">
-                        <ProductCatalogue />
-                    </div>
-                ) : (
-                    // Placeholder para a próxima jornada
-                    <div className="h-full flex flex-col items-center justify-center text-gray-500 space-y-4 bg-gray-900/50">
-                        <div className="p-6 bg-gray-800 rounded-full border border-gray-700 shadow-inner">
-                            <FaFileImport className="w-12 h-12 text-gray-600" />
-                        </div>
-                        <div className="text-center">
-                            <h3 className="text-xl font-bold text-gray-400">Central de Inteligência</h3>
-                            <p className="text-sm mt-2 max-w-md">
-                                Em breve: Importação em massa (CSV/XML) e enriquecimento de catálogo via Inteligência Artificial.
+            {/* HEADER: Fundo Escuro com Borda Sutil para separar do conteúdo */}
+            <header className="bg-base-dark border-b border-gray-800 px-8 pt-8 pb-0 sticky top-0 z-20">
+                <div className="flex flex-col space-y-6">
+                    
+                    {/* Título e Ações */}
+                    <div className="flex justify-between items-center pb-2">
+                        <div>
+                            <h1 className="text-3xl font-bold text-base-text tracking-tight animate-fade-in-down">
+                                {activeView === 'OVERVIEW' ? 'Supply Chain Tower' : 'Gestão de Materiais'}
+                            </h1>
+                            <p className="text-gray-400 text-sm mt-1 animate-fade-in">
+                                {activeView === 'OVERVIEW' 
+                                    ? 'Monitoramento estratégico de estoque e movimentações.' 
+                                    : 'Controle operacional e cadastros de produtos.'}
                             </p>
                         </div>
                     </div>
-                )}
 
-            </div>
+                    {/* Navegação de Abas */}
+                    <nav className="flex space-x-8 overflow-x-auto custom-scrollbar">
+                        {tabs.map((tab) => {
+                            const isActive = activeView === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveView(tab.id as ProductViewType)}
+                                    className={`
+                                        group flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap
+                                        ${isActive 
+                                            ? 'border-accent-primary text-accent-primary' // Ativo: Laranja Vibrante
+                                            : 'border-transparent text-gray-400 hover:text-base-text hover:border-gray-700' // Inativo: Cinza -> Claro
+                                        }
+                                    `}
+                                >
+                                    <tab.icon className={`w-4 h-4 ${isActive ? 'text-accent-primary' : 'text-gray-500 group-hover:text-gray-300'}`} />
+                                    <span>{tab.label}</span>
+                                </button>
+                            );
+                        })}
+                    </nav>
+                </div>
+            </header>
+
+            {/* MAIN: Conteúdo com Fundo Transparente (herda base-dark) */}
+            <main className="flex-1 p-8 overflow-y-auto animate-fade-in custom-scrollbar">
+                {renderContent()}
+            </main>
+
         </div>
     );
 };

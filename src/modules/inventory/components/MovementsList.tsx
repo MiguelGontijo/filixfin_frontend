@@ -1,167 +1,197 @@
+// src/modules/inventory/components/MovementsList.tsx
+
 'use client';
 
-import React, { useState } from 'react'; // Adicionei useState para mocks temporários se o hook não tiver fetchAll
-import Link from 'next/link';
-import { TransactionType, InventoryTransaction } from '../types/InventoryTypes';
-
-// Importando tipos, mas simulando dados por enquanto caso o hook de listagem global não esteja pronto
-// Em produção: import { useStockMovements } from '../hooks/useStockMovements';
+import React, { useEffect } from 'react';
+import { 
+    FaArrowUp, 
+    FaArrowDown, 
+    FaHistory, 
+    FaBox,
+    FaWarehouse
+} from 'react-icons/fa';
+import { useStockMovements } from '../hooks/useStockMovements';
+import { TransactionType } from '../types/InventoryTypes';
 
 interface Props {
-    tenantId: string;
+    variantId?: string;
 }
 
-export function MovementsList({ tenantId }: Props) {
-    // TODO: Conectar com endpoint real de listagem global (GET /movements)
-    // const { movements, isLoading } = useStockMovements(); 
+/**
+ * @component MovementsList
+ * @description Kardex Visual alinhado ao tema Dark/Metallic do CRM.
+ */
+export const MovementsList: React.FC<Props> = ({ variantId }) => {
     
-    // Mock de dados para visualização imediata da interface
-    const [movements] = useState<InventoryTransaction[]>([
-        {
-            id: '1',
-            warehouseId: 'w1',
-            variantId: 'v1',
-            type: TransactionType.IN_PURCHASE,
-            quantity: 100,
-            unitCost: 12.50,
-            totalValue: 1250.00,
-            createdAt: new Date().toISOString(),
-            previousBalance: 0,
-            newBalance: 100,
-            createdBy: 'admin',
-            warehouse: { name: 'Depósito Central', id: 'w1', isActive: true, isDefault: true, allowsNegativeStock: false },
-            variant: { name: 'Coca-Cola 2L', sku: 'BEB-001' },
-            documentRef: 'NF-5501'
-        },
-        {
-            id: '2',
-            warehouseId: 'w1',
-            variantId: 'v1',
-            type: TransactionType.OUT_SALE,
-            quantity: -5,
-            unitCost: 12.50,
-            totalValue: 0,
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-            previousBalance: 100,
-            newBalance: 95,
-            createdBy: 'admin',
-            warehouse: { name: 'Depósito Central', id: 'w1', isActive: true, isDefault: true, allowsNegativeStock: false },
-            variant: { name: 'Coca-Cola 2L', sku: 'BEB-001' },
-            documentRef: 'PDV-10'
-        }
-    ]);
+    const { 
+        transactions, 
+        isLoading, 
+        fetchMovements 
+    } = useStockMovements();
 
-    // Helper de Formatação
+    useEffect(() => {
+        fetchMovements({ variantId });
+    }, [variantId, fetchMovements]);
+
+    // --- Formatadores ---
+
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleString('pt-BR', {
+        return new Intl.DateTimeFormat('pt-BR', {
             day: '2-digit', month: '2-digit', year: '2-digit',
             hour: '2-digit', minute: '2-digit'
-        });
+        }).format(new Date(dateString));
     };
 
-    // Helper de Badges (Cores por Tipo)
-    const getTypeBadge = (type: TransactionType) => {
-        const styles: Record<string, string> = {
-            [TransactionType.IN_PURCHASE]: 'bg-green-100 text-green-800 border-green-200',
-            [TransactionType.IN_TRANSFER]: 'bg-blue-100 text-blue-800 border-blue-200',
-            [TransactionType.IN_ADJUSTMENT]: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-            [TransactionType.IN_RETURN]: 'bg-teal-100 text-teal-800 border-teal-200',
-            
-            [TransactionType.OUT_SALE]: 'bg-gray-100 text-gray-800 border-gray-200',
-            [TransactionType.OUT_CONSUMPTION]: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-            [TransactionType.OUT_LOSS]: 'bg-red-100 text-red-800 border-red-200',
-            [TransactionType.OUT_ADJUSTMENT]: 'bg-orange-100 text-orange-800 border-orange-200',
-            [TransactionType.OUT_TRANSFER]: 'bg-blue-50 text-blue-600 border-blue-100',
+    /**
+     * Estilização Dark Mode para os Badges
+     */
+    const getTransactionStyle = (type: TransactionType) => {
+        const isEntry = type.startsWith('IN_');
+        
+        if (isEntry) {
+            return {
+                icon: <FaArrowUp className="w-2.5 h-2.5" />,
+                // Fundo translúcido verde, texto verde claro, borda sutil
+                badgeClass: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+                amountClass: 'text-emerald-400',
+                label: getTransactionLabel(type)
+            };
+        }
+        
+        return {
+            icon: <FaArrowDown className="w-2.5 h-2.5" />,
+            // Fundo translúcido vermelho, texto vermelho claro
+            badgeClass: 'bg-rose-500/10 text-rose-400 border border-rose-500/20',
+            amountClass: 'text-rose-400',
+            label: getTransactionLabel(type)
         };
+    };
 
+    const getTransactionLabel = (type: TransactionType) => {
         const labels: Record<string, string> = {
-            [TransactionType.IN_PURCHASE]: 'Compra',
-            [TransactionType.IN_TRANSFER]: 'Transf. Entrada',
-            [TransactionType.IN_ADJUSTMENT]: 'Sobras',
-            [TransactionType.IN_RETURN]: 'Devolução',
-            [TransactionType.OUT_SALE]: 'Venda',
-            [TransactionType.OUT_CONSUMPTION]: 'Consumo',
-            [TransactionType.OUT_LOSS]: 'Perda/Quebra',
-            [TransactionType.OUT_ADJUSTMENT]: 'Faltas',
-            [TransactionType.OUT_TRANSFER]: 'Transf. Saída',
+            IN_PURCHASE: 'Compra',
+            IN_TRANSFER: 'Entrada Transf.',
+            IN_ADJUSTMENT: 'Sobra de Inv.',
+            IN_RETURN: 'Devolução',
+            OUT_SALE: 'Venda',
+            OUT_CONSUMPTION: 'Consumo',
+            OUT_LOSS: 'Perda/Quebra',
+            OUT_TRANSFER: 'Saída Transf.',
+            OUT_ADJUSTMENT: 'Falta de Inv.'
         };
-
-        return (
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles[type] || 'bg-gray-100 text-gray-800'}`}>
-                {labels[type] || type}
-            </span>
-        );
+        return labels[type] || type;
     };
 
-    return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Histórico de Movimentações</h2>
-                    <p className="text-sm text-gray-500">Auditoria completa de entradas e saídas.</p>
-                </div>
-                <div className="flex gap-3">
-                    <button className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm">
-                        Exportar
-                    </button>
-                    <Link
-                        href={`/dashboard/inventory/movements/create`}
-                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                    >
-                        + Nova Movimentação
-                    </Link>
-                </div>
+    // --- Loading State (Skeleton Dark) ---
+    if (isLoading) {
+        return (
+            <div className="w-full p-8 flex flex-col items-center justify-center space-y-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent-primary"></div>
+                <span className="text-sm text-gray-500 animate-pulse">Sincronizando Kardex...</span>
             </div>
+        );
+    }
 
-            {/* Tabela */}
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+    // --- Empty State (Estilo CRM) ---
+    if (!isLoading && transactions.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-gray-700/50 rounded-xl bg-gray-800/20">
+                <div className="p-4 bg-gray-800 rounded-full mb-4">
+                    <FaHistory className="w-8 h-8 text-gray-600" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-300">Sem histórico</h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xs">
+                    Nenhuma movimentação de estoque registrada para este contexto até o momento.
+                </p>
+            </div>
+        );
+    }
+
+    // --- Tabela Dark ---
+    return (
+        <div className="overflow-hidden rounded-xl border border-gray-700 bg-base-metallic shadow-lg">
+            <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-700/50">
+                    
+                    {/* Cabeçalho Escuro */}
+                    <thead className="bg-gray-800/50">
                         <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produto</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Local</th>
-                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd.</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doc.</th>
+                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Data
+                            </th>
+                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Natureza
+                            </th>
+                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Item / Depósito
+                            </th>
+                            <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Qtd.
+                            </th>
+                            <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Saldo Final
+                            </th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {movements.length > 0 ? (
-                            movements.map((tx) => (
-                                <tr key={tx.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+
+                    {/* Corpo da Tabela */}
+                    <tbody className="divide-y divide-gray-700/50">
+                        {transactions.map((tx) => {
+                            const style = getTransactionStyle(tx.type);
+                            
+                            return (
+                                <tr key={tx.id} className="hover:bg-gray-700/30 transition-colors duration-150">
+                                    {/* Data */}
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 font-mono">
                                         {formatDate(tx.createdAt)}
                                     </td>
+
+                                    {/* Badge de Tipo */}
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-gray-900">{tx.variant?.name || 'Item Removido'}</div>
-                                        <div className="text-xs text-gray-500">{tx.variant?.sku || '-'}</div>
+                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${style.badgeClass}`}>
+                                            <span className="mr-2">{style.icon}</span>
+                                            {style.label}
+                                        </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {getTypeBadge(tx.type)}
+
+                                    {/* Detalhes (Produto + Depósito) */}
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-col space-y-1">
+                                            {/* Nome do Produto */}
+                                            <span className="text-sm font-medium text-gray-200 flex items-center">
+                                                <FaBox className="mr-2 text-gray-500 w-3 h-3" />
+                                                {tx.variant?.product?.name || 'Item Removido'}
+                                                {tx.variant?.name && (
+                                                    <span className="ml-2 text-xs text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded">
+                                                        {tx.variant.name}
+                                                    </span>
+                                                )}
+                                            </span>
+                                            {/* Nome do Depósito */}
+                                            <span className="text-xs text-gray-500 flex items-center ml-5">
+                                                <FaWarehouse className="mr-1.5 w-2.5 h-2.5" />
+                                                {tx.warehouse?.name || 'N/A'}
+                                            </span>
+                                        </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {tx.warehouse?.name}
+
+                                    {/* Quantidade Colorida */}
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold font-mono">
+                                        <span className={style.amountClass}>
+                                            {tx.type.startsWith('IN_') ? '+' : ''}{tx.quantity}
+                                        </span>
                                     </td>
-                                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-bold text-right ${tx.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {tx.quantity > 0 ? '+' : ''}{tx.quantity}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                                        {tx.documentRef || '-'}
+
+                                    {/* Saldo (Neutro) */}
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-300 font-mono bg-gray-800/20">
+                                        {tx.newBalance}
                                     </td>
                                 </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-500">
-                                    Nenhuma movimentação registrada neste período.
-                                </td>
-                            </tr>
-                        )}
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
         </div>
     );
-}
+};

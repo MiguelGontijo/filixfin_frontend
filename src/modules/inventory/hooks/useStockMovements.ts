@@ -1,10 +1,13 @@
+// src/modules/inventory/hooks/useStockMovements.ts
+
 'use client';
 
 import { useState, useCallback } from 'react';
 import { api } from '@/core/services/api';
 import { 
     InventoryTransaction, 
-    RegisterMovementInput 
+    RegisterMovementInput,
+    MovementFilter // Importando o filtro que definimos no InventoryTypes.ts
 } from '../types/InventoryTypes';
 
 /**
@@ -18,20 +21,20 @@ export function useStockMovements() {
     /**
      * Registra uma nova movimentação (Entrada ou Saída).
      * POST /inventory/movements
-     * * @param input Dados da movimentação (Variant, Warehouse, Tipo, Qtd)
-     * @returns A transação criada
      */
     const registerMovement = async (input: RegisterMovementInput) => {
         setIsLoading(true);
         try {
             const response = await api.post<InventoryTransaction>('/inventory/movements', input);
             
-            // Opcional: Se estivermos visualizando o Kardex deste item no momento,
-            // podemos adicionar a nova transação no topo da lista imediatamente.
+            // Opcional: Atualização otimista da lista se estiver vendo o mesmo item
             setTransactions((prev) => {
-                // Só adiciona se o histórico carregado for do mesmo item (segurança básica)
                 if (prev.length > 0 && prev[0].variantId === input.variantId) {
                     return [response.data, ...prev];
+                }
+                // Se for visão global, adiciona no topo também
+                if (!input.variantId || prev.length > 0) {
+                     return [response.data, ...prev];
                 }
                 return prev;
             });
@@ -39,8 +42,6 @@ export function useStockMovements() {
             return response.data;
         } catch (error) {
             console.error('Erro ao registrar movimentação:', error);
-            // Repassa o erro para que o Modal exiba a mensagem específica do Backend
-            // (ex: "Saldo insuficiente" ou "Regra de Negócio Violada")
             throw error; 
         } finally {
             setIsLoading(false);
@@ -48,25 +49,37 @@ export function useStockMovements() {
     };
 
     /**
-     * Busca o histórico completo (Kardex) de uma variante específica.
-     * GET /inventory/kardex/:variantId
+     * Busca o histórico (Kardex).
+     * Agora suporta busca Global (sem ID) ou Específica (com ID/Filtros).
+     * GET /inventory/kardex
      */
-    const fetchKardex = useCallback(async (variantId: string) => {
-        if (!variantId) return;
-
+    const fetchMovements = useCallback(async (filters?: MovementFilter) => {
         setIsLoading(true);
         try {
-            const response = await api.get<InventoryTransaction[]>(`/inventory/kardex/${variantId}`);
+            // Alteração: Usamos query params para flexibilidade (Global vs Produto Único)
+            // O backend deve suportar receber os filtros via query string
+            const response = await api.get<InventoryTransaction[]>('/inventory/kardex', {
+                params: filters
+            });
             setTransactions(response.data);
         } catch (error) {
-            console.error(`Erro ao buscar Kardex para variante ${variantId}:`, error);
+            console.error('Erro ao buscar movimentações:', error);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
     /**
-     * Limpa o estado atual das transações (útil ao fechar modais ou trocar de aba)
+     * Mantive a assinatura antiga para compatibilidade, mas redirecionando para a nova lógica.
+     * Isso evita quebrar telas que já usam fetchKardex(id).
+     */
+    const fetchKardex = useCallback(async (variantId: string) => {
+        if (!variantId) return;
+        return fetchMovements({ variantId });
+    }, [fetchMovements]);
+
+    /**
+     * Limpa o estado atual das transações
      */
     const clearTransactions = useCallback(() => {
         setTransactions([]);
@@ -76,7 +89,8 @@ export function useStockMovements() {
         transactions,
         isLoading,
         registerMovement,
-        fetchKardex,
+        fetchMovements, // Nova função flexível
+        fetchKardex,    // Mantida para retrocompatibilidade
         clearTransactions
     };
 }

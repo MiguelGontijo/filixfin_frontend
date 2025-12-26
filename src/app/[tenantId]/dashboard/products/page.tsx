@@ -1,10 +1,12 @@
-import { ProductList } from '@/modules/products/components/ProductList';
+'use client';
 
-/**
- * Rota Principal de Produtos.
- * * URL: /[tenantId]/dashboard/products
- * * Padrão: Thin Page (A lógica está isolada em ProductList).
- */
+import React from 'react';
+import { ProductCatalogue } from '@/modules/products/presentation/ProductCatalogue';
+
 export default function ProductsPage() {
-    return <ProductList />;
+    return (
+        <main className="h-full w-full overflow-hidden p-6">
+            <ProductCatalogue />
+        </main>
+    );
 }

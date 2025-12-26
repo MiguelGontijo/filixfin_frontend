@@ -1,30 +1,13 @@
-import React from 'react';
-import { MovementsList } from '@/modules/inventory/components/MovementsList';
+// src/app/[tenantId]/dashboard/inventory/movements/page.tsx
 
-interface Props {
-    params: {
-        tenantId: string;
-    };
-}
+import React from 'react';
+import { MovementsContainer } from '@/modules/inventory/presentation/MovementsContainer';
 
 /**
- * Rota: /dashboard/inventory/movements
- * Responsabilidade: Exibir o histórico global de transações de estoque (Kardex).
+ * @page MovementsPage
+ * @description Rota para o histórico de movimentações.
+ * Implementa o padrão "Dumb Page", delegando toda a UI para o Container do módulo.
  */
-export default function MovementsPage({ params }: Props) {
-    return (
-        <main className="flex-1 w-full h-full p-6 overflow-y-auto">
-            <div className="max-w-7xl mx-auto">
-                {/* Breadcrumb Simples */}
-                <div className="mb-6 flex items-center text-sm text-gray-500">
-                    <span>Inventário</span>
-                    <span className="mx-2">/</span>
-                    <span className="font-medium text-gray-900">Histórico de Movimentações</span>
-                </div>
-
-                {/* Componente da Lista (Módulo) */}
-                <MovementsList tenantId={params.tenantId} />
-            </div>
-        </main>
-    );
+export default function MovementsPage() {
+    return <MovementsContainer />;
 }

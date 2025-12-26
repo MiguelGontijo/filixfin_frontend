@@ -1,3 +1,5 @@
+// src/modules/inventory/types/InventoryTypes.ts
+
 /**
  * ==========================================
  * MÓDULO DE INVENTÁRIO - TIPOS E INTERFACES
@@ -62,7 +64,7 @@ export interface InventoryTransaction {
     variantId: string; // ID da variante do produto (SKU)
     
     type: TransactionType;
-    quantity: number;      // Valor absoluto ou assinado, dependendo da lógica do back (Front envia absoluto e Type define sinal)
+    quantity: number;      // Valor absoluto ou assinado, dependendo da lógica do back
     
     previousBalance: number; // Snapshot do saldo antes
     newBalance: number;      // Snapshot do saldo depois
@@ -82,6 +84,9 @@ export interface InventoryTransaction {
         id?: string;
         name: string;
         sku?: string;
+        product?: { // Adicionei product aqui pois geralmente precisamos do nome do pai na lista
+             name: string;
+        };
     };
 }
 
@@ -108,13 +113,13 @@ export interface RegisterMovementInput {
     warehouseId: string;
     variantId: string;
     type: TransactionType;
-    quantity: number | string; // Aceita string durante a digitação no form, converte no submit
+    quantity: number | string; // Aceita string durante a digitação no form
     unitCost?: number | string;
     documentRef?: string;
     notes?: string;
 }
 
-// --- ESTADOS DE FILTRO (Opcional, para as Listagens) ---
+// --- ESTADOS DE FILTRO ---
 
 export interface WarehouseFilter {
     isActive?: boolean;
@@ -127,4 +132,8 @@ export interface MovementFilter {
     type?: TransactionType;
     warehouseId?: string;
     variantId?: string;
+    
+    // ADIÇÃO NECESSÁRIA: Paginação para a Tabela
+    page?: number;
+    limit?: number;
 }
