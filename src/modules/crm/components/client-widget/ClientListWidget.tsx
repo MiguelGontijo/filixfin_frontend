@@ -1,4 +1,4 @@
-// src/features/crm/components/client-widget/ClientListWidget.tsx
+// src/modules/crm/components/client-widget/ClientListWidget.tsx
 
 import React, { useState } from 'react';
 import { FaUser, FaPlus, FaExclamationTriangle } from 'react-icons/fa';

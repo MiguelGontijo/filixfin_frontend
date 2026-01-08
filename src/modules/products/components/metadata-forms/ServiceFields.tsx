@@ -1,4 +1,4 @@
-// src/features/products/components/metadata-forms/ServiceFields.tsx
+// src/modules/products/components/metadata-forms/ServiceFields.tsx
 
 import React from 'react';
 import { FaClock, FaGlobeAmericas, FaRedo, FaListUl } from 'react-icons/fa';

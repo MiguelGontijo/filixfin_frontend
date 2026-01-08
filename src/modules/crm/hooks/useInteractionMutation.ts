@@ -1,4 +1,4 @@
-// src/features/crm/hooks/useInteractionMutation.ts
+// src/modules/crm/hooks/useInteractionMutation.ts
 
 import { useState } from 'react';
 import { api } from '@/core/services/api';

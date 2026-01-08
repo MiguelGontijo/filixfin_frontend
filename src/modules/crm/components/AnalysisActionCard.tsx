@@ -1,4 +1,4 @@
-// src/features/crm/components/AnalysisActionCard.tsx
+// src/modules/crm/components/AnalysisActionCard.tsx
 
 import React, { useState, useEffect } from 'react';
 import { 

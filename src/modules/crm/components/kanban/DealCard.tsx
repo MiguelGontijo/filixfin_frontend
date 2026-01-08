@@ -1,4 +1,4 @@
-// src/features/crm/components/kanban/DealCard.tsx
+// src/modules/crm/components/kanban/DealCard.tsx
 
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';

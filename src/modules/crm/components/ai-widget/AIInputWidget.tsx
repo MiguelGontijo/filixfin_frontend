@@ -1,4 +1,4 @@
-// src/features/crm/components/ai-widget/AIInputWidget.tsx
+// src/modules/crm/components/ai-widget/AIInputWidget.tsx
 
 import React, { useState } from 'react';
 import { FaMicrophone, FaPaperPlane, FaMagic, FaBrain } from 'react-icons/fa';

@@ -1,4 +1,4 @@
-// src/features/crm/components/client-widget/ClientSearchInput.tsx
+// src/modules/crm/components/client-widget/ClientSearchInput.tsx
 
 import React from 'react';
 import { FaSearch } from 'react-icons/fa';

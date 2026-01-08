@@ -1,23 +1,24 @@
-// src/features/crm/components/kanban/KanbanColumn.tsx
-
 import React from 'react';
 import { Droppable } from '@hello-pangea/dnd';
-import { CRMDeal, DealStatus } from '@/modules/crm/types';
+import { CRMDeal } from '@/modules/crm/types'; // Removemos DealStatus, não precisamos dele aqui
 import { DealCard } from './DealCard';
 import { FaPlus } from 'react-icons/fa';
 
+// Ajustando para bater com o kanban.types.ts que definimos
 interface KanbanColumnProps {
-    status: DealStatus;
-    title: string;
+    id: string;          // UUID do Stage
+    title: string;       // Nome do Stage
+    color?: string;      // Cor da fase (Novo!)
     deals: CRMDeal[];
     totalValue: number;
-    onAddDeal: () => void; // <--- NOVO: Callback para adicionar nesta coluna
-    onEditDeal: (deal: CRMDeal) => void; // <--- NOVO
+    onAddDeal: () => void;
+    onEditDeal: (deal: CRMDeal) => void;
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({ 
-    status, 
+    id,
     title, 
+    color = '#cccccc', // Default visual
     deals, 
     totalValue,
     onAddDeal,
@@ -33,10 +34,14 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     return (
         <div className="flex flex-col h-full w-72 min-w-[288px] bg-base-metallic/30 rounded-xl border border-gray-700/50 flex-shrink-0">
             
-            {/* Header da Coluna */}
-            <div className="p-3 border-b border-gray-700/50 bg-gray-800/40 rounded-t-xl flex justify-between items-center">
+            {/* Header da Coluna com Indicador de Cor */}
+            <div className="p-3 border-b border-gray-700/50 bg-gray-800/40 rounded-t-xl flex justify-between items-center relative overflow-hidden">
+                
+                {/* Faixa colorida no topo baseada na configuração do Pipeline */}
+                <div className="absolute top-0 left-0 w-full h-[2px]" style={{ backgroundColor: color }}></div>
+
                 <div className="flex items-center space-x-2">
-                    <span className="text-xs font-bold text-gray-300 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-gray-300 uppercase tracking-wider truncate max-w-[120px]" title={title}>
                         {title}
                     </span>
                     <span className="bg-gray-700 text-gray-400 text-[10px] px-1.5 py-0.5 rounded-full font-mono">
@@ -48,8 +53,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 </div>
             </div>
 
-            {/* Área de Drop */}
-            <Droppable droppableId={status}>
+            {/* Área de Drop - Agora usa o ID do Stage (UUID) */}
+            <Droppable droppableId={id}>
                 {(provided, snapshot) => (
                     <div
                         {...provided.droppableProps}
@@ -68,7 +73,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                         ))}
                         {provided.placeholder}
 
-                        {/* Botão de Adicionar Rápido (No corpo da coluna) */}
+                        {/* Botão de Adicionar Rápido */}
                         <button 
                             onClick={onAddDeal}
                             className="mt-2 flex items-center justify-center w-full py-2 border border-dashed border-gray-600 rounded-lg text-gray-500 hover:text-white hover:border-accent-secondary hover:bg-accent-secondary/10 transition group"

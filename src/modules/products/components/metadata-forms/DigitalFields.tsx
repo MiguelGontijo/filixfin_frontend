@@ -1,4 +1,4 @@
-// src/features/products/components/metadata-forms/DigitalFields.tsx
+// src/modules/products/components/metadata-forms/DigitalFields.tsx
 
 import React from 'react';
 import { FaCloudDownloadAlt, FaHdd, FaFileCode, FaCodeBranch, FaDesktop } from 'react-icons/fa';

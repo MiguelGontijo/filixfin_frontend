@@ -1,4 +1,4 @@
-// src/features/products/components/metadata-forms/PhysicalFields.tsx
+// src/modules/products/components/metadata-forms/PhysicalFields.tsx
 
 import React from 'react';
 import { FaWeightHanging, FaRulerCombined, FaPalette, FaTshirt, FaBarcode } from 'react-icons/fa';

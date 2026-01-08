@@ -6,7 +6,7 @@ const outputFile = path.join(projectRoot, 'frontend-sources.txt');
 const srcDir = path.join(projectRoot, 'src');
 
 // Pastas que NÃO queremos ver na árvore para não poluir
-const ignoredFolders = ['.git', 'node_modules', 'dist', 'build', '.next', 'coverage'];
+const ignoredFolders = ['.git', 'node_modules', 'dist', 'build', '.next', 'coverage', 'package-lock.json' ];
 
 console.log('Iniciando coleta de arquivos...');
 
@@ -66,18 +66,23 @@ function addFileToOutput(fullPath: string) {
 
 // --- 1. Sua função original para ler 'src' recursivamente ---
 function processSrcRecursive(directory: string) {
-  if (!fs.existsSync(directory)) return; // Segurança caso src não exista
+  if (!fs.existsSync(directory)) return;
 
   const files = fs.readdirSync(directory);
   
   files.forEach(file => {
+    // 🛑 TRAVA DE SEGURANÇA (O Pulo do Gato)
+    // Se o nome (arquivo ou pasta) estiver na lista de ignorados, aborta este item.
+    if (ignoredFolders.includes(file)) return;
+
     const fullPath = path.join(directory, file);
     const stat = fs.statSync(fullPath);
     
     if (stat.isDirectory()) {
-      processSrcRecursive(fullPath); // Continua recursivo
+      // Como já passamos pela trava acima, é seguro entrar recursivamente
+      processSrcRecursive(fullPath); 
     } else if (allowedExtensions.includes(path.extname(file))) {
-      addFileToOutput(fullPath); // Usa o helper
+      addFileToOutput(fullPath);
     }
   });
 }
@@ -87,13 +92,14 @@ function processRootFiles(directory: string) {
   const files = fs.readdirSync(directory);
 
   files.forEach(file => {
+    // 🛑 A MESMA TRAVA DE SEGURANÇA AQUI
+    if (ignoredFolders.includes(file)) return;
+
     const fullPath = path.join(directory, file);
     const stat = fs.statSync(fullPath);
 
-    // Se for um ARQUIVO (ignorando pastas como 'src', 'node_modules' etc.)
-    // E tiver a extensão correta...
     if (stat.isFile() && allowedExtensions.includes(path.extname(file))) {
-      addFileToOutput(fullPath); // Adiciona ao output
+      addFileToOutput(fullPath);
     }
   });
 }

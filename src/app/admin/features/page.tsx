@@ -1,4 +1,4 @@
-// src/app/admin/features/page.tsx (INTEGRAÇÃO DA TABELA)
+// src/app/admin/modules/page.tsx (INTEGRAÇÃO DA TABELA)
 
 import React from 'react';
 import { FeatureTable } from '@/modules/admin/components/FeatureTable';

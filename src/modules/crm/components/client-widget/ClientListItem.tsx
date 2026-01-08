@@ -1,4 +1,4 @@
-// src/features/crm/components/client-widget/ClientListItem.tsx
+// src/modules/crm/components/client-widget/ClientListItem.tsx
 
 import React from 'react';
 import { FaBuilding, FaEnvelope, FaEdit, FaTrash, FaUndo } from 'react-icons/fa'; // Novos ícones

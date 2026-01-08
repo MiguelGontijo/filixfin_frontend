@@ -1,4 +1,4 @@
-// src/features/products/components/metadata-forms/RealEstateFields.tsx
+// src/modules/products/components/metadata-forms/RealEstateFields.tsx
 
 import React from 'react';
 import { FaHome, FaRulerCombined, FaBed, FaBath, FaCar, FaMoneyBillWave, FaListUl } from 'react-icons/fa';

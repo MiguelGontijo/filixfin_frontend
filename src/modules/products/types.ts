@@ -1,4 +1,4 @@
-// src/features/products/types.ts
+// src/modules/products/types.ts
 
 // --- ENUMS (Mantidos do Original) ---
 

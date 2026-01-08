@@ -1,4 +1,4 @@
-// src/features/crm/components/client-dashboard/ClientDashboard.tsx
+// src/modules/crm/components/client-dashboard/ClientDashboard.tsx
 
 import React, { useState, useEffect } from 'react';
 import { 

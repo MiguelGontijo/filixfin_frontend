@@ -3,16 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { FaSave, FaPlus, FaTrash, FaBox, FaWrench, FaExclamationTriangle, FaLink } from 'react-icons/fa';
 import { useClients } from '@/core/hooks/useClients';
-import { useDeals } from '@/modules/crm/hooks/useDeals'; // Path corrigido
-import { DealStatus, DealItemType, CRMDeal } from '@/modules/crm/types'; // Path corrigido
-import { Product } from '@/modules/products/types'; // Path corrigido
-import { ProductSelector } from '@/modules/products/components/ProductSelector'; // Path corrigido
+import { useDeals } from '@/modules/crm/hooks/useDeals'; 
+import { DealStatus, DealItemType, CRMDeal } from '@/modules/crm/types'; 
+import { Product } from '@/modules/products/types'; 
+import { ProductSelector } from '@/modules/products/components/ProductSelector'; 
 
 interface DealFormProps {
     deal?: CRMDeal;
     initialStatus?: DealStatus;
     onSuccess: () => void;
     onCancel: () => void;
+    
+    // --- NOVO: Recebe o ID do funil vindo do Modal -> Kanban -> Container ---
+    pipelineId?: string;
 }
 
 interface LocalItem {
@@ -24,7 +27,13 @@ interface LocalItem {
     type: DealItemType;
 }
 
-export const DealForm: React.FC<DealFormProps> = ({ deal, initialStatus, onSuccess, onCancel }) => {
+export const DealForm: React.FC<DealFormProps> = ({ 
+    deal, 
+    initialStatus, 
+    onSuccess, 
+    onCancel,
+    pipelineId // <--- Destrutarando a nova prop
+}) => {
     
     const { clients } = useClients();
     const { createDeal, updateDeal, isLoading } = useDeals();
@@ -128,7 +137,9 @@ export const DealForm: React.FC<DealFormProps> = ({ deal, initialStatus, onSucce
                 quantity: i.quantity,
                 unitPrice: i.unitPrice,
                 type: i.type
-            }))
+            })),
+            // --- CONEXÃO FINAL: Enviamos o pipelineId apenas na criação ---
+            pipelineId: isEditing ? undefined : pipelineId 
         };
 
         try {
@@ -203,7 +214,6 @@ export const DealForm: React.FC<DealFormProps> = ({ deal, initialStatus, onSucce
                         Itens do Negócio (Produtos/Serviços)
                     </h4>
 
-                    {/* CORREÇÃO: Removemos overflow-hidden e adicionamos overflow-visible para o dropdown não ser cortado */}
                     <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-visible">
                         <table className="w-full text-left text-xs">
                             <thead className="bg-gray-900 text-gray-400 uppercase font-bold">
@@ -237,7 +247,7 @@ export const DealForm: React.FC<DealFormProps> = ({ deal, initialStatus, onSucce
                                     </tr>
                                 ))}
 
-                                {/* Linha de Input (NOVO COMPONENTE DE BUSCA) */}
+                                {/* Linha de Input */}
                                 <tr className="bg-gray-800/80">
                                     <td className="px-2 py-2 align-top">
                                         <select 
@@ -249,7 +259,6 @@ export const DealForm: React.FC<DealFormProps> = ({ deal, initialStatus, onSucce
                                             <option value={DealItemType.PRODUCT}>Prod.</option>
                                         </select>
                                     </td>
-                                    {/* CORREÇÃO: Adicionado z-50 para garantir o contexto de empilhamento */}
                                     <td className="px-2 py-2 align-top relative z-50">
                                         <ProductSelector 
                                             value={newItem.description || ''}

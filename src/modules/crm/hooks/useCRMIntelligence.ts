@@ -1,4 +1,4 @@
-// src/features/crm/hooks/useCRMIntelligence.ts
+// src/modules/crm/hooks/useCRMIntelligence.ts
 
 import { useState } from 'react';
 import { api } from '@/core/services/api';

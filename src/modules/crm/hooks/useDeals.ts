@@ -1,4 +1,4 @@
-// src/features/crm/hooks/useDeals.ts
+// src/modules/crm/hooks/useDeals.ts
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/core/services/api';
@@ -6,29 +6,33 @@ import { CRMDeal, DealStatus } from '../types';
 // Importamos tipos genéricos, assumindo que o DTO de update seja um Partial do Create ou similar
 // Ajuste conforme sua estrutura real de DTOs no frontend se tiver definido interfaces específicas
 
-export function useDeals() {
+export function useDeals(pipelineId?: string) {
     
     const [deals, setDeals] = useState<CRMDeal[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     // --- FETCHING ---
-    
     const fetchDeals = useCallback(async () => {
+        // Se a lógica exigir que SÓ busque se tiver pipelineId, descomente abaixo:
+        // if (!pipelineId) return; 
+
+        setIsLoading(true);
         try {
-            setIsLoading(true);
-            setError(null);
-            // Rota criada no Backend: GET /crm/deals
-            const response = await api.get<CRMDeal[]>('/crm/deals'); 
+            // 2. Passamos o pipelineId como parâmetro query string (?pipelineId=...)
+            const response = await api.get<CRMDeal[]>('/crm/deals', {
+                params: {
+                    pipelineId: pipelineId 
+                }
+            });
             setDeals(response.data);
         } catch (err: any) {
+            // setError(err);
             console.error("Erro ao buscar negócios:", err);
-            const msg = err.response?.data?.message || "Falha ao carregar o pipeline de vendas.";
-            setError(msg);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [pipelineId]); // 3. pipelineId entra na dependência (se mudar o ID, busca de novo)
 
     // Carrega na montagem
     useEffect(() => {
@@ -39,24 +43,32 @@ export function useDeals() {
 
     /**
      * @method updateDealStatus
-     * @description Move um card de uma coluna para outra (Atualiza Status).
+     * @description Move um card de uma coluna para outra (Atualiza Stage/Status).
      * Aplica Optimistic Update para sensação de instantaneidade.
      */
-    const updateDealStatus = async (dealId: string, newStatus: DealStatus) => {
+    const updateDealStatus = async (dealId: string, newStageId: string, newStatus?: DealStatus) => {
         // 1. Snapshot do estado anterior (para rollback em caso de erro)
         const previousDeals = [...deals];
 
         // 2. Atualização Otimista (Frontend reflete mudança na hora)
         setDeals(currentDeals => currentDeals.map(deal => {
             if (deal.id === dealId) {
-                return { ...deal, status: newStatus };
+                return { 
+                    ...deal, 
+                    currentStageId: newStageId, // Atualiza a coluna visual (Dinâmico)
+                    status: newStatus || deal.status // Atualiza o status lógico (Compatibilidade)
+                };
             }
             return deal;
         }));
 
         // 3. Chamada API
         try {
-            await api.patch(`/crm/deals/${dealId}`, { status: newStatus });
+            // Enviamos tanto o stageId (novo) quanto o status (legado/derivado)
+            await api.patch(`/crm/deals/${dealId}`, { 
+                currentStageId: newStageId,
+                status: newStatus
+            });
         } catch (err) {
             console.error("Falha ao atualizar status do deal:", err);
             // Rollback silencioso ou com toast (aqui apenas revertemos a lista)

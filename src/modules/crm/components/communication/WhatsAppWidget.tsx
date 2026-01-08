@@ -1,4 +1,4 @@
-// src/features/crm/components/communication/WhatsAppWidget.tsx
+// src/modules/crm/components/communication/WhatsAppWidget.tsx
 
 import React, { useEffect } from 'react';
 import { FaWhatsapp, FaQrcode, FaUnlink, FaCheckCircle, FaSync, FaExclamationTriangle } from 'react-icons/fa';

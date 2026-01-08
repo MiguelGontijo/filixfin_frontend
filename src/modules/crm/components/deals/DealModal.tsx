@@ -1,4 +1,4 @@
-// src/features/crm/components/deals/DealModal.tsx
+// src/modules/crm/components/deals/DealModal.tsx
 
 import React from 'react';
 import { FaTimes, FaHandshake } from 'react-icons/fa';
@@ -10,7 +10,12 @@ interface DealModalProps {
     onClose: () => void;
     onSuccess: () => void;
     defaultStatus?: DealStatus;
-    currentDeal?: CRMDeal; // <--- NOVO
+    
+    // --- PROPS PARA EDIÇÃO ---
+    dealToEdit?: CRMDeal; // Ajustei o nome para bater com o que vimos no CRMKanbanView (lá estava dealToEdit)
+    
+    // --- NOVO PROP: Contexto do Funil ---
+    pipelineId?: string;
 }
 
 export const DealModal: React.FC<DealModalProps> = ({ 
@@ -18,12 +23,13 @@ export const DealModal: React.FC<DealModalProps> = ({
     onClose, 
     onSuccess,
     defaultStatus,
-    currentDeal // <--- NOVO
+    dealToEdit, // Usando o nome mais comum vindo do pai
+    pipelineId  // <--- Recebendo o ID
 }) => {
     
     if (!isOpen) return null;
 
-    const isEditing = !!currentDeal;
+    const isEditing = !!dealToEdit;
 
     return (
         <div className="fixed inset-0 bg-base-dark/70 backdrop-blur-sm z-[9999] flex items-center justify-center transition-all animate-fade-in p-4">
@@ -56,8 +62,13 @@ export const DealModal: React.FC<DealModalProps> = ({
                 {/* Corpo */}
                 <div className="flex-1 overflow-hidden p-6">
                     <DealForm 
-                        deal={currentDeal} // <--- Passa o deal
+                        deal={dealToEdit} // Passa o objeto de edição
                         initialStatus={defaultStatus}
+                        
+                        // --- AQUI ESTÁ A CONEXÃO ---
+                        // Passamos o ID do funil para o formulário saber onde salvar
+                        pipelineId={pipelineId}
+                        
                         onSuccess={() => { onSuccess(); onClose(); }}
                         onCancel={onClose}
                     />

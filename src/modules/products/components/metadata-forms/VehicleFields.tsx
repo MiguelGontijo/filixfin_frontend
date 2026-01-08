@@ -1,4 +1,4 @@
-// src/features/products/components/metadata-forms/VehicleFields.tsx
+// src/modules/products/components/metadata-forms/VehicleFields.tsx
 
 import React from 'react';
 import { FaCar, FaTachometerAlt, FaGasPump, FaCogs, FaPalette, FaDoorClosed, FaHashtag } from 'react-icons/fa';
