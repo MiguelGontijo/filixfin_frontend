@@ -1,137 +1,218 @@
-import React, { useState, useRef, useEffect } from 'react';
-// Ícones padrão do projeto (react-icons/fa)
-import { FaRobot, FaTimes, FaExpandAlt } from 'react-icons/fa'; 
+// ===== FILE: src/core/ai/components/ChatInterface.tsx =====
 
-// Importa o componente unificado de input que criamos para evitar duplicação de código
-import { AgentInput } from './AgentInput'; 
+import React, { useState, useRef, useEffect } from 'react';
+import { FaRobot, FaTimes, FaExpandAlt, FaExclamationTriangle } from 'react-icons/fa';
+
+// --- COMPONENTES & UI ---
+import { AgentInput } from './AgentInput';
+import { SmartProposalCard } from './SmartProposalCard';
+
+// --- LÓGICA & SERVIÇOS (MOTOR V8) ---
+import { useAIChatService } from '../hooks/useAIChatService';
+import { useFilixAI } from '../context/FilixAIContext';
+import { AIMessage, AIActionProposal } from '../types/AITypes';
 
 // ============================================================================
 // TIPOS E INTERFACES
 // ============================================================================
 
-interface Message {
-    id: string;
-    role: 'user' | 'assistant'; // Quem mandou a mensagem?
-    content: string;            // O texto da mensagem
-    timestamp: Date;            // Hora do envio
-}
-
 interface ChatInterfaceProps {
     /**
-     * Função opcional para fechar o chat (usada quando está em modo flutuante/modal)
+     * Callback acionado ao clicar no 'X'.
+     * Essencial para o modo Flutuante (FloatingWidget).
      */
     onClose?: () => void;
+
+    /**
+     * ID do Tenant atual.
+     * Necessário para o Backend V8 validar permissões de uso das Tools.
+     * @default 'demo-tenant' (Fallback para evitar crash em dev)
+     */
+    tenantId?: string;
+
+    /**
+     * ID do Plano atual.
+     * Necessário para verificar cotas (ex: limite de produtos).
+     * @default 'demo-plan'
+     */
+    planId?: string;
     
     /**
-     * Se true, aplica estilos de tela cheia (para futura expansão)
+     * Controla se o chat está em modo tela cheia (futuro).
      */
-    isExpanded?: boolean; 
+    isExpanded?: boolean;
 }
 
 /**
- * ChatInterface
- * O componente visual principal do Assistente de IA Global.
- * Diferente da Timeline do CRM (que é focada em registros), este chat é focado
- * em perguntas e respostas gerais sobre o sistema (RAG).
+ * @component ChatInterface
+ * @description O Cockpit Principal da IA (Motor V8).
+ * * RESPONSABILIDADES:
+ * 1. Renderizar o histórico de mensagens.
+ * 2. Gerenciar o input do usuário.
+ * 3. Exibir Cards de Proposta (SmartProposalCard) quando a IA sugere ações.
+ * 4. Garantir visual SÓLIDO (sem transparência) para leitura profissional.
  */
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
+    onClose,
+    tenantId = 'demo-tenant', 
+    planId = 'demo-plan' 
+}) => {
     
-    // --- ESTADOS ---
+    // --- 1. HOOKS E CONTEXTO ---
+    
+    // Pega o escopo semântico (Estou no CRM? Estou no Estoque?)
+    const { contextScope } = useFilixAI();
+    
+    // Hook de Serviço: Conecta com a API Real (/api/v1/ai/chat)
+    const { sendMessage, confirmAction, isLoading, error } = useAIChatService();
 
-    // Lista de mensagens inicial (Boas-vindas)
-    const [messages, setMessages] = useState<Message[]>([
+    // Ref para garantir que o chat role para baixo automaticamente
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // --- 2. ESTADO LOCAL ---
+
+    // Estado inicial com mensagem de boas-vindas contextualizada
+    const [messages, setMessages] = useState<AIMessage[]>([
         {
-            id: '1',
+            id: 'welcome',
             role: 'assistant',
-            content: 'Olá! Sou sua inteligência auxiliar. Como posso ajudar com seus dados hoje?',
+            content: `Olá! Sou seu Assistente Inteligente.\nEstou conectado ao módulo: **${contextScope}**.\nComo posso ajudar?`,
             timestamp: new Date()
         }
     ]);
-    
-    // Estado de "Pensando" (Controla o loading e feedback visual)
-    const [isLoading, setIsLoading] = useState(false);
-    
-    // Ref para garantir que o chat sempre role para baixo na nova mensagem
-    const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // --- EFEITOS ---
+    // --- 3. EFEITOS (Side Effects) ---
 
-    // Sempre que a lista de mensagens mudar, rola para o fim
+    // Monitora a lista de mensagens: Sempre que chegar uma nova, rola para o fim.
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages, isLoading]);
 
-    // --- LÓGICA DE ENVIO ---
+    // --- 4. LÓGICA DE NEGÓCIO (Handlers) ---
 
     /**
-     * Processa o envio da mensagem vinda do AgentInput.
-     * @param text O texto digitado pelo usuário.
+     * Processa o envio de texto pelo usuário.
+     * 1. Adiciona mensagem localmente (Optimistic UI).
+     * 2. Chama o Backend.
+     * 3. Adiciona resposta da IA.
      */
     const handleSendMessage = async (text: string) => {
         if (!text.trim()) return;
 
-        // 1. UI Optimistic: Adiciona a mensagem do usuário imediatamente
-        const userMsg: Message = {
+        // Cria a mensagem do usuário visualmente
+        const userMsg: AIMessage = {
             id: Date.now().toString(),
             role: 'user',
             content: text,
             timestamp: new Date()
         };
         setMessages(prev => [...prev, userMsg]);
-        setIsLoading(true);
 
-        try {
-            // ============================================================
-            // TODO: CONEXÃO COM BACKEND
-            // Aqui entra a chamada real para sua API (ex: api.post('/ai/chat'))
-            // ============================================================
-            
-            // Simulação temporária de delay de rede/processamento (Remover na integração)
-            setTimeout(() => {
-                const aiMsg: Message = {
-                    id: (Date.now() + 1).toString(),
-                    role: 'assistant',
-                    content: 'Entendi. Estou verificando essa informação na base de dados...',
-                    timestamp: new Date()
-                };
-                setMessages(prev => [...prev, aiMsg]);
-                setIsLoading(false);
-            }, 1500);
+        // Dispara a requisição real
+        const response = await sendMessage({
+            message: text,
+            scope: contextScope,
+            tenantId,
+            planId
+        });
 
-        } catch (error) {
-            console.error('Erro ao enviar mensagem:', error);
-            // Poderíamos adicionar uma mensagem de erro visual aqui
-            setIsLoading(false);
+        // Se houve resposta válida, adiciona ao chat
+        if (response) {
+            setMessages(prev => [...prev, response]);
         }
     };
 
-    // --- RENDERIZAÇÃO ---
+    /**
+     * Ação: Usuário clicou em [CONFIRMAR] no Card de Proposta.
+     * 1. Trava o card (status EXECUTED).
+     * 2. Envia comando de confirmação ao Backend.
+     * 3. Atualiza o card para APPROVED se der certo.
+     */
+    const handleConfirmProposal = async (proposal: AIActionProposal, messageId: string) => {
+        // Feedback imediato: muda botão para "Processando..."
+        updateMessageStatus(messageId, 'EXECUTED'); 
+
+        // Chama o serviço de confirmação
+        const response = await confirmAction(proposal, {
+            scope: contextScope,
+            tenantId,
+            planId
+        });
+
+        if (response) {
+            // Sucesso: Marca visualmente como Aprovado e mostra a resposta da IA
+            updateMessageStatus(messageId, 'APPROVED');
+            setMessages(prev => [...prev, response]);
+        } else {
+            // Falha: Reverte para Pendente para tentar de novo ou mostra erro
+            updateMessageStatus(messageId, 'PENDING');
+        }
+    };
+
+    /**
+     * Ação: Usuário clicou em [CANCELAR/REJEITAR].
+     * Apenas atualiza o visual localmente, não precisa ir ao backend.
+     */
+    const handleRejectProposal = (messageId: string) => {
+        updateMessageStatus(messageId, 'REJECTED');
+        
+        // Adiciona uma nota de sistema discreta
+        setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            role: 'system',
+            content: 'Ação cancelada pelo usuário.',
+            timestamp: new Date()
+        }]);
+    };
+
+    /**
+     * Helper para atualizar o status de uma mensagem específica sem recriar todo o array.
+     */
+    const updateMessageStatus = (msgId: string, newStatus: AIMessage['proposalStatus']) => {
+        setMessages(prev => prev.map(msg => 
+            msg.id === msgId 
+                ? { ...msg, proposalStatus: newStatus }
+                : msg
+        ));
+    };
+
+    // ============================================================================
+    // RENDERIZAÇÃO
+    // ============================================================================
 
     return (
-        <div className="flex flex-col h-full bg-base-dark border border-gray-700 rounded-xl shadow-2xl overflow-hidden font-sans">
+        // CONTAINER PRINCIPAL
+        // FIX: Usando bg-gray-900 (Sólido Absoluto) para garantir opacidade total.
+        // O border-gray-700 cria a delimitação da janela.
+        <div className="flex flex-col h-full bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden font-sans">
             
-            {/* ================================================================
-               1. HEADER (Cabeçalho com Identidade e Ações)
-               ================================================================
+            {/* === CABEÇALHO (HEADER) === 
+              FIX: bg-gray-800 Sólido. 
+              Classe 'handle-drag' permite arrastar o widget flutuante.
             */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gray-800/95 backdrop-blur-sm">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gray-800 handle-drag cursor-move select-none">
                 <div className="flex items-center gap-3">
-                    {/* Avatar do Robô */}
+                    {/* Ícone do Robô */}
                     <div className="p-2 rounded-full bg-accent-primary text-base-dark shadow-lg shadow-accent-primary/20">
                         <FaRobot size={18} />
                     </div>
                     
-                    {/* Info de Status */}
+                    {/* Título e Status */}
                     <div>
-                        <h3 className="font-bold text-gray-100 text-sm tracking-wide">Assistente IA</h3>
+                        <h3 className="font-bold text-gray-100 text-sm tracking-wide">
+                            Filix AI
+                        </h3>
+                        {/* Indicador de Contexto (CRM, Estoque, etc) */}
                         <span className="flex items-center gap-1.5 text-[10px] text-green-400 font-medium uppercase tracking-wider">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                            Online
+                            {contextScope === 'GLOBAL' ? 'Online' : `Contexto: ${contextScope}`}
                         </span>
                     </div>
                 </div>
                 
-                {/* Botões de Janela (Expandir / Fechar) */}
+                {/* Ações da Janela */}
                 <div className="flex items-center gap-1">
                     <button 
                         className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-700 transition-colors"
@@ -139,11 +220,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                     >
                         <FaExpandAlt size={14} />
                     </button>
+                    
+                    {/* Botão Fechar (Renderiza apenas se a prop onClose existir) */}
                     {onClose && (
                         <button 
                             onClick={onClose}
                             className="p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-gray-700 transition-colors"
-                            title="Fechar chat"
+                            title="Fechar Assistente"
                         >
                             <FaTimes size={16} />
                         </button>
@@ -151,35 +234,59 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                 </div>
             </div>
 
-            {/* ================================================================
-               2. BODY (Área de Rolagem das Mensagens)
-               ================================================================
+            {/* === CORPO DO CHAT (BODY) === 
+              FIX: bg-gray-900 Sólido. Fundo escuro profundo.
             */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-base-metallic">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gray-900">
                 {messages.map((msg) => (
-                    <div
-                        key={msg.id}
-                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                    <div 
+                        key={msg.id} 
+                        className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} animate-fade-in`}
                     >
-                        <div
-                            className={`
-                                max-w-[85%] rounded-2xl p-3.5 text-sm leading-relaxed shadow-sm relative
-                                ${msg.role === 'user' 
-                                    ? 'bg-accent-primary text-base-dark rounded-tr-none font-medium' // Estilo User
-                                    : 'bg-gray-800 text-gray-200 border border-gray-700 rounded-tl-none'} // Estilo AI
-                            `}
-                        >
+                        
+                        {/* BALÃO DE MENSAGEM 
+                           Logica de Cores:
+                           - User: Accent Primary (Verde Neon) + Texto Escuro
+                           - Assistant: Gray-800 (Sólido) + Texto Claro
+                           - System: Texto cinza discreto
+                        */}
+                        <div className={`
+                            max-w-[85%] rounded-2xl p-3.5 text-sm leading-relaxed shadow-sm relative
+                            ${msg.role === 'user' 
+                                ? 'bg-accent-primary text-base-dark rounded-tr-none font-bold' 
+                                : msg.role === 'system'
+                                    ? 'bg-transparent text-gray-500 text-xs italic border border-gray-800' // Mensagem de sistema discreta
+                                    : 'bg-gray-800 text-gray-200 border border-gray-700 rounded-tl-none'} 
+                        `}>
                             <p className="whitespace-pre-wrap">{msg.content}</p>
                             
                             {/* Hora da mensagem */}
-                            <span className={`text-[10px] block mt-1.5 opacity-60 font-mono ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                            <span className={`text-[10px] block mt-1.5 opacity-60 font-mono ${msg.role === 'user' ? 'text-right text-black/60' : 'text-left'}`}>
                                 {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         </div>
+
+                        {/* SMART CARD (O CORAÇÃO DO V8)
+                           Só renderiza se a mensagem tiver uma 'proposal'.
+                           Fica sempre abaixo do balão de texto correspondente.
+                        */}
+                        {msg.proposal && (
+                            <div className="w-[90%] mt-1 animate-slide-up">
+                                <SmartProposalCard 
+                                    proposal={msg.proposal}
+                                    status={msg.proposalStatus}
+                                    onConfirm={() => handleConfirmProposal(msg.proposal!, msg.id)}
+                                    onReject={() => handleRejectProposal(msg.id)}
+                                    // Mostra estado de "loading" no botão se estiver executando
+                                    isExecuting={isLoading && msg.proposalStatus === 'EXECUTED'}
+                                />
+                            </div>
+                        )}
+
                     </div>
                 ))}
                 
-                {/* Indicador de Digitação (Loading State) */}
+                {/* LOADING STATE (Bolinhas pulando) */}
                 {isLoading && (
                     <div className="flex justify-start animate-pulse">
                         <div className="bg-gray-800 border border-gray-700 rounded-2xl rounded-tl-none p-4 flex gap-1.5 items-center">
@@ -189,30 +296,36 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                         </div>
                     </div>
                 )}
+
+                {/* ERROR STATE (Feedback visual) */}
+                {error && (
+                    <div className="flex justify-center animate-fade-in my-2">
+                        <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-2 rounded-lg text-xs flex items-center gap-2 shadow-lg">
+                            <FaExclamationTriangle />
+                            <span>{error}</span>
+                        </div>
+                    </div>
+                )}
                 
-                {/* Elemento invisível para scroll automático */}
+                {/* Elemento invisível para forçar scroll para o final */}
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* ================================================================
-               3. FOOTER (Input Unificado)
-               ================================================================
+            {/* === RODAPÉ (INPUT) === 
+              FIX: bg-gray-800 Sólido.
             */}
-            <div className="p-3 bg-gray-800/50 border-t border-gray-700 backdrop-blur-md">
-                {/* Aqui usamos o AgentInput no modo 'chat'.
-                    Isso mantém a consistência visual e lógica com o CRM.
-                */}
+            <div className="p-3 bg-gray-800 border-t border-gray-700">
                 <AgentInput 
                     mode="chat" 
-                    placeholder="Pergunte sobre vendas, estoque ou clientes..."
+                    placeholder={`Pergunte ao ${contextScope === 'GLOBAL' ? 'Assistente' : contextScope}...`}
                     onSend={handleSendMessage}
                     isLoading={isLoading}
                 />
                 
-                {/* Disclaimer Jurídico/Técnico */}
+                {/* Disclaimer Técnico */}
                 <div className="mt-2 text-center select-none">
-                    <p className="text-[10px] text-gray-600">
-                        O Agente pode cometer erros. Verifique informações críticas.
+                    <p className="text-[10px] text-gray-500">
+                        Filix AI V8.0 - Modo: {contextScope}
                     </p>
                 </div>
             </div>

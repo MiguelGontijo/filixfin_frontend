@@ -4,7 +4,7 @@ export interface IPipelineStage {
     pipelineId: string;
     name: string;
     color: string;
-    orderIndex: number;
+    order: number;
     code?: string; // Ex: WON, LOST
 }
 
@@ -24,7 +24,7 @@ export interface ICreatePipelineDTO {
     stages: {
         name: string;
         color: string;
-        orderIndex: number;
+        order: number;
     }[];
 }
 
@@ -34,9 +34,9 @@ export interface IUpdatePipelineDTO {
     name?: string;
     isDefault?: boolean;
     stages?: {
-        id?: string; // Opcional se for novo
+        id?: string;
         name: string;
         color: string;
-        orderIndex: number;
+        order: number;
     }[];
 }

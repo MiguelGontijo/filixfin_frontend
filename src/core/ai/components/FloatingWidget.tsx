@@ -181,7 +181,7 @@ export const FloatingWidget: React.FC = () => {
             ) : (
                 // --- MODO CHAT (Expandido) ---
                 // O ChatInterface não precisa de onClick wrapper, pois tem seus próprios botões
-                <ChatInterface />
+                <ChatInterface onClose={toggleVisibility} />
             )}
         </div>
     );
