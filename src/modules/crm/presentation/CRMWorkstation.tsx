@@ -5,7 +5,6 @@ import { FaWhatsapp, FaTelegram, FaPaperPlane, FaCalendarAlt } from 'react-icons
 
 // --- COMPONENTES ---
 import { ClientListWidget } from '@/modules/crm/components/client-widget/ClientListWidget';
-import { AIInputWidget } from '@/modules/crm/components/ai-widget/AIInputWidget';
 import { AnalysisActionCard } from '@/modules/crm/components/AnalysisActionCard';
 import { ClientDashboard, DashboardMode } from '@/modules/crm/components/client-dashboard/ClientDashboard';
 import { WhatsAppWidget } from '@/modules/crm/components/communication/WhatsAppWidget';
@@ -78,15 +77,6 @@ export const CRMWorkstation: React.FC<CRMWorkstationProps> = ({
                         />
                     </div>
 
-                    {/* 1.2 Console de IA */}
-                    <div className="h-64 flex-shrink-0 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
-                        <AIInputWidget 
-                            value={aiInputText}
-                            onChange={onAiInputChange}
-                            onAnalyze={onAnalyzeRequest}
-                            isAnalyzing={isAnalyzing}
-                        />
-                    </div>
                 </div>
 
                 {/* ================================================================

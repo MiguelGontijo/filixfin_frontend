@@ -1,15 +1,15 @@
+// ===== FILE: src/core/ai/context/FilixAIContext.tsx =====
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
-    FilixAIContextData, 
-    AIContextScope, 
-    AIWidgetMode, 
-    AIPosition 
-} from '../types/AITypes';
+import { AIMessage, FilixAIContextData } from '../types/state/AIState';
+import { AIContextScope, AIWidgetMode } from '../types/enums/AIEnums';
+import { AIContextMetadata } from '../types/dtos/AIChatRequest.dto';
+import { api } from '@/core/services/api'; // [NOVO] Importação da API para o Contexto buscar os dados
 
-// Chave para persistência local (enquanto não migramos para o banco de dados do usuário)
-const STORAGE_KEY = '@filix-ai/preferences-v1';
+// Chave para persistência local (Salva apenas se o usuário desligou a IA)
+const STORAGE_KEY = '@filix-ai/preferences-v2'; // Mudamos a versão para evitar conflito com cache antigo
 
 // Contexto Inicial Vazio
 const FilixAIContext = createContext<FilixAIContextData | undefined>(undefined);
@@ -20,8 +20,12 @@ interface FilixAIProviderProps {
 
 /**
  * @provider FilixAIProvider
- * @description Gerencia o estado global da Inteligência Artificial (Visibilidade, Contexto, Posição).
- * Atua como o "Cérebro" que mantém a continuidade da experiência através das rotas.
+ * @description Gerencia o estado global da Inteligência Artificial.
+ * * ARQUITETURA ATUALIZADA:
+ * Removida toda a carga de Drag & Drop e coordenadas (x,y).
+ * Agora o Contexto gerencia puramente o Estado Lógico (Aberto/Fechado), Semântico (Vendas/Fiscal)
+ * e atua como a Memória Central (Histórico de Mensagens).
+ * * OPÇÃO B APLICADA: O Contexto é o único dono e buscador do Histórico.
  */
 export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) => {
     
@@ -30,59 +34,110 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
     // Soberania do Usuário (Kill Switch do Header)
     const [isEnabled, setIsEnabled] = useState(true);
     
-    // Estado Visual (Minimizado, Expandido, Oculto)
+    // Estado Visual (Aberto ou Fechado/Minimizado)
     const [mode, setMode] = useState<AIWidgetMode>('MINIMIZED');
     
-    // Posição na tela (Draggable)
-    // Default: null inicial para evitar hydration mismatch, setado no useEffect
-    const [position, setPosition] = useState<AIPosition>({ x: 0, y: 0 });
+    // Contexto Semântico (A Pistola - Macro)
+    const [contextScope, setInternalContextScope] = useState<AIContextScope>('AI_AGENT_CHAT');
 
-    // Contexto Semântico (Onde estou?)
-    const [contextScope, setContextScope] = useState<AIContextScope>('GLOBAL');
+    // Contexto de Metadados (A Sniper - Micro)
+    const [contextMetadata, setContextMetadata] = useState<AIContextMetadata | undefined>(undefined);
+
+    // Estado de Interação (O Rascunho)
+    const [inputDraft, setInputDraft] = useState('');
+
+    // =======================================================
+    // 🧠 A MEMÓRIA DO CHAT (Histórico Global)
+    // =======================================================
+    // Movemos o histórico do componente visual para o Cérebro. 
+    // Assim a conversa não se perde quando o chat é minimizado.
+    const [messages, setMessages] = useState<AIMessage[]>([]);
+
+    // Trava de segurança para não recarregar o histórico infinitamente
+    const [hasLoadedHistory, setHasLoadedHistory] = useState<boolean>(false);
 
     // --- 2. Persistência e Inicialização ---
 
     useEffect(() => {
-        // Carrega preferências salvas no navegador
-        // TODO: Futuro -> Substituir por chamada à API: await userSettingsService.getAIPreferences()
         const savedPrefs = localStorage.getItem(STORAGE_KEY);
         
         if (savedPrefs) {
             try {
                 const parsed = JSON.parse(savedPrefs);
+                // Restauramos apenas a decisão do usuário de manter a IA ligada/desligada
                 setIsEnabled(parsed.isEnabled ?? true);
-                
-                // Só restaura posição se ela existir, senão usa padrão CSS (bottom-right)
-                if (parsed.position) setPosition(parsed.position);
-                
-                // Nota: Não restauramos 'mode' ou 'contextScope' propositalmente.
-                // A IA deve sempre iniciar 'fechada' e descobrir o contexto da rota atual.
             } catch (error) {
                 console.warn('Filix AI: Falha ao carregar preferências', error);
             }
         }
     }, []);
 
-    // Salva preferências quando alteradas
+    // Salva preferências quando alteradas (Debounce para performance)
     useEffect(() => {
-        // Debounce simples para não salvar a cada pixel arrastado
         const timeoutId = setTimeout(() => {
-            const prefsToSave = {
-                isEnabled,
-                position
-            };
-            // TODO: Futuro -> Disparar patch para o Backend: userSettingsService.updateAIPreferences(prefsToSave)
+            const prefsToSave = { isEnabled };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(prefsToSave));
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [isEnabled, position]);
+    }, [isEnabled]);
+
+    // =======================================================
+    // 🧹 [ATUALIZADO] LÓGICA DE LIMPEZA E BUSCA CONTEXTUAL
+    // =======================================================
+    // Sempre que o Escopo (Módulo) mudar, O PRÓPRIO CONTEXTO limpa 
+    // a memória velha e busca a memória nova (Single Source of Truth).
+    useEffect(() => {
+        // [SEGURANÇA] Flag para evitar Race Conditions se o usuário clicar rápido em 2 módulos
+        let isMounted = true; 
+
+        const fetchHistory = async () => {
+            // 1. Apagão Imediato (Evita o Fantasma da tela anterior)
+            setMessages([]);
+            setHasLoadedHistory(false);
+
+            if (!contextScope) return;
+
+            try {
+                // 2. Busca os dados reais do Backend
+                const response = await api.get<any[]>(`/ai/history/${contextScope}`);
+                
+                // Se o componente desmontou (ou o scope mudou de novo) enquanto a rede processava, ignora a resposta.
+                if (!isMounted) return;
+
+                // 3. Formata os dados para a tela
+                const formattedHistory: AIMessage[] = response.data.map((msg) => ({
+                    id: msg.id,
+                    role: msg.role as 'user' | 'assistant',
+                    content: msg.content,
+                    timestamp: new Date(msg.timestamp),
+                    toolUsed: msg.toolUsed 
+                }));
+
+                // 4. Injeta a memória oficial no Cérebro
+                setMessages(formattedHistory);
+                setHasLoadedHistory(true);
+
+            } catch (error) {
+                console.error(`❌ [FilixAIContext] Erro ao carregar histórico da rotina ${contextScope}:`, error);
+                if (isMounted) {
+                    setMessages([]); // Fallback seguro
+                }
+            }
+        };
+
+        fetchHistory();
+
+        // Cleanup da montagem
+        return () => {
+            isMounted = false; 
+        };
+    }, [contextScope]);
 
     // --- 3. Ações (Actions) ---
 
     const toggleEnabled = () => {
         setIsEnabled(prev => !prev);
-        // Se desativar, força o modo para HIDDEN visualmente se necessário
         if (isEnabled) setMode('HIDDEN');
         else setMode('MINIMIZED');
     };
@@ -91,23 +146,55 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
         setMode(prev => (prev === 'MINIMIZED' ? 'EXPANDED' : 'MINIMIZED'));
     };
 
-    const updatePosition = (newPos: AIPosition) => {
-        setPosition(newPos);
+    // =======================================================
+    // 🚀 COMANDO DE ABERTURA DIRETA
+    // =======================================================
+    // Usado por botões no Dashboard para garantir que a janela abra,
+    // em vez de usar o toggle (que poderia fechar se já estivesse aberto).
+    const openChat = () => {
+        setMode('EXPANDED');
+    };
+
+    /**
+     * Define o contexto completo da IA (Macro + Micro).
+     */
+    const setContext = (scope: AIContextScope, metadata?: AIContextMetadata) => {
+        setInternalContextScope(scope);
+        // Se metadata for undefined, limpa o estado anterior
+        setContextMetadata(metadata);
+        
+        // Debug em Dev
+        // if (process.env.NODE_ENV === 'development') {
+        //     console.debug(`🧠 [AI Context] Scope: ${scope}`);
+        // }
     };
 
     // --- 4. Exposição do Contexto ---
 
     return (
         <FilixAIContext.Provider value={{
+            // Estado Visual
             mode,
-            position,
-            contextScope,
-            toggleVisibility,
-            setMode,
-            updatePosition,
-            setContextScope,
             isEnabled,
-            toggleEnabled
+            
+            // Estado de Inteligência
+            contextScope,
+            contextMetadata,
+            
+            // Estado de Interação
+            inputDraft,
+            setInputDraft,
+
+            // Memória do Chat
+            messages,
+            setMessages,
+
+            // Ações
+            toggleVisibility,
+            openChat, 
+            setMode,
+            toggleEnabled,
+            setContext
         }}>
             {children}
         </FilixAIContext.Provider>
@@ -116,7 +203,6 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
 
 /**
  * Hook para consumir o Cérebro da IA.
- * Deve ser usado dentro de componentes que precisam interagir com a IA.
  */
 export const useFilixAI = (): FilixAIContextData => {
     const context = useContext(FilixAIContext);

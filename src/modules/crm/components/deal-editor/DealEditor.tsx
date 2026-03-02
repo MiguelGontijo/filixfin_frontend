@@ -1,81 +1,81 @@
-// src/modules/crm/components/deal-editor/DealEditor.tsx
+// ===== FILE: src/modules/crm/components/deal-editor/DealEditor.tsx =====
 
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaSave, FaUser, FaCalendar, FaBoxOpen, FaTrash, FaPlus } from 'react-icons/fa';
-import { CRMDeal, DealStatus } from '../../types';
-
-// Tipagem dos Itens do Pedido (Produto/Serviço)
-interface DealItem {
-    id: string;
-    description: string;
-    quantity: number;
-    unitPrice: number;
-}
+import { FaTimes, FaSave, FaUser, FaCalendar, FaBoxOpen, FaTrash, FaPlus, FaStream } from 'react-icons/fa';
+import { CRMDeal, DealStatus, CRMDealItem } from '@/modules/crm/types';
+import { IPipelineStage } from '../../types/pipeline.types';
+import { useClients } from '@/core/hooks/useClients';
+import { useDeals } from '../../hooks/useDeals';
 
 interface DealEditorProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess: () => void; // Callback para recarregar o Kanban após salvar
-    
-    // Dados de Contexto
-    pipelineId?: string;
-    defaultStatus?: DealStatus; // Se clicou no "+" de uma coluna específica
-    dealToEdit?: CRMDeal; // Se for edição, vem preenchido
+    onSuccess: () => void;
+    stages: IPipelineStage[];
+    pipelineId: string;
+    dealToEdit?: CRMDeal; 
+    defaultStageId?: string;
 }
 
-export const DealEditor: React.FC<DealEditorProps> = ({
-    isOpen,
-    onClose,
+export const DealEditor: React.FC<DealEditorProps> = ({ 
+    isOpen, 
+    onClose, 
     onSuccess,
+    stages,
     pipelineId,
-    defaultStatus,
-    dealToEdit
+    dealToEdit,
+    defaultStageId
 }) => {
     
+    // Hooks de Dados
+    const { clients } = useClients(); 
+    const { createDeal, updateDeal } = useDeals();
+
     // ============================================================================
-    // 1. ESTADOS DO FORMULÁRIO
+    // 1. BLINDAGEM (DEFENSIVE PROGRAMMING)
+    // ============================================================================
+    if (isOpen && (!stages || stages.length === 0)) {
+        return null;
+    }
+
+    // ============================================================================
+    // 2. ESTADOS DO FORMULÁRIO (Dinâmicos)
     // ============================================================================
     const [title, setTitle] = useState('');
     const [clientId, setClientId] = useState('');
     const [closingDate, setClosingDate] = useState('');
     const [description, setDescription] = useState('');
-    const [status, setStatus] = useState<DealStatus>('OPEN');
-    
-    // Lista de Itens (Produtos/Serviços)
-    const [items, setItems] = useState<DealItem[]>([]);
-    
-    // Estado derivado: Valor Total (Soma dos itens)
+    const [currentStageId, setCurrentStageId] = useState<string>('');
+    const [items, setItems] = useState<CRMDealItem[]>([]);
     const [totalAmount, setTotalAmount] = useState(0);
-
     const [isSaving, setIsSaving] = useState(false);
 
-    // Hook para buscar clientes (para o dropdown)
-    const { clients } = useClients(); 
-
     // ============================================================================
-    // 2. EFEITOS (CARREGAMENTO E CÁLCULOS)
+    // 3. EFEITOS (CARREGAMENTO)
     // ============================================================================
-
-    // Efeito: Carregar dados quando abrir para EDIÇÃO
     useEffect(() => {
         if (isOpen) {
             if (dealToEdit) {
-                // Modo Edição: Preenche tudo
+                // --- MODO EDIÇÃO ---
                 setTitle(dealToEdit.title);
                 setClientId(dealToEdit.clientId);
-                setClosingDate(dealToEdit.expectedClosingDate ? new Date(dealToEdit.expectedClosingDate).toISOString().split('T')[0] : '');
-                setDescription(dealToEdit.description || '');
-                setStatus(dealToEdit.status);
-                // TODO: Se o backend retornar itens, preencher aqui: setItems(dealToEdit.items)
+                setClosingDate(dealToEdit.expectedCloseDate ? new Date(dealToEdit.expectedCloseDate).toISOString().split('T')[0] : '');
+                
+                const activeStage = dealToEdit.currentStageId || stages.find(s => s.code === dealToEdit.status)?.id || stages[0].id;
+                setCurrentStageId(activeStage);
+                
+                if (dealToEdit.items) {
+                    setItems(dealToEdit.items.map(i => ({ ...i})));
+                }
             } else {
-                // Modo Criação: Reseta (mantendo status da coluna se houver)
+                // --- MODO CRIAÇÃO ---
                 resetForm();
-                if (defaultStatus) setStatus(defaultStatus);
+                setCurrentStageId(defaultStageId || stages[0]?.id || '');
             }
         }
-    }, [isOpen, dealToEdit, defaultStatus]);
+    }, [isOpen, dealToEdit, defaultStageId, stages]);
 
-    // Efeito: Calcular Total automaticamente quando os itens mudam
+    // Calcula total
     useEffect(() => {
         const total = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
         setTotalAmount(total);
@@ -88,28 +88,17 @@ export const DealEditor: React.FC<DealEditorProps> = ({
         setDescription('');
         setItems([]);
         setTotalAmount(0);
-        setStatus('OPEN');
     };
 
     // ============================================================================
-    // 3. HANDLERS (LÓGICA DE ITENS E SALVAMENTO)
+    // 4. HANDLERS
     // ============================================================================
-
     const handleAddItem = () => {
-        const newItem: DealItem = {
-            id: Date.now().toString(), // ID temporário
-            description: '',
-            quantity: 1,
-            unitPrice: 0
-        };
-        setItems([...items, newItem]);
+        setItems([...items, { id: Date.now().toString(), description: '', quantity: 1, unitPrice: 0, type: 'SERVICE' } as CRMDealItem]);
     };
 
-    const handleUpdateItem = (id: string, field: keyof DealItem, value: any) => {
-        const updatedItems = items.map(item => 
-            item.id === id ? { ...item, [field]: value } : item
-        );
-        setItems(updatedItems);
+    const handleUpdateItem = (id: string, field: keyof CRMDealItem, value: any) => {
+        setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
     };
 
     const handleRemoveItem = (id: string) => {
@@ -117,285 +106,269 @@ export const DealEditor: React.FC<DealEditorProps> = ({
     };
 
     const handleSave = async () => {
-        if (!title || !clientId || !pipelineId) return;
+        if (!title || !clientId || !currentStageId) {
+            alert("Preencha os campos obrigatórios (Título, Cliente e Fase).");
+            return;
+        }
 
         setIsSaving(true);
         try {
-            const dealData = {
+            const selectedStage = stages.find(s => s.id === currentStageId);
+            const derivedStatus = (selectedStage?.code as DealStatus) || DealStatus.NEW;
+
+            const payload = {
                 title,
                 clientId,
                 pipelineId,
-                status, // Agora usamos o status do form
-                value: totalAmount, // O valor é a soma dos itens
-                expectedClosingDate: closingDate ? new Date(closingDate) : undefined,
-                description,
-                items // Enviamos os itens para o backend salvar
+                currentStageId,
+                status: derivedStatus,
+                value: totalAmount,
+                expectedCloseDate: closingDate ? new Date(closingDate).toISOString() : undefined,
+                items: items.map(i => ({
+                    description: i.description,
+                    quantity: i.quantity,
+                    unitPrice: i.unitPrice,
+                    type: 'SERVICE'
+                }))
             };
 
             if (dealToEdit) {
-                await dealService.update(dealToEdit.id, dealData);
+                await updateDeal(dealToEdit.id, payload);
             } else {
-                await dealService.create(dealData);
+                await createDeal(payload);
             }
             
-            onSuccess(); // Avisa o pai para atualizar o Kanban
-            onClose();   // Fecha o editor
+            onSuccess();
+            onClose();
         } catch (error) {
-            console.error("Erro ao salvar deal:", error);
-            alert("Erro ao salvar negócio. Verifique os dados.");
+            console.error("Erro ao salvar:", error);
+            alert("Erro ao salvar negócio.");
         } finally {
             setIsSaving(false);
         }
     };
 
     // ============================================================================
-    // 4. RENDERIZAÇÃO
+    // 5. RENDERIZAÇÃO (VISUAL SÓLIDO)
     // ============================================================================
-
     return (
         <div 
             className={`
-                absolute bottom-0 left-0 w-full z-40
-                bg-base-metallic rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)]
-                flex flex-col border-t border-white/10
-                transition-transform duration-300 ease-out
-                ${isOpen ? 'translate-y-0' : 'translate-y-full pointer-events-none'}
+                fixed inset-0 z-50 flex items-center justify-center
+                transition-all duration-300
+                ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}
             `}
-            // Altura de 97% conforme solicitado (deixa ver o topo do Kanban)
-            style={{ height: '97%' }} 
         >
-            
-            {/* --- HEADER (FIXO) --- */}
-            <div className="flex items-center justify-between p-6 border-b border-white/5 bg-base-metallic rounded-t-2xl">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-accent-primary/10 rounded-xl border border-accent-primary/20 text-accent-primary">
-                        <FaBoxOpen size={20} />
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-100">
-                            {dealToEdit ? 'Editar Negócio' : 'Novo Negócio'}
-                        </h2>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">
-                            {pipelineId ? 'Registrando oportunidade no funil' : 'Detalhes da Venda'}
-                        </p>
-                    </div>
-                </div>
-                
-                <button 
-                    onClick={onClose}
-                    className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-full transition-colors"
-                >
-                    <FaTimes size={20} />
-                </button>
-            </div>
+            {/* Backdrop com Blur suave e fundo escuro */}
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
 
-            {/* --- BODY (SCROLLÁVEL) --- */}
-            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 bg-base-metallic">
+            {/* Modal Principal (Superfície Sólida) */}
+            <div 
+                className={`
+                    relative w-full max-w-5xl h-[90vh] 
+                    bg-gray-900 rounded-2xl border border-gray-800 shadow-2xl 
+                    flex flex-col overflow-hidden
+                    transform transition-all duration-300
+                    ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}
+                `}
+            >
                 
-                {/* BLOCO 1: DADOS PRINCIPAIS (Grid Layout) */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                {/* --- HEADER --- */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-800 bg-gray-900 flex-shrink-0">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-accent-primary/10 rounded-xl border border-accent-primary/20 text-accent-primary">
+                            <FaBoxOpen size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-100">
+                                {dealToEdit ? 'Editar Oportunidade' : 'Nova Oportunidade'}
+                            </h2>
+                            <p className="text-sm text-gray-500 uppercase tracking-wide flex items-center gap-2 mt-1">
+                                <FaStream size={10} /> 
+                                {stages.find(s => s.id === currentStageId)?.name || 'Funil de Vendas'}
+                            </p>
+                        </div>
+                    </div>
                     
-                    {/* Cliente (Ocupa metade) */}
-                    <div className="md:col-span-6 space-y-2">
-                        <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                            <FaUser className="text-accent-secondary" /> Cliente
-                        </label>
-                        <select
-                            value={clientId}
-                            onChange={(e) => setClientId(e.target.value)}
-                            className="w-full bg-base-dark text-gray-100 p-3 rounded-xl border border-white/10 focus:border-accent-primary focus:ring-1 focus:ring-accent-primary outline-none appearance-none cursor-pointer"
-                        >
-                            <option value="">Selecione um cliente...</option>
-                            {clients.map(client => (
-                                <option key={client.id} value={client.id}>{client.name}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Título do Deal (Ocupa metade) */}
-                    <div className="md:col-span-6 space-y-2">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">
-                            Título da Oportunidade
-                        </label>
-                        <input 
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Ex: Contrato Anual - Empresa X"
-                            className="w-full bg-base-dark text-gray-100 p-3 rounded-xl border border-white/10 focus:border-accent-primary outline-none placeholder-gray-600"
-                        />
-                    </div>
-
-                    {/* Data de Fechamento */}
-                    <div className="md:col-span-4 space-y-2">
-                        <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                            <FaCalendar className="text-accent-secondary" /> Previsão
-                        </label>
-                        <input 
-                            type="date"
-                            value={closingDate}
-                            onChange={(e) => setClosingDate(e.target.value)}
-                            className="w-full bg-base-dark text-gray-100 p-3 rounded-xl border border-white/10 focus:border-accent-primary outline-none"
-                        />
-                    </div>
-
-                    {/* Status/Fase */}
-                    <div className="md:col-span-4 space-y-2">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">
-                            Fase Inicial
-                        </label>
-                        <select
-                            value={status}
-                            onChange={(e) => setStatus(e.target.value as DealStatus)}
-                            className="w-full bg-base-dark text-gray-100 p-3 rounded-xl border border-white/10 focus:border-accent-primary outline-none"
-                        >
-                            <option value="OPEN">Em Aberto</option>
-                            <option value="WON" className="text-green-400">Ganho (Won)</option>
-                            <option value="LOST" className="text-red-400">Perdido (Lost)</option>
-                        </select>
-                    </div>
-
+                    <button onClick={onClose} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">
+                        <FaTimes size={20} />
+                    </button>
                 </div>
 
-                {/* BLOCO 2: ITENS E VALORES (A "Tabela Integrada") */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wide">
-                            Itens e Produtos
-                        </h3>
-                        <button 
-                            onClick={handleAddItem}
-                            className="text-xs font-bold text-accent-primary hover:text-orange-400 flex items-center gap-1 bg-accent-primary/10 px-3 py-1.5 rounded-lg border border-accent-primary/20 transition-all hover:bg-accent-primary/20"
-                        >
-                            <FaPlus /> Adicionar Item
-                        </button>
+                {/* --- BODY SCROLLÁVEL --- */}
+                <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar bg-gray-900">
+                    
+                    {/* Bloco 1: Dados Principais */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        
+                        {/* Cliente */}
+                        <div className="md:col-span-6 space-y-2">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Cliente *</label>
+                            <div className="relative group">
+                                <FaUser className="absolute left-4 top-3.5 text-gray-500 group-hover:text-accent-primary transition-colors" />
+                                <select 
+                                    value={clientId} 
+                                    onChange={(e) => setClientId(e.target.value)}
+                                    className="w-full bg-gray-800 pl-11 pr-4 py-3 rounded-xl border border-gray-700 focus:border-accent-primary focus:ring-1 focus:ring-accent-primary focus:outline-none appearance-none text-white transition-all cursor-pointer"
+                                >
+                                    <option value="">Selecione o cliente...</option>
+                                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Título */}
+                        <div className="md:col-span-6 space-y-2">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Título da Oportunidade *</label>
+                            <input 
+                                type="text" 
+                                value={title} 
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="Ex: Contrato de Consultoria"
+                                className="w-full bg-gray-800 px-4 py-3 rounded-xl border border-gray-700 focus:border-accent-primary focus:ring-1 focus:ring-accent-primary focus:outline-none text-white placeholder-gray-600 transition-all"
+                            />
+                        </div>
+
+                        {/* Fase do Funil */}
+                        <div className="md:col-span-4 space-y-2">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Etapa Atual</label>
+                            <div className="relative group">
+                                <div 
+                                    className="absolute left-4 top-4 w-3 h-3 rounded-full shadow-sm"
+                                    style={{ backgroundColor: stages.find(s => s.id === currentStageId)?.color || '#555' }}
+                                ></div>
+                                <select 
+                                    value={currentStageId} 
+                                    onChange={(e) => setCurrentStageId(e.target.value)}
+                                    className="w-full bg-gray-800 pl-11 pr-4 py-3 rounded-xl border border-gray-700 focus:border-accent-primary focus:ring-1 focus:ring-accent-primary focus:outline-none appearance-none text-white transition-all cursor-pointer"
+                                >
+                                    {stages.map(stage => (
+                                        <option key={stage.id} value={stage.id}>
+                                            {stage.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Data */}
+                        <div className="md:col-span-4 space-y-2">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Previsão Fechamento</label>
+                            <div className="relative group">
+                                <FaCalendar className="absolute left-4 top-3.5 text-gray-500 group-hover:text-accent-primary transition-colors" />
+                                <input 
+                                    type="date" 
+                                    value={closingDate} 
+                                    onChange={(e) => setClosingDate(e.target.value)}
+                                    className="w-full bg-gray-800 pl-11 pr-4 py-3 rounded-xl border border-gray-700 focus:border-accent-primary focus:ring-1 focus:ring-accent-primary focus:outline-none text-white transition-all cursor-pointer [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Totalizador */}
+                        <div className="md:col-span-4 flex flex-col justify-end pb-2 text-right">
+                            <span className="text-xs text-gray-500 uppercase font-bold mb-1">Valor Total (Automático)</span>
+                            <div className="text-3xl font-bold text-green-500 tracking-tight">
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount)}
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Container da Tabela com visual 'Inset' */}
-                    <div className="bg-base-dark rounded-xl border border-white/5 overflow-hidden">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-white/5 text-gray-400 font-medium">
-                                <tr>
-                                    <th className="p-3 pl-4 w-1/2">Descrição / Produto</th>
-                                    <th className="p-3 w-20 text-center">Qtd</th>
-                                    <th className="p-3 w-32 text-right">Valor Unit.</th>
-                                    <th className="p-3 w-32 text-right">Subtotal</th>
-                                    <th className="p-3 w-10"></th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                                {items.length === 0 ? (
+                    {/* Bloco 2: Itens (Tabela) */}
+                    <div className="pt-8 border-t border-gray-800">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wide flex items-center gap-2">
+                                <FaBoxOpen className="text-gray-500" /> Produtos e Serviços
+                            </h3>
+                        </div>
+
+                        <div className="border border-gray-800 rounded-xl overflow-hidden bg-gray-900">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-gray-800 text-gray-400 font-medium text-xs uppercase tracking-wider">
                                     <tr>
-                                        <td colSpan={5} className="p-8 text-center text-gray-600 italic">
-                                            Nenhum item adicionado. O valor será zero.
-                                        </td>
+                                        <th className="p-4 w-1/2">Descrição</th>
+                                        <th className="p-4 w-24 text-center">Qtd</th>
+                                        <th className="p-4 w-32 text-right">Valor Unit.</th>
+                                        <th className="p-4 w-32 text-right">Subtotal</th>
+                                        <th className="p-4 w-12 text-center">Ação</th>
                                     </tr>
-                                ) : (
-                                    items.map((item) => (
-                                        <tr key={item.id} className="group hover:bg-white/5 transition-colors">
-                                            <td className="p-2 pl-3">
+                                </thead>
+                                <tbody className="divide-y divide-gray-800">
+                                    {items.map(item => (
+                                        <tr key={item.id} className="group hover:bg-gray-800/30 transition-colors">
+                                            <td className="p-2 pl-4">
                                                 <input 
-                                                    type="text"
-                                                    value={item.description}
+                                                    type="text" 
+                                                    value={item.description} 
                                                     onChange={(e) => handleUpdateItem(item.id, 'description', e.target.value)}
-                                                    placeholder="Nome do produto ou serviço"
-                                                    className="w-full bg-transparent text-gray-200 placeholder-gray-600 focus:outline-none"
+                                                    placeholder="Digite o nome do produto/serviço..."
+                                                    className="w-full bg-transparent text-gray-200 placeholder-gray-600 focus:outline-none focus:bg-gray-800/80 rounded-lg px-3 py-2 transition-all border border-transparent focus:border-gray-700"
                                                 />
                                             </td>
                                             <td className="p-2">
                                                 <input 
-                                                    type="number"
-                                                    min="1"
-                                                    value={item.quantity}
+                                                    type="number" min="1" 
+                                                    value={item.quantity} 
                                                     onChange={(e) => handleUpdateItem(item.id, 'quantity', Number(e.target.value))}
-                                                    className="w-full bg-base-dark/50 text-center text-gray-200 rounded p-1 border border-transparent focus:border-accent-primary focus:outline-none"
+                                                    className="w-full bg-transparent text-center text-gray-200 rounded-lg px-2 py-2 border border-transparent focus:bg-gray-800/80 focus:border-gray-700 focus:outline-none transition-all"
                                                 />
                                             </td>
                                             <td className="p-2">
                                                 <input 
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
-                                                    value={item.unitPrice}
+                                                    type="number" min="0" step="0.01" 
+                                                    value={item.unitPrice} 
                                                     onChange={(e) => handleUpdateItem(item.id, 'unitPrice', Number(e.target.value))}
-                                                    className="w-full bg-base-dark/50 text-right text-gray-200 rounded p-1 border border-transparent focus:border-accent-primary focus:outline-none"
+                                                    className="w-full bg-transparent text-right text-gray-200 rounded-lg px-3 py-2 border border-transparent focus:bg-gray-800/80 focus:border-gray-700 focus:outline-none transition-all"
                                                 />
                                             </td>
-                                            <td className="p-3 text-right font-medium text-gray-300">
+                                            <td className="p-4 text-right font-medium text-gray-300">
                                                 R$ {(item.quantity * item.unitPrice).toFixed(2)}
                                             </td>
                                             <td className="p-2 text-center">
                                                 <button 
-                                                    onClick={() => handleRemoveItem(item.id)}
-                                                    className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                                                    onClick={() => handleRemoveItem(item.id)} 
+                                                    className="p-2 text-gray-600 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                    title="Remover item"
                                                 >
-                                                    <FaTrash size={12} />
+                                                    <FaTrash size={14} />
                                                 </button>
                                             </td>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
+                                    ))}
+                                </tbody>
+                            </table>
                             
-                            {/* Rodapé da Tabela: Totalizador */}
-                            <tfoot className="bg-white/5 border-t border-white/10">
-                                <tr>
-                                    <td colSpan={3} className="p-3 text-right text-gray-400 text-xs uppercase font-bold tracking-wider">
-                                        Valor Total Estimado:
-                                    </td>
-                                    <td className="p-3 text-right font-bold text-xl text-accent-primary">
-                                        R$ {totalAmount.toFixed(2)}
-                                    </td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                            {/* Botão Adicionar (Linha Pontilhada) */}
+                            <button 
+                                onClick={handleAddItem}
+                                className="w-full p-4 flex items-center justify-center gap-2 text-sm font-medium text-gray-500 hover:text-accent-primary bg-gray-900 hover:bg-gray-800/50 border-t border-dashed border-gray-700 transition-all cursor-pointer"
+                            >
+                                <FaPlus size={12} />
+                                Adicionar nova linha
+                            </button>
+                        </div>
                     </div>
+
                 </div>
 
-                {/* BLOCO 3: OBSERVAÇÕES */}
-                <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">
-                        Observações / Descrição Detalhada
-                    </label>
-                    <textarea 
-                        rows={4}
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Detalhes importantes sobre esta negociação..."
-                        className="w-full bg-base-dark text-gray-100 p-3 rounded-xl border border-white/10 focus:border-accent-primary outline-none resize-none placeholder-gray-600"
-                    />
-                </div>
-
-            </div>
-
-            {/* --- FOOTER (AÇÕES FIXAS) --- */}
-            <div className="p-6 border-t border-white/5 bg-base-metallic rounded-b-lg">
-                <div className="flex gap-4 max-w-2xl ml-auto">
+                {/* --- FOOTER --- */}
+                <div className="p-6 border-t border-gray-800 bg-gray-900 flex justify-end gap-4 flex-shrink-0">
                     <button 
-                        onClick={onClose}
-                        className="px-6 py-3 rounded-xl text-sm font-bold text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all"
+                        onClick={onClose} 
+                        className="px-6 py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
                     >
                         Cancelar
                     </button>
-                    
                     <button 
-                        onClick={handleSave}
-                        disabled={isSaving || !title || !clientId || items.length === 0}
-                        className="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-white bg-accent-primary hover:bg-orange-600 shadow-lg shadow-orange-900/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={handleSave} 
+                        disabled={isSaving}
+                        className="px-8 py-3 rounded-xl text-sm font-bold text-white bg-accent-primary hover:bg-orange-600 shadow-lg shadow-orange-900/20 flex items-center gap-2 transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isSaving ? (
-                            <span className="animate-pulse">Salvando...</span>
-                        ) : (
-                            <>
-                                <FaSave />
-                                <span>Salvar Negócio</span>
-                            </>
-                        )}
+                        {isSaving ? 'Salvando...' : <><FaSave /> Salvar Negócio</>}
                     </button>
                 </div>
-            </div>
 
+            </div>
         </div>
     );
 };

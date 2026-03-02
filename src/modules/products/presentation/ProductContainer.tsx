@@ -42,7 +42,7 @@ export const ProductContainer: React.FC<ProductContainerProps> = ({
     initialView = 'CATALOG' 
 }) => {
     
-    useAIContextInjector('SUPPLY_CHAIN');
+    useAIContextInjector('AI_INVENTORY_AGENT');
     
     const [activeView, setActiveView] = useState<ProductViewType>(initialView);
 

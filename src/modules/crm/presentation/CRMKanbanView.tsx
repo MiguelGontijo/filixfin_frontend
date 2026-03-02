@@ -1,12 +1,13 @@
-// src/modules/crm/presentation/CRMKanbanView.tsx
+// ===== FILE: src/modules/crm/presentation/CRMKanbanView.tsx =====
 
 import React, { useState } from 'react';
 
 // --- COMPONENTES VISUAIS ---
 import { KanbanBoard } from '../components/kanban/KanbanBoard';
+import { EmptyPipelineState } from '../components/kanban/EmptyPipelineState'; // ✅ Importado
 import { DealModal } from '../components/deals/DealModal';
 
-// --- NOVO COMPONENTE: A Sidebar de Configuração ---
+// --- COMPONENTES DE CONFIGURAÇÃO ---
 import { PipelineDrawer } from '../components/pipeline-manager/PipelineDrawer';
 import { ConfigStage } from '../components/pipeline-manager/StageList';
 
@@ -17,11 +18,6 @@ import { FaSync, FaExclamationTriangle, FaPlus } from 'react-icons/fa';
 // --- HOOKS ---
 import { usePipelineDetails } from '../hooks/usePipelines';
 
-// ============================================================================
-// INTERFACE DE PROPS
-// Define o contrato do que este componente precisa para funcionar.
-// Agora inclui os controles para a Sidebar (Drawer) de Funis.
-// ============================================================================
 interface CRMKanbanViewProps {
     // Dados Principais
     deals: CRMDeal[];
@@ -32,76 +28,67 @@ interface CRMKanbanViewProps {
     onDealMove: (dealId: string, newStageId: string, newStatus?: DealStatus) => void; 
     onRefresh: () => void;
     
-    // Contexto: Qual funil estamos visualizando?
+    // Contexto
     pipelineId?: string;
 
-    // --- CONTROLE DO DRAWER (NOVO) ---
-    // Estas props vêm do CRMContainer para controlar a visibilidade da Sidebar
+    // --- CONTROLE DO DRAWER DE CONFIGURAÇÃO ---
     isPipelineDrawerOpen: boolean;
     onPipelineDrawerClose: () => void;
+    onPipelineDrawerOpen: () => void; // ✅ Nova prop para o botão manual do EmptyState
     onSavePipeline: (data: { name: string; stages: ConfigStage[] }) => void;
+
+    // --- CONTROLE DA IA (ONBOARDING) ---
+    onGeneratePipelineWithAI: () => void; // ✅ Nova prop para o botão mágico
 }
 
 export const CRMKanbanView: React.FC<CRMKanbanViewProps> = ({ 
     deals, 
     isLoading: isLoadingDeals, 
     error, 
-    onDealMove,
-    onRefresh,
+    onDealMove, 
+    onRefresh, 
     pipelineId,
-    // Desestruturando as novas props do Drawer
+    
+    // Props de Controle
     isPipelineDrawerOpen,
     onPipelineDrawerClose,
-    onSavePipeline
+    onPipelineDrawerOpen,
+    onSavePipeline,
+    onGeneratePipelineWithAI
 }) => {
     
-    // ------------------------------------------------------------------------
-    // 1. CARREGAMENTO DE DADOS ESTRUTURAIS
-    // Precisamos saber quais são as colunas (Stages) deste funil específico.
-    // O hook usePipelineDetails resolve isso baseado no pipelineId.
-    // ------------------------------------------------------------------------
+    // 1. CARREGAMENTO ESTRUTURAL
     const { stages, isLoadingPipeline } = usePipelineDetails(pipelineId);
 
-    // Unifica o status de carregamento:
-    // A tela só está pronta quando temos os Deals E a estrutura das Colunas.
     const isLoading = isLoadingDeals || isLoadingPipeline;
+    
+    // ✅ VERIFICAÇÃO DE ESTADO VAZIO (ZERO DATA)
+    // Se carregou e não tem estágios, estamos no "Limbo" que precisa de Onboarding.
+    const isEmptyState = !isLoading && stages.length === 0;
 
-    // ------------------------------------------------------------------------
-    // 2. ESTADOS LOCAIS (MODAL DE DEALS)
-    // Controlam apenas o formulário de criação/edição de Negócios (Deals),
-    // que é diferente da configuração do Funil.
-    // ------------------------------------------------------------------------
+    // 2. ESTADOS LOCAIS (DEALS)
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [defaultStatus, setDefaultStatus] = useState<DealStatus | undefined>(undefined);
     const [dealToEdit, setDealToEdit] = useState<CRMDeal | undefined>(undefined);
 
-    // ------------------------------------------------------------------------
-    // 3. HANDLERS (Ações do Usuário)
-    // ------------------------------------------------------------------------
-
-    // Abre o modal para CRIAR um novo negócio
+    // 3. HANDLERS
     const handleOpenNewDeal = (status?: DealStatus) => {
-        setDealToEdit(undefined); // Garante que não é edição
-        setDefaultStatus(status); // Se veio de uma coluna específica (botão + da coluna)
+        setDealToEdit(undefined);
+        setDefaultStatus(status);
         setIsModalOpen(true);
     };
 
-    // Abre o modal para EDITAR um negócio existente
     const handleOpenEditDeal = (deal: CRMDeal) => {
         setDealToEdit(deal); 
         setDefaultStatus(undefined);
         setIsModalOpen(true);
     };
     
-    // Callback de sucesso ao salvar/editar um deal
     const handleSuccess = () => {
-        onRefresh(); // Recarrega a lista para mostrar os dados novos
+        onRefresh();
     };
 
-    // ------------------------------------------------------------------------
     // 4. RENDERIZAÇÃO DE ESTADOS DE CARREGAMENTO / ERRO
-    // ------------------------------------------------------------------------
-
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -129,69 +116,74 @@ export const CRMKanbanView: React.FC<CRMKanbanViewProps> = ({
         );
     }
 
-    // ------------------------------------------------------------------------
     // 5. RENDERIZAÇÃO PRINCIPAL
-    // Aqui está a mudança crítica de layout para a Sidebar funcionar.
-    // ------------------------------------------------------------------------
     return (
-        /* CONTAINER PRINCIPAL
-           relative: Torna este elemento a "âncora" para elementos absolute filhos.
-                     Isso garante que o Drawer (absolute) se posicione relativo a ESTE container,
-                     e não à tela inteira.
-           overflow-hidden: Garante que, quando o Drawer estiver fechado (fora da tela),
-                            ele não gere barra de rolagem horizontal na página.
-        */
         <div className="h-full flex flex-col relative overflow-hidden">
             
-            {/* --- HEADER INTERNO (Título + Botão Novo Deal) --- */}
-            {/* flex-shrink-0 impede que o header encolha se a tela for pequena */}
+            {/* --- HEADER INTERNO --- */}
             <div className="flex justify-between items-center mb-4 px-1 flex-shrink-0">
                 <div className="flex items-baseline space-x-3">
                     <h2 className="text-xl font-bold text-white">Pipeline de Vendas</h2>
-                    <div className="text-xs text-gray-500">
-                        {deals.length} oportunidades ativas
-                    </div>
+                    {!isEmptyState && (
+                        <div className="text-xs text-gray-500">
+                            {deals.length} oportunidades ativas
+                        </div>
+                    )}
                 </div>
 
-                <button 
-                    onClick={() => handleOpenNewDeal()} 
-                    className="flex items-center space-x-2 px-4 py-2 bg-accent-primary text-base-dark font-bold rounded-lg hover:bg-orange-500 transition shadow-lg transform active:scale-95"
-                >
-                    <FaPlus />
-                    <span>Novo Deal</span>
-                </button>
+                {/* BOTÃO NOVO DEAL (Protegido) */}
+                {/* Só aparece se NÃO estivermos no estado vazio.
+                    Isso previne o erro de criar deal sem funil. */}
+                {!isEmptyState && (
+                    <button 
+                        onClick={() => handleOpenNewDeal()} 
+                        className="flex items-center space-x-2 px-4 py-2 bg-accent-primary text-base-dark font-bold rounded-lg hover:bg-orange-500 transition shadow-lg transform active:scale-95"
+                    >
+                        <FaPlus />
+                        <span>Novo Deal</span>
+                    </button>
+                )}
             </div>
 
-            {/* --- ÁREA DO BOARD (KANBAN) --- */}
-            {/* flex-1: Ocupa todo o espaço vertical restante */}
-            {/* min-h-0: Fix do Flexbox para permitir scroll interno corretamente */}
-            <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
-                <KanbanBoard 
-                    deals={deals}
-                    stages={stages} // Passamos as fases carregadas dinamicamente
-                    onDealMove={onDealMove} 
-                    onAddDeal={handleOpenNewDeal}
-                    onEditDeal={handleOpenEditDeal}
+            {/* --- ÁREA DO BOARD ou EMPTY STATE --- */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+                {isEmptyState ? (
+                    // ✨ ESTADO VAZIO INTELIGENTE
+                    <EmptyPipelineState 
+                        onGenerateWithAI={onGeneratePipelineWithAI}
+                        onManualConfig={onPipelineDrawerOpen}
+                    />
+                ) : (
+                    // 🏗️ KANBAN NORMAL
+                    <div className="h-full overflow-x-auto overflow-y-hidden">
+                        <KanbanBoard 
+                            deals={deals}
+                            stages={stages} 
+                            onDealMove={onDealMove} 
+                            onAddDeal={handleOpenNewDeal}
+                            onEditDeal={handleOpenEditDeal}
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* --- MODAIS E DRAWERS --- */}
+            
+            {/* Modal de Deal (Só renderiza se tiver stages para evitar crash, embora o botão esteja oculto) */}
+            {!isEmptyState && (
+                <DealModal 
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSuccess={handleSuccess}
+                    defaultStatus={defaultStatus}
+                    dealToEdit={dealToEdit}
+                    pipelineId={pipelineId}
+                    // A correção interna do DealEditor (Passo 3) virá a seguir, 
+                    // mas aqui já garantimos que ele não abre sem dados.
                 />
-            </div>
+            )}
 
-            {/* --- MODAL OPERACIONAL (DEAL) --- */}
-            {/* Este modal (DealModal) usa Overlay fixo e centralizado, padrão do app */}
-            <DealModal 
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSuccess={handleSuccess}
-                defaultStatus={defaultStatus}
-                dealToEdit={dealToEdit}
-                pipelineId={pipelineId}
-            />
-
-            {/* --- SIDEBAR DE CONFIGURAÇÃO (PIPELINE DRAWER) --- */}
-            {/* DIFERENÇA CRUCIAL:
-                Este componente está inserido AQUI dentro para herdar o contexto 'relative' do pai.
-                Ele vai se posicionar como 'absolute top-0 right-0' DENTRO desta div principal.
-                Resultado: Ele cobre o Kanban, mas respeita o Header e o Menu Lateral do CRM.
-            */}
+            {/* Sidebar de Configuração */}
             <PipelineDrawer 
                 isOpen={isPipelineDrawerOpen}
                 onClose={onPipelineDrawerClose}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api } from '../../../core/services/api';
-import { IPipeline, ICreatePipelineDTO, IUpdatePipelineDTO } from '../pipeline.types';
+import { api } from '@/core/services/api';
+import { IPipeline, ICreatePipelineDTO, IUpdatePipelineDTO } from '../types/pipeline.types';
 
 export function usePipelines() {
     const [pipelines, setPipelines] = useState<IPipeline[]>([]);

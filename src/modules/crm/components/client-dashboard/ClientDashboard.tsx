@@ -1,4 +1,4 @@
-// src/modules/crm/components/client-dashboard/ClientDashboard.tsx
+// ===== FILE: src/modules/crm/components/client-dashboard/ClientDashboard.tsx =====
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -9,7 +9,9 @@ import {
 } from 'react-icons/fa';
 import { Client, AddressType } from '@/core/types/client';
 import { ClientForm } from '@/core/components/client/ClientForm';
-import { InteractionTimeline } from './InteractionTimeline';
+
+// --- AQUI ESTÁ A MUDANÇA: Importamos o Módulo Soberano ---
+import { TimelineModule } from '@/modules/timeline/TimelineModule';
 
 export type DashboardMode = 'VIEW' | 'EDIT' | 'CREATE';
 
@@ -22,8 +24,7 @@ interface ClientDashboardProps {
 
 type DashboardTab = 'OVERVIEW' | 'TIMELINE';
 
-// --- SUB-COMPONENTE REUTILIZÁVEL: CARD EXPANSÍVEL ---
-// Garante que IA e Notas tenham exatamente o mesmo comportamento e visual
+// --- SUB-COMPONENTE: CARD EXPANSÍVEL (Mantido igual) ---
 const ExpandableInfoCard: React.FC<{ 
     title: string; 
     icon: React.ElementType; 
@@ -32,12 +33,10 @@ const ExpandableInfoCard: React.FC<{
 }> = ({ title, icon: Icon, content, placeholder }) => {
     
     const [isExpanded, setIsExpanded] = useState(false);
-    // Define um limite de caracteres para ativar o collapse (ex: 200 chars)
     const shouldCollapse = content && content.length > 200;
 
     return (
         <div className="bg-gray-800/50 rounded-xl border border-gray-600 p-4 relative overflow-hidden group transition-all hover:border-gray-500">
-            {/* Barra lateral gradiente (Estilo unificado) */}
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-accent-secondary to-accent-primary"></div>
             
             <div className="flex justify-between items-center mb-3">
@@ -51,7 +50,6 @@ const ExpandableInfoCard: React.FC<{
                     {content || <span className="text-gray-500 italic">{placeholder}</span>}
                 </div>
 
-                {/* Botão de Toggle (Só aparece se o texto for longo) */}
                 {shouldCollapse && (
                     <button 
                         onClick={() => setIsExpanded(!isExpanded)}
@@ -72,7 +70,7 @@ const ExpandableInfoCard: React.FC<{
 /**
  * @component ClientDashboard
  * @description Painel Central Unificado.
- * @update Adicionado suporte a Collapse/Expand e novo card de Notas do Usuário.
+ * @update Integrado com o novo TimelineModule V8.
  */
 export const ClientDashboard: React.FC<ClientDashboardProps> = ({ 
     client, 
@@ -83,12 +81,14 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
     
     const [activeTab, setActiveTab] = useState<DashboardTab>('OVERVIEW');
 
+    // Reset da tab quando muda o cliente
     useEffect(() => {
         if (mode !== 'CREATE') {
             setActiveTab('OVERVIEW');
         }
     }, [client?.id, mode]);
 
+    // Tela de "Nenhum Cliente Selecionado"
     if (!client && mode !== 'CREATE') {
         return (
             <div className="h-full flex flex-col items-center justify-center text-gray-500 bg-base-metallic/50 rounded-xl border border-gray-700/50 border-dashed">
@@ -106,6 +106,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
     const isCreating = mode === 'CREATE';
     const isFormOpen = mode === 'CREATE' || mode === 'EDIT';
 
+    // Objeto de fallback seguro para renderização
     const displayClient = client || {
         name: 'Novo Cliente',
         document: '',
@@ -113,7 +114,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
         phone: '',
         isActive: true,
         aiSummary: null,
-        userNotes: null, // Placeholder para criação
+        userNotes: null,
         addresses: []
     } as unknown as Client;
 
@@ -122,14 +123,10 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
         ? `${mainAddress.street}, ${mainAddress.number} - ${mainAddress.district}, ${mainAddress.city}/${mainAddress.state}`
         : 'Sem endereço cadastrado';
 
-    const handleFormSuccess = () => {
-        onUpdateSuccess();
-    };
-
     return (
         <div className="bg-base-metallic rounded-xl border border-gray-700 flex flex-col h-full overflow-hidden shadow-2xl relative">
             
-            {/* --- HEADER --- */}
+            {/* --- HEADER (Fixo) --- */}
             <div className="p-6 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900 flex-shrink-0">
                 <div className="flex justify-between items-start">
                     <div className="flex items-center space-x-4">
@@ -191,7 +188,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
                 </div>
             </div>
 
-            {/* --- NAVEGAÇÃO --- */}
+            {/* --- NAVEGAÇÃO (Abas) --- */}
             {!isFormOpen && (
                 <div className="flex border-b border-gray-700 bg-gray-800/50 px-6 flex-shrink-0">
                     <button 
@@ -204,19 +201,24 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
                         onClick={() => setActiveTab('TIMELINE')}
                         className={`py-3 px-4 text-sm font-bold border-b-2 transition ${activeTab === 'TIMELINE' ? 'border-accent-primary text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
                     >
-                        Histórico de Interações
+                        Timeline (Histórico)
                     </button>
                 </div>
             )}
 
-            {/* --- CONTEÚDO PRINCIPAL --- */}
-            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+            {/* --- ÁREA DE CONTEÚDO PRINCIPAL --- 
+                Lógica de Scroll Inteligente:
+                - Se for OVERVIEW ou FORM: Usa overflow-y-auto (scroll da página)
+                - Se for TIMELINE: Usa overflow-hidden (o scroll é interno do módulo timeline)
+            */}
+            <div className={`
+                flex-1 
+                ${activeTab === 'TIMELINE' && !isFormOpen ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar p-6'}
+            `}>
                 
                 {isFormOpen ? (
-                    // --- MODO FORMULÁRIO ---
-                    <div className="space-y-6 animate-fade-in">
-                        
-                        {/* Exibição dos Cards em modo "Read-Only/Disabled" visual durante a criação para manter layout */}
+                    // --- MODO FORMULÁRIO (EDIT/CREATE) ---
+                    <div className="space-y-6 animate-fade-in pb-6">
                         <div className="opacity-60 grayscale cursor-not-allowed">
                             <ExpandableInfoCard 
                                 title="Dossiê Vivo (IA Memory)"
@@ -232,7 +234,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
                             </h4>
                             <ClientForm 
                                 client={isCreating ? undefined : client!} 
-                                onSuccess={handleFormSuccess}
+                                onSuccess={onUpdateSuccess}
                                 showSubmitButton={false}
                             />
                         </div>
@@ -242,16 +244,12 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
                     <>
                         {activeTab === 'OVERVIEW' && (
                             <div className="space-y-6 animate-fade-in">
-                                
-                                {/* 1. Dossiê da IA */}
                                 <ExpandableInfoCard 
                                     title="Dossiê Vivo (IA Memory)"
                                     icon={FaBrain}
                                     content={displayClient.aiSummary}
                                     placeholder="Ainda não há um resumo gerado pela Inteligência Artificial."
                                 />
-
-                                {/* 2. Notas do Usuário (NOVO) */}
                                 <ExpandableInfoCard 
                                     title="Notas Pessoais"
                                     icon={FaStickyNote}
@@ -259,9 +257,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
                                     placeholder="Nenhuma nota privada adicionada. Clique em editar para adicionar."
                                 />
 
-                                {/* 3. Dados Cadastrais */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Contato */}
                                     <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
                                         <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Contato</h4>
                                         <div className="space-y-3">
@@ -276,7 +272,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
                                         </div>
                                     </div>
 
-                                    {/* Endereço */}
                                     <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
                                         <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Localização Principal</h4>
                                         <div className="flex items-start text-sm text-gray-200">
@@ -289,8 +284,16 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
                         )}
 
                         {activeTab === 'TIMELINE' && (
-                            <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
-                                <InteractionTimeline clientId={displayClient.id} />
+                            /* MÓDULO SOBERANO TIMELINE 
+                                - Ocupa 100% da altura disponível (h-full)
+                                - entityId pode ser undefined se o cliente for null (embora o 'if' lá em cima proteja)
+                            */
+                            <div className="h-full w-full animate-fade-in">
+                                <TimelineModule 
+                                    entityId={displayClient.id} 
+                                    entityType="CLIENT"
+                                    className="h-full" // Garante que o scroll interno funcione
+                                />
                             </div>
                         )}
                     </>

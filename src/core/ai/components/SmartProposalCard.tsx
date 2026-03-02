@@ -1,7 +1,8 @@
 
 import React, { useMemo } from 'react';
 import { FaCheck, FaTimes, FaMicrophone, FaInfoCircle } from 'react-icons/fa';
-import { AIActionProposal, ProposalStatus } from '../types/AITypes';
+import { AIActionProposal } from '../types/dtos/AIActionProposal.dto';
+import { ProposalStatus } from '../types/enums/AIEnums';
 
 interface SmartProposalCardProps {
     /**
