@@ -1,3 +1,4 @@
+// ===== FILE: src/core/ai/components/SmartProposalCard.tsx =====
 
 import React, { useMemo } from 'react';
 import { FaCheck, FaTimes, FaMicrophone, FaInfoCircle } from 'react-icons/fa';
@@ -95,12 +96,24 @@ export const SmartProposalCard: React.FC<SmartProposalCardProps> = ({
         return String(value);
     };
 
-    // Filtra chaves que não devem ser exibidas (ex: IDs internos, metadados)
+    // =========================================================================
+    // [CORREÇÃO] O FILTRO ANTI-VAZAMENTO
+    // Filtra chaves técnicas que o LLM usa para raciocínio interno.
+    // =========================================================================
     const displayData = useMemo(() => {
         if (!proposal.data) return [];
+        
+        // Blacklist de chaves internas do Motor V8 (Não mostrar ao usuário)
+        const ignoredKeys = [
+            'justification', 
+            'ui_message', 
+            'user_confirmed', 
+            'tenantId'
+        ];
+
         return Object.entries(proposal.data).filter(([key]) => {
-            // Esconde chaves que começam com underscore ou parecem IDs técnicos sem valor semântico
-            return !key.startsWith('_') && key !== 'tenantId';
+            // Esconde chaves da blacklist e chaves que começam com underscore (ex: _id)
+            return !key.startsWith('_') && !ignoredKeys.includes(key);
         });
     }, [proposal.data]);
 

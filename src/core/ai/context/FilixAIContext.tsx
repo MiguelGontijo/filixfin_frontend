@@ -1,12 +1,11 @@
-// ===== FILE: src/core/ai/context/FilixAIContext.tsx =====
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { AIMessage, FilixAIContextData } from '../types/state/AIState';
+import { AIMessage, AIMessageType, FilixAIContextData } from '../types/state/AIState'; // [ATUALIZADO] Importando o AIMessageType
 import { AIContextScope, AIWidgetMode } from '../types/enums/AIEnums';
 import { AIContextMetadata } from '../types/dtos/AIChatRequest.dto';
-import { api } from '@/core/services/api'; // [NOVO] Importação da API para o Contexto buscar os dados
+import { api } from '@/core/services/api'; 
+import { fetchAIHistory } from '../hooks/AIHistoryService';
 
 // Chave para persistência local (Salva apenas se o usuário desligou a IA)
 const STORAGE_KEY = '@filix-ai/preferences-v2'; // Mudamos a versão para evitar conflito com cache antigo
@@ -26,6 +25,7 @@ interface FilixAIProviderProps {
  * Agora o Contexto gerencia puramente o Estado Lógico (Aberto/Fechado), Semântico (Vendas/Fiscal)
  * e atua como a Memória Central (Histórico de Mensagens).
  * * OPÇÃO B APLICADA: O Contexto é o único dono e buscador do Histórico.
+ * * [NOVO] Aplica a tipagem visual (Crachá) na remontagem do histórico.
  */
 export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) => {
     
@@ -88,50 +88,34 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
     // Sempre que o Escopo (Módulo) mudar, O PRÓPRIO CONTEXTO limpa 
     // a memória velha e busca a memória nova (Single Source of Truth).
     useEffect(() => {
-        // [SEGURANÇA] Flag para evitar Race Conditions se o usuário clicar rápido em 2 módulos
         let isMounted = true; 
 
-        const fetchHistory = async () => {
-            // 1. Apagão Imediato (Evita o Fantasma da tela anterior)
+        const loadHistory = async () => {
+            // 1. Apagão Imediato
             setMessages([]);
             setHasLoadedHistory(false);
 
             if (!contextScope) return;
 
             try {
-                // 2. Busca os dados reais do Backend
-                const response = await api.get<any[]>(`/ai/history/${contextScope}`);
+                // 2. O Contexto delega o trabalho sujo para o Serviço Puro!
+                const historyData = await fetchAIHistory(contextScope);
                 
-                // Se o componente desmontou (ou o scope mudou de novo) enquanto a rede processava, ignora a resposta.
-                if (!isMounted) return;
-
-                // 3. Formata os dados para a tela
-                const formattedHistory: AIMessage[] = response.data.map((msg) => ({
-                    id: msg.id,
-                    role: msg.role as 'user' | 'assistant',
-                    content: msg.content,
-                    timestamp: new Date(msg.timestamp),
-                    toolUsed: msg.toolUsed 
-                }));
-
-                // 4. Injeta a memória oficial no Cérebro
-                setMessages(formattedHistory);
-                setHasLoadedHistory(true);
+                // Se o componente não morreu no meio do caminho, salva na memória RAM
+                if (isMounted) {
+                    setMessages(historyData);
+                    setHasLoadedHistory(true);
+                }
 
             } catch (error) {
-                console.error(`❌ [FilixAIContext] Erro ao carregar histórico da rotina ${contextScope}:`, error);
-                if (isMounted) {
-                    setMessages([]); // Fallback seguro
-                }
+                // O serviço falhou, garantimos a memória vazia
+                if (isMounted) setMessages([]); 
             }
         };
 
-        fetchHistory();
+        loadHistory();
 
-        // Cleanup da montagem
-        return () => {
-            isMounted = false; 
-        };
+        return () => { isMounted = false; };
     }, [contextScope]);
 
     // --- 3. Ações (Actions) ---
@@ -162,11 +146,6 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
         setInternalContextScope(scope);
         // Se metadata for undefined, limpa o estado anterior
         setContextMetadata(metadata);
-        
-        // Debug em Dev
-        // if (process.env.NODE_ENV === 'development') {
-        //     console.debug(`🧠 [AI Context] Scope: ${scope}`);
-        // }
     };
 
     // --- 4. Exposição do Contexto ---

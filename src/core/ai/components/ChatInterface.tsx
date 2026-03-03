@@ -1,11 +1,10 @@
-// ===== FILE: src/core/ai/components/ChatInterface.tsx =====
-
 import React, { useRef, useEffect } from 'react';
-import { FaRobot, FaTimes, FaExpandAlt, FaExclamationTriangle } from 'react-icons/fa';
+import { FaRobot, FaTimes, FaExpandAlt, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
 
 // --- COMPONENTES & UI ---
 import { AgentInput } from './AgentInput';
 import { SmartProposalCard } from './SmartProposalCard';
+import { ChatMessageItem } from './ChatMessageItem';
 
 // --- LÓGICA & SERVIÇOS (MOTOR V8) ---
 import { useAIChatService } from '../hooks/useAIChatService';
@@ -47,6 +46,8 @@ interface ChatInterfaceProps {
  * 1. Componente 100% Visual (Dumb Component).
  * 2. Lê a memória global (Contexto) e desenha na tela.
  * 3. Delega ações de envio/confirmação para os Services.
+ * 4. [NOVO] Funciona como um "Roteador Visual", renderizando componentes 
+ * específicos baseados no crachá 'msg.type'.
  */
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
     onClose,
@@ -74,11 +75,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         }
     }, [messages, isLoading]);
 
-    // =======================================================================
-    // [REMOVIDO] Toda a lógica de useAIHistory, loadedScopeRef e travas de 
-    // sincronização foi apagada. A responsabilidade agora é 100% do Contexto.
-    // =======================================================================
-
     // --- 3. LÓGICA DE NEGÓCIO (Handlers de Interação) ---
 
     /**
@@ -88,9 +84,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         if (!text.trim()) return;
 
         // Optimistic UI: Cria a mensagem do usuário visualmente antes da API responder
+        // [CORREÇÃO]: Injetado o crachá type: 'TEXT' para obedecer ao novo contrato
         const userMsg: AIMessage = {
             id: Date.now().toString(),
             role: 'user',
+            type: 'TEXT', 
             content: text,
             timestamp: new Date()
         };
@@ -116,11 +114,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const handleConfirmProposal = async (proposal: AIActionProposal, messageId: string) => {
         updateMessageStatus(messageId, 'EXECUTED'); 
 
-        const response = await confirmAction(proposal, {
-            routineKey: contextScope,
-            tenantId,
-            planId
-        });
+        const response = await confirmAction(proposal, messageId);
 
         if (response) {
             updateMessageStatus(messageId, 'APPROVED');
@@ -136,9 +130,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const handleRejectProposal = (messageId: string) => {
         updateMessageStatus(messageId, 'REJECTED');
         
+        // [CORREÇÃO]: Injetado o crachá type: 'SYSTEM_ACTION' para renderizar como um Chip Central
         setMessages(prev => [...prev, {
             id: crypto.randomUUID(),
             role: 'system',
+            type: 'SYSTEM_ACTION',
             content: 'Ação cancelada pelo usuário.',
             timestamp: new Date()
         }]);
@@ -201,51 +197,59 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </div>
             </div>
 
-            {/* === CORPO DO CHAT (BODY) === */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gray-900">
-                {messages.map((msg) => (
-                    <div 
-                        key={msg.id} 
-                        className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} animate-fade-in`}
-                    >
+            {/* === CORPO DO CHAT (BODY) - O ROTEADOR VISUAL === */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5 custom-scrollbar bg-gray-900">
+                {messages.map((msg) => {
+                    // A MÁGICA DO SWITCH CASE (União Discriminada)
+                    switch (msg.type) {
                         
-                        {/* BALÃO DE MENSAGEM */}
-                        <div className={`
-                            max-w-[85%] rounded-2xl p-3.5 text-sm leading-relaxed shadow-sm relative
-                            ${msg.role === 'user' 
-                                ? 'bg-accent-primary text-base-dark rounded-tr-none font-bold' 
-                                : msg.role === 'system'
-                                    ? 'bg-transparent text-gray-500 text-xs italic border border-gray-800' 
-                                    : 'bg-gray-800 text-gray-200 border border-gray-700 rounded-tl-none'} 
-                        `}>
-                            {/* UI DEFENSIVA: Limite de altura no texto da IA com scroll interno */}
-                            <div className="max-h-[40vh] overflow-y-auto custom-scrollbar pr-2">
-                                <p className="whitespace-pre-wrap">{msg.content}</p>
-                            </div>
-                            
-                            {/* Hora da mensagem */}
-                            <span className={`text-[10px] block mt-1.5 opacity-60 font-mono ${msg.role === 'user' ? 'text-right text-black/60' : 'text-left'}`}>
-                                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                        </div>
+                        case 'SYSTEM_ACTION':
+                            // Renderiza um "Chip" centralizado, discreto, como log do WhatsApp
+                            return (
+                                <div key={msg.id} className="flex justify-center my-2 animate-fade-in">
+                                    <span className="text-[11px] font-medium text-gray-400 bg-gray-800/80 px-4 py-1.5 rounded-full border border-gray-700/50 shadow-sm flex items-center gap-2">
+                                        <FaInfoCircle className="opacity-70" />
+                                        {msg.content}
+                                    </span>
+                                </div>
+                            );
 
-                        {/* SMART CARD (O CORAÇÃO DO V8) */}
-                        {msg.proposal && (
-                            <div className="w-[90%] mt-1 animate-slide-up">
-                                <SmartProposalCard 
-                                    proposal={msg.proposal}
-                                    status={msg.proposalStatus}
-                                    onConfirm={() => handleConfirmProposal(msg.proposal!, msg.id)}
-                                    onReject={() => handleRejectProposal(msg.id)}
-                                    isExecuting={isLoading && msg.proposalStatus === 'EXECUTED'}
+                        case 'ERROR':
+                            // Box centralizado vermelho escuro para erros
+                            return (
+                                <div key={msg.id} className="flex justify-center my-2 animate-fade-in">
+                                    <span className="text-xs text-red-300 bg-red-900/30 px-4 py-2 rounded-lg border border-red-800/50 shadow-sm flex items-center gap-2">
+                                        <FaExclamationTriangle />
+                                        {msg.content}
+                                    </span>
+                                </div>
+                            );
+
+                        case 'PROPOSAL':
+                            // O Card interativo completo
+                            return (
+                                <ChatMessageItem 
+                                    key={msg.id}
+                                    message={msg}
+                                    isExecuting={isLoading}
+                                    onConfirmProposal={handleConfirmProposal}
+                                    onRejectProposal={handleRejectProposal}
                                 />
-                            </div>
-                        )}
+                            );
 
-                    </div>
-                ))}
+                        case 'TEXT':
+                        default:
+                            // Balão de texto normal (sem botões)
+                            return (
+                                <ChatMessageItem 
+                                    key={msg.id}
+                                    message={msg}
+                                />
+                            );
+                    }
+                })}
                 
-                {/* LOADING STATE */}
+                {/* LOADING STATE (Mantido igual) */}
                 {isLoading && (
                     <div className="flex justify-start animate-pulse">
                         <div className="bg-gray-800 border border-gray-700 rounded-2xl rounded-tl-none p-4 flex gap-1.5 items-center">
@@ -255,11 +259,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         </div>
                     </div>
                 )}
-
-                {/* ERROR STATE */}
+                
+                {/* ERROR STATE DA SESSÃO ATUAL */}
                 {error && (
                     <div className="flex justify-center animate-fade-in my-2">
-                        <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-2 rounded-lg text-xs flex items-center gap-2 shadow-lg">
+                        <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-2 rounded-lg text-xs flex items-center gap-2 shadow-lg">
                             <FaExclamationTriangle />
                             <span>{error}</span>
                         </div>

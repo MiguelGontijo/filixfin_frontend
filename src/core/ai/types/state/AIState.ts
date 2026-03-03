@@ -17,6 +17,18 @@ import { AIContextMetadata } from '../dtos/AIChatRequest.dto';
 // --- 1. A Mensagem (O "Tijolo" da Interface) ---
 
 /**
+ * @type AIMessageType
+ * @description [NOVO] O "Crachá" de Renderização Visual (Discriminated Union).
+ * Define EXATAMENTE qual componente o React deve desenhar na tela, 
+ * eliminando a necessidade de "adivinhar" o layout.
+ */
+export type AIMessageType = 
+    | 'TEXT'            // Balão de conversa normal (Chat Bubble)
+    | 'PROPOSAL'        // Card interativo de confirmação (SmartProposalCard)
+    | 'SYSTEM_ACTION'   // Log de execução de background ou ação autônoma
+    | 'ERROR';          // Box de falha/erro do sistema
+
+/**
  * @interface AIMessage
  * @description Estrutura de uma mensagem renderizada no chat.
  * É a evolução do AIResponseDto, adicionando controle de estado local (UI).
@@ -24,6 +36,12 @@ import { AIContextMetadata } from '../dtos/AIChatRequest.dto';
 export interface AIMessage {
     id: string;
     role: AIRole;
+    
+    // ==========================================
+    // [NOVO] O CONTRATO VISUAL ESTrito
+    // ==========================================
+    type: AIMessageType; 
+    
     content: string; 
     timestamp: Date;
     

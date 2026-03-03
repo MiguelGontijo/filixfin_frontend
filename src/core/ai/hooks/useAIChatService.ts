@@ -1,17 +1,19 @@
+// ===== FILE: src/core/ai/hooks/useAIChatService.ts =====
+
 import { useState, useCallback } from 'react';
 import { api } from '@/core/services/api';
 import { useFilixAI } from '../context/FilixAIContext'; // [NOVO] Acesso ao Cérebro Global
 import { AIActionProposal } from '../types/dtos/AIActionProposal.dto';
 import { AIChatRequestDto } from '../types/dtos/AIChatRequest.dto';
 import { AIResponseDto } from '../types/dtos/AIResponse.dto';
-import { AIMessage } from '../types/state/AIState';
-
-
+import { AIMessage, AIMessageType } from '../types/state/AIState'; // [ATUALIZADO] Importando o novo Crachá (AIMessageType)
 
 /**
  * @hook useAIChatService
  * @description Camada de Serviço responsável pela comunicação com o Orchestrator V8.
  * Agora capaz de injetar automaticamente metadados contextuais (Sniper).
+ * [NOVO] Executa propostas consultivas com segurança máxima (Chave do Cofre).
+ * [ATUALIZADO] Atribui o Crachá Visual (type) para garantir a renderização correta.
  */
 export const useAIChatService = () => {
     // 1. Acesso ao Contexto Global para injeção automática
@@ -22,20 +24,29 @@ export const useAIChatService = () => {
 
     /**
      * Mapper: Transforma a resposta crua da API no formato de Mensagem da UI.
+     * [CORREÇÃO ARQUITETURAL]: Injeta o 'type' baseado no conteúdo do DTO.
      */
     const mapResponseToMessage = (dto: AIResponseDto): AIMessage => {
+        const hasProposal = !!dto.proposal;
+        
         return {
             id: dto.interactionId || Date.now().toString(),
             role: 'assistant',
+            
+            // ==========================================
+            // O CRACHÁ VISUAL: Define o que a tela vai desenhar
+            // ==========================================
+            type: hasProposal ? 'PROPOSAL' : 'TEXT', 
+            
             content: dto.text,
             timestamp: new Date(),
-            proposal: dto.proposal ? {
-                type: dto.proposal.type,
-                label: dto.proposal.label,
-                actionIntent: dto.proposal.actionIntent,
-                data: dto.proposal.data
+            proposal: hasProposal ? {
+                type: dto.proposal!.type,
+                label: dto.proposal!.label,
+                actionIntent: dto.proposal!.actionIntent,
+                data: dto.proposal!.data
             } : undefined,
-            proposalStatus: dto.proposal ? 'PENDING' : undefined
+            proposalStatus: hasProposal ? 'PENDING' : undefined
         };
     };
 
@@ -80,42 +91,38 @@ export const useAIChatService = () => {
     }, [globalMetadata]); // Importante: recria a função se o contexto global mudar
 
     /**
-     * Envia uma confirmação de execução.
+     * Envia uma confirmação de execução de proposta para o Agente.
+     * @param proposal Os dados visuais da proposta (mantido por integridade)
+     * @param interactionId [NOVO] A Chave do Cofre (O ID da mensagem no banco)
+     * @param context [OPCIONAL] Mantido apenas para evitar quebras de tipagem em componentes não atualizados
      */
     const confirmAction = useCallback(async (
         proposal: AIActionProposal,
-        context: Omit<AIChatRequestDto, 'message'>
+        interactionId: string, 
+        context?: Omit<AIChatRequestDto, 'message'> 
     ): Promise<AIMessage | null> => {
         setIsLoading(true);
         setError(null);
 
-        // Lógica de Ouro também na confirmação
-        const effectiveMetadata = context.metadata || globalMetadata;
-
         try {
-            const commandMessage = `[SYSTEM_CONFIRMATION]: O usuário APROVOU a execução da ferramenta '${proposal.actionIntent}'. Prossiga com a execução.`;
-
-            const { data } = await api.post<AIResponseDto>('/ai/chat', {
-                message: commandMessage,
-                routineKey: context.routineKey,
-                tenantId: context.tenantId,
-                planId: context.planId,
-                metadata: effectiveMetadata, // Mantém o contexto durante a execução
-                overrides: {
-                    mode: 'AUTONOMOUS'
-                }
+            // [NOVO] Lógica Padrão Ouro: Não enviamos mais textos falsos ou o JSON da proposta.
+            // Batemos direto na nossa nova rota segura passando APENAS a Chave do Cofre.
+            // O Backend resolve o tenant, o usuário e a segurança através do Token JWT.
+            const { data } = await api.post<AIResponseDto>('/ai/execute-proposal', {
+                interactionId
             });
 
             return mapResponseToMessage(data);
 
         } catch (err: any) {
             console.error('❌ [AI Service] Erro ao confirmar ação:', err);
-            setError('Não foi possível processar a confirmação.');
+            const errorMessage = err.response?.data?.message || 'Não foi possível confirmar a ação. A proposta pode ter expirado.';
+            setError(errorMessage);
             return null;
         } finally {
             setIsLoading(false);
         }
-    }, [globalMetadata]);
+    }, []);
 
     /**
      * Busca o histórico de conversas da rotina atual no banco de dados.
@@ -130,12 +137,27 @@ export const useAIChatService = () => {
             const { data } = await api.get<any[]>(`/ai/history/${routineKey}`);
 
             // Mapeia o JSON bruto do Backend para a tipagem rigorosa do Frontend (AIMessage)
-            const formattedHistory: AIMessage[] = data.map((msg) => ({
-                id: msg.id,
-                role: msg.role as 'user' | 'assistant',
-                content: msg.content,
-                timestamp: new Date(msg.timestamp)
-            }));
+            const formattedHistory: AIMessage[] = data.map((msg) => {
+                const role = msg.role as 'user' | 'assistant' | 'system';
+                const hasProposal = !!msg.proposal;
+                
+                // ==========================================
+                // LÓGICA DO CRACHÁ PARA O HISTÓRICO:
+                // ==========================================
+                let messageType: AIMessageType = 'TEXT';
+                if (role === 'system') messageType = 'SYSTEM_ACTION';
+                else if (hasProposal) messageType = 'PROPOSAL';
+
+                return {
+                    id: msg.id,
+                    role: role,
+                    type: messageType, // Injeta a tipagem rigorosa para renderização!
+                    content: msg.content,
+                    timestamp: new Date(msg.timestamp),
+                    proposal: msg.proposal,
+                    proposalStatus: msg.proposalStatus
+                };
+            });
 
             return formattedHistory;
 
