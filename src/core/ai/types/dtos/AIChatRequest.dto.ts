@@ -48,6 +48,8 @@ export interface AIChatRequestDto {
     /** (Opcional) Contexto microscópico focado injetado pela tela atual. */
     metadata?: AIContextMetadata;
 
+    attachmentsUrls?: string[];
+
     /** (Opcional) Sobrescrita de comportamentos dinâmicos do Motor V8. */
     overrides?: {
         /** * Define se a IA deve agir sozinha (AUTONOMOUS) 

@@ -1,5 +1,3 @@
-// ===== FILE: src/core/ai/hooks/useAIChatService.ts =====
-
 import { useState, useCallback } from 'react';
 import { api } from '@/core/services/api';
 import { useFilixAI } from '../context/FilixAIContext'; // [NOVO] Acesso ao Cérebro Global
@@ -7,6 +5,16 @@ import { AIActionProposal } from '../types/dtos/AIActionProposal.dto';
 import { AIChatRequestDto } from '../types/dtos/AIChatRequest.dto';
 import { AIResponseDto } from '../types/dtos/AIResponse.dto';
 import { AIMessage, AIMessageType } from '../types/state/AIState'; // [ATUALIZADO] Importando o novo Crachá (AIMessageType)
+import { StorageService } from '@/core/services/StorageService';
+
+/**
+ * @interface AIChatSendMessageParams
+ * @description Extensão do DTO original para uso interno do Hook.
+ * Permite que a UI passe arquivos físicos (File[]), que o Hook converterá em URLs (string[]).
+ */
+export interface AIChatSendMessageParams extends AIChatRequestDto {
+    attachments?: File[];
+}
 
 /**
  * @hook useAIChatService
@@ -14,6 +22,7 @@ import { AIMessage, AIMessageType } from '../types/state/AIState'; // [ATUALIZAD
  * Agora capaz de injetar automaticamente metadados contextuais (Sniper).
  * [NOVO] Executa propostas consultivas com segurança máxima (Chave do Cofre).
  * [ATUALIZADO] Atribui o Crachá Visual (type) para garantir a renderização correta.
+ * [FASE 2 ATIVA] Orquestra o upload de arquivos via StorageService antes de chamar a IA.
  */
 export const useAIChatService = () => {
     // 1. Acesso ao Contexto Global para injeção automática
@@ -51,37 +60,58 @@ export const useAIChatService = () => {
     };
 
     /**
-     * Envia uma mensagem de texto natural para o Agente.
+     * Envia uma mensagem de texto natural (e agora arquivos) para o Agente.
      */
     const sendMessage = useCallback(async ({ 
         message, 
         routineKey, 
         tenantId, 
         planId,
-        metadata // Pode vir sobrescrito pelo chamador
-    }: AIChatRequestDto): Promise<AIMessage | null> => {
+        metadata, // Pode vir sobrescrito pelo chamador
+        attachments // [NOVO] Array de arquivos físicos vindos do Input
+    }: AIChatSendMessageParams): Promise<AIMessage | null> => {
         setIsLoading(true);
         setError(null);
 
         // LÓGICA DE OURO: Usa o metadata passado OU o global (Sniper Automática)
         const effectiveMetadata = metadata || globalMetadata;
+        let uploadedUrls: string[] = [];
 
         try {
-            // Chamada real ao Backend V8
-            const { data } = await api.post<AIResponseDto>('/ai/chat', {
+            // ==========================================
+            // PASSO 1: O UPLOAD FÍSICO (Se existirem arquivos)
+            // ==========================================
+            if (attachments && attachments.length > 0) {
+                // Delegamos o trabalho pesado ao Carteiro.
+                // Criamos uma subpasta organizada baseada na rotina atual.
+                uploadedUrls = await StorageService.uploadFiles(attachments, `ai-${routineKey.toLowerCase()}`);
+            }
+
+            // ==========================================
+            // PASSO 2: A CHAMADA REAL AO BACKEND V8
+            // ==========================================
+            const requestPayload: AIChatRequestDto = {
                 message,
                 routineKey,
                 tenantId,
                 planId,
                 
                 // [NOVO] Envia a Sniper se ela estiver montada
-                metadata: effectiveMetadata 
-            });
+                metadata: effectiveMetadata,
+                
+                // Injetamos as URLs que acabaram de ser geradas (ou um array vazio se não houver)
+                attachmentsUrls: uploadedUrls.length > 0 ? uploadedUrls : undefined
+            };
+
+            console.log("🕵️‍♂️ [DEBUG FRONTEND] Payload sendo enviado para o Backend:", JSON.stringify(requestPayload, null, 2));
+            
+            // Chamada real ao Backend V8
+            const { data } = await api.post<AIResponseDto>('/ai/chat', requestPayload);
 
             return mapResponseToMessage(data);
 
         } catch (err: any) {
-            console.error('❌ [AI Service] Erro ao enviar mensagem:', err);
+            console.error('❌ [AI Service] Erro ao enviar mensagem/arquivos:', err);
             const errorMessage = err.response?.data?.message || 'Falha de conexão com a Inteligência.';
             setError(errorMessage);
             return null;

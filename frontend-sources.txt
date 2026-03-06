@@ -76,19 +76,33 @@
 │   ├── core
 │   │   ├── ai
 │   │   │   ├── components
-│   │   │   │   ├── AgentInput.tsx
+│   │   │   │   ├── agent-input
+│   │   │   │   │   ├── AgentInput.tsx
+│   │   │   │   │   ├── AutoResizeTextarea.tsx
+│   │   │   │   │   ├── RecordingOverlay.tsx
+│   │   │   │   │   └── StagingArea.tsx
 │   │   │   │   ├── ChatInterface.tsx
+│   │   │   │   ├── ChatMessageItem.tsx
 │   │   │   │   ├── FloatingWidget.tsx
 │   │   │   │   └── SmartProposalCard.tsx
 │   │   │   ├── context
 │   │   │   │   └── FilixAIContext.tsx
 │   │   │   ├── hooks
+│   │   │   │   ├── AIHistoryService.ts
 │   │   │   │   ├── useAIChatService.ts
 │   │   │   │   ├── useAIContextInjector.ts
-│   │   │   │   └── useAIHistory.ts
-│   │   │   ├── services
-│   │   │   └── types
-│   │   │       └── AITypes.ts
+│   │   │   │   └── useSpeechToText.ts
+│   │   │   ├── types
+│   │   │   │   ├── dtos
+│   │   │   │   │   ├── AIActionProposal.dto.ts
+│   │   │   │   │   ├── AIChatRequest.dto.ts
+│   │   │   │   │   └── AIResponse.dto.ts
+│   │   │   │   ├── enums
+│   │   │   │   │   └── AIEnums.ts
+│   │   │   │   └── state
+│   │   │   │       └── AIState.ts
+│   │   │   └── utils
+│   │   │       └── imageCompressor.ts
 │   │   ├── components
 │   │   │   ├── auth
 │   │   │   │   ├── AuthGuard.tsx
@@ -116,7 +130,8 @@
 │   │   ├── providers
 │   │   │   └── GoogleProvider.tsx
 │   │   ├── services
-│   │   │   └── api.ts
+│   │   │   ├── api.ts
+│   │   │   └── StorageService.ts
 │   │   ├── types
 │   │   │   ├── acl.ts
 │   │   │   ├── auth.ts
@@ -410,7 +425,9 @@ export default nextConfig;
     "react": "19.2.0",
     "react-big-calendar": "^1.19.4",
     "react-dom": "19.2.0",
-    "react-icons": "^5.5.0"
+    "react-icons": "^5.5.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -421,7 +438,7 @@ export default nextConfig;
     "@types/react-big-calendar": "^1.16.3",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
-    "baseline-browser-mapping": "^2.9.3",
+    "baseline-browser-mapping": "^2.10.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
     "tailwindcss": "^4",
@@ -2238,167 +2255,23 @@ export const forceGlobalLogout = () => {
 };
 
 
-// ===== FILE: src/core/ai/components/AgentInput.tsx =====
-
-
-import React, { useState, useRef, useEffect } from 'react';
-import { FaPaperPlane, FaMicrophone, FaPaperclip, FaStop } from 'react-icons/fa';
-import { useFilixAI } from '../context/FilixAIContext';
-
-interface AgentInputProps {
-    onSend: (message: string, attachments?: File[]) => Promise<void>;
-    mode?: 'chat' | 'compose';
-    isLoading?: boolean;
-    placeholder?: string;
-}
-
-export const AgentInput: React.FC<AgentInputProps> = ({ 
-    onSend, 
-    mode = 'chat', 
-    isLoading = false, 
-    placeholder = "Digite sua mensagem ou grave um áudio..." 
-}) => {
-    // --- 1. CONTEXTO GLOBAL ---
-    const { inputDraft, setInputDraft } = useFilixAI();
-
-    // --- 2. ESTADOS LOCAIS ---
-    const [text, setText] = useState('');
-    const [isRecording, setIsRecording] = useState(false);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-    // --- 3. EFEITOS ---
-
-    // Monitora o Rascunho Global
-    useEffect(() => {
-        if (inputDraft && inputDraft.trim() !== '') {
-            setText(inputDraft); 
-            if (textareaRef.current) {
-                textareaRef.current.focus();
-            }
-            setInputDraft('');
-        }
-    }, [inputDraft, setInputDraft]);
-
-    // Auto-resize inteligente (Expande conforme digita, mas respeita se o usuário redimensionar)
-    useEffect(() => {
-        if (textareaRef.current) {
-            // Apenas aplica o auto-resize se a altura do scroll for maior que o tamanho atual,
-            // garantindo que não vamos "brigar" com o redimensionamento manual do usuário.
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-        }
-    }, [text]);
-
-    // --- 4. HANDLERS ---
-
-    const handleSubmit = async (e?: React.FormEvent) => {
-        e?.preventDefault();
-        if (!text.trim() || isLoading) return;
-
-        const messageToSend = text;
-        setText(''); 
-        
-        // Reseta altura para o mínimo após o envio
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-        }
-
-        await onSend(messageToSend);
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        // Envia com Enter (sem Shift). Permite pular linha com Shift+Enter.
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSubmit();
-        }
-    };
-
-    return (
-        <div className={`
-            relative flex items-end gap-2 p-2 rounded-xl border border-gray-700 bg-gray-800/50
-            ${mode === 'compose' ? 'min-h-[100px]' : ''}
-            focus-within:border-accent-primary/50 focus-within:bg-gray-800 transition-all
-        `}>
-            {/* Botão de Anexo (Clip) */}
-            <button 
-                type="button"
-                className="p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-gray-700"
-                title="Anexar arquivo"
-            >
-                <FaPaperclip size={16} />
-            </button>
-
-            {/* --- ÁREA DE TEXTO (Atualizada) --- 
-                - 'resize-y' ativado: O usuário pode puxar a caixa para baixo para ver textões.
-                - 'min-h-[44px]': Acaba com o bug da barra de rolagem apertada da imagem.
-                - 'max-h-[40vh]': Limite máximo razoável de expansão automática.
-            */}
-            <textarea
-                ref={textareaRef}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={placeholder}
-                disabled={isLoading || isRecording}
-                rows={1}
-                className="flex-1 bg-transparent border-none outline-none text-gray-200 placeholder-gray-500 py-2 min-h-[44px] max-h-[40vh] resize-y overflow-y-auto custom-scrollbar"
-            />
-
-            {/* Ações da Direita (Microfone ou Enviar) */}
-            <div className="flex gap-2 shrink-0">
-                {text.trim() ? (
-                    <button
-                        onClick={() => handleSubmit()}
-                        disabled={isLoading}
-                        className="p-2 bg-accent-primary text-base-dark rounded-full hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-1"
-                        title="Enviar"
-                    >
-                        <FaPaperPlane size={16} />
-                    </button>
-                ) : (
-                    <button
-                        onClick={() => setIsRecording(!isRecording)}
-                        className={`
-                            p-2 rounded-full transition-all mb-1
-                            ${isRecording 
-                                ? 'bg-red-500/20 text-red-500 animate-pulse' 
-                                : 'text-gray-400 hover:text-white hover:bg-gray-700'}
-                        `}
-                        title={isRecording ? "Parar gravação" : "Gravar áudio"}
-                    >
-                        {isRecording ? <FaStop size={16} /> : <FaMicrophone size={16} />}
-                    </button>
-                )}
-            </div>
-            
-            {/* Overlay de Gravação */}
-            {isRecording && (
-                <div className="absolute inset-0 bg-gray-900/90 rounded-xl flex items-center justify-center gap-3 z-20 backdrop-blur-sm">
-                    <span className="text-red-400 font-medium animate-pulse">Gravando... 00:00</span>
-                </div>
-            )}
-        </div>
-    );
-};
-
-
-// ===== FILE: src/core/ai/components/ChatInterface.tsx =====
-
 // ===== FILE: src/core/ai/components/ChatInterface.tsx =====
 
 import React, { useRef, useEffect } from 'react';
-import { FaRobot, FaTimes, FaExpandAlt, FaExclamationTriangle } from 'react-icons/fa';
+import { FaRobot, FaTimes, FaExpandAlt, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
 
 // --- COMPONENTES & UI ---
-import { AgentInput } from './AgentInput';
 import { SmartProposalCard } from './SmartProposalCard';
+import { ChatMessageItem } from './ChatMessageItem';
 
 // --- LÓGICA & SERVIÇOS (MOTOR V8) ---
 import { useAIChatService } from '../hooks/useAIChatService';
 import { useFilixAI } from '../context/FilixAIContext';
-import { AIMessage, AIActionProposal } from '../types/AITypes';
-import { useAIHistory } from '../hooks/useAIHistory';
+
+// --- TIPAGENS ISOLADAS (PADRÃO SRP) ---
+import { AIMessage } from '../types/state/AIState';
+import { AIActionProposal } from '../types/dtos/AIActionProposal.dto';
+import { AgentInput } from './agent-input/AgentInput';
 
 // ============================================================================
 // TIPOS E INTERFACES
@@ -2428,10 +2301,12 @@ interface ChatInterfaceProps {
 /**
  * @component ChatInterface
  * @description O Cockpit Principal da IA (Motor V8).
- * * RESPONSABILIDADES ATUALIZADAS:
- * 1. Agora consome o histórico de mensagens global (O Cérebro).
- * 2. Implementa "UI Defensiva" (Scroll interno para mensagens gigantes).
- * 3. Mantém a integridade visual do widget flutuante clássico.
+ * * RESPONSABILIDADES ATUALIZADAS (ARQUITETURA DE MÃO ÚNICA):
+ * 1. Componente 100% Visual (Dumb Component).
+ * 2. Lê a memória global (Contexto) e desenha na tela.
+ * 3. Delega ações de envio/confirmação para os Services.
+ * 4. [NOVO] Funciona como um "Roteador Visual", renderizando componentes 
+ * específicos baseados no crachá 'msg.type'.
  */
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
     onClose,
@@ -2441,16 +2316,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     
     // --- 1. HOOKS E CONTEXTO ---
     
-    // [NOVO] Extraímos messages e setMessages do Cérebro (Contexto Global)
-    const { contextScope, messages, setMessages, routineKey, isOpen } = useFilixAI();
+    // O ChatInterface agora APENAS lê do Cérebro. Ele não decide mais quando buscar.
+    const { contextScope, messages, setMessages } = useFilixAI();
     
-    // Hook de Serviço de comunicação com o Backend
+    // Hook de Serviço de comunicação com o Backend (Para novas mensagens)
     const { sendMessage, confirmAction, isLoading, error } = useAIChatService();
 
-    // Ref para a rolagem automática
+    // Ref apenas para a rolagem automática (Lógica puramente visual)
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // --- 2. EFEITOS (Side Effects) ---
+    // --- 2. EFEITOS VISUAIS ---
 
     // Rola suavemente para o final sempre que uma nova mensagem ou loading entrar na tela
     useEffect(() => {
@@ -2459,25 +2334,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         }
     }, [messages, isLoading]);
 
-    // =======================================================================
-    // [NOVO] 1. Instancia o Hook de Leitura (O "Query" do nosso Padrão Ouro)
-    // Passamos a chave apenas se o chat estiver aberto, economizando requisições!
-    // =======================================================================
-    const { data: historyData, isLoading: isHistoryLoading } = useAIHistory(isOpen ? routineKey : null);
-
-    // =======================================================================
-    // [NOVO] 2. Sincroniza a memória local com o Cérebro Global (State Hoisting)
-    // =======================================================================
-    useEffect(() => {
-        // Se o histórico chegou do backend com sucesso, atualizamos o estado Global.
-        // O React é inteligente: se o usuário mandar uma mensagem nova depois, 
-        // o setMessages do envio não afetará essa leitura inicial.
-        if (historyData) {
-            setMessages(historyData);
-        }
-    }, [historyData, setMessages]);
-
-    // --- 3. LÓGICA DE NEGÓCIO (Handlers) ---
+    // --- 3. LÓGICA DE NEGÓCIO (Handlers de Interação) ---
 
     /**
      * Processa o envio de texto pelo usuário.
@@ -2486,15 +2343,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         if (!text.trim()) return;
 
         // Optimistic UI: Cria a mensagem do usuário visualmente antes da API responder
+        // [CORREÇÃO]: Injetado o crachá type: 'TEXT' para obedecer ao novo contrato
         const userMsg: AIMessage = {
             id: Date.now().toString(),
             role: 'user',
+            type: 'TEXT', 
             content: text,
             timestamp: new Date()
         };
         setMessages(prev => [...prev, userMsg]);
 
-        // Dispara a requisição real
+        // Dispara a requisição real de conversação
         const response = await sendMessage({
             message: text,
             routineKey: contextScope,
@@ -2514,11 +2373,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const handleConfirmProposal = async (proposal: AIActionProposal, messageId: string) => {
         updateMessageStatus(messageId, 'EXECUTED'); 
 
-        const response = await confirmAction(proposal, {
-            routineKey: contextScope,
-            tenantId,
-            planId
-        });
+        const response = await confirmAction(proposal, messageId);
 
         if (response) {
             updateMessageStatus(messageId, 'APPROVED');
@@ -2534,9 +2389,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const handleRejectProposal = (messageId: string) => {
         updateMessageStatus(messageId, 'REJECTED');
         
+        // [CORREÇÃO]: Injetado o crachá type: 'SYSTEM_ACTION' para renderizar como um Chip Central
         setMessages(prev => [...prev, {
             id: crypto.randomUUID(),
             role: 'system',
+            type: 'SYSTEM_ACTION',
             content: 'Ação cancelada pelo usuário.',
             timestamp: new Date()
         }]);
@@ -2599,51 +2456,59 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </div>
             </div>
 
-            {/* === CORPO DO CHAT (BODY) === */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gray-900">
-                {messages.map((msg) => (
-                    <div 
-                        key={msg.id} 
-                        className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} animate-fade-in`}
-                    >
+            {/* === CORPO DO CHAT (BODY) - O ROTEADOR VISUAL === */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5 custom-scrollbar bg-gray-900">
+                {messages.map((msg) => {
+                    // A MÁGICA DO SWITCH CASE (União Discriminada)
+                    switch (msg.type) {
                         
-                        {/* BALÃO DE MENSAGEM */}
-                        <div className={`
-                            max-w-[85%] rounded-2xl p-3.5 text-sm leading-relaxed shadow-sm relative
-                            ${msg.role === 'user' 
-                                ? 'bg-accent-primary text-base-dark rounded-tr-none font-bold' 
-                                : msg.role === 'system'
-                                    ? 'bg-transparent text-gray-500 text-xs italic border border-gray-800' 
-                                    : 'bg-gray-800 text-gray-200 border border-gray-700 rounded-tl-none'} 
-                        `}>
-                            {/* [NOVO] UI DEFENSIVA: Limite de altura no texto da IA com scroll interno */}
-                            <div className="max-h-[40vh] overflow-y-auto custom-scrollbar pr-2">
-                                <p className="whitespace-pre-wrap">{msg.content}</p>
-                            </div>
-                            
-                            {/* Hora da mensagem */}
-                            <span className={`text-[10px] block mt-1.5 opacity-60 font-mono ${msg.role === 'user' ? 'text-right text-black/60' : 'text-left'}`}>
-                                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                        </div>
+                        case 'SYSTEM_ACTION':
+                            // Renderiza um "Chip" centralizado, discreto, como log do WhatsApp
+                            return (
+                                <div key={msg.id} className="flex justify-center my-2 animate-fade-in">
+                                    <span className="text-[11px] font-medium text-gray-400 bg-gray-800/80 px-4 py-1.5 rounded-full border border-gray-700/50 shadow-sm flex items-center gap-2">
+                                        <FaInfoCircle className="opacity-70" />
+                                        {msg.content}
+                                    </span>
+                                </div>
+                            );
 
-                        {/* SMART CARD (O CORAÇÃO DO V8) */}
-                        {msg.proposal && (
-                            <div className="w-[90%] mt-1 animate-slide-up">
-                                <SmartProposalCard 
-                                    proposal={msg.proposal}
-                                    status={msg.proposalStatus}
-                                    onConfirm={() => handleConfirmProposal(msg.proposal!, msg.id)}
-                                    onReject={() => handleRejectProposal(msg.id)}
-                                    isExecuting={isLoading && msg.proposalStatus === 'EXECUTED'}
+                        case 'ERROR':
+                            // Box centralizado vermelho escuro para erros
+                            return (
+                                <div key={msg.id} className="flex justify-center my-2 animate-fade-in">
+                                    <span className="text-xs text-red-300 bg-red-900/30 px-4 py-2 rounded-lg border border-red-800/50 shadow-sm flex items-center gap-2">
+                                        <FaExclamationTriangle />
+                                        {msg.content}
+                                    </span>
+                                </div>
+                            );
+
+                        case 'PROPOSAL':
+                            // O Card interativo completo
+                            return (
+                                <ChatMessageItem 
+                                    key={msg.id}
+                                    message={msg}
+                                    isExecuting={isLoading}
+                                    onConfirmProposal={handleConfirmProposal}
+                                    onRejectProposal={handleRejectProposal}
                                 />
-                            </div>
-                        )}
+                            );
 
-                    </div>
-                ))}
+                        case 'TEXT':
+                        default:
+                            // Balão de texto normal (sem botões)
+                            return (
+                                <ChatMessageItem 
+                                    key={msg.id}
+                                    message={msg}
+                                />
+                            );
+                    }
+                })}
                 
-                {/* LOADING STATE */}
+                {/* LOADING STATE (Mantido igual) */}
                 {isLoading && (
                     <div className="flex justify-start animate-pulse">
                         <div className="bg-gray-800 border border-gray-700 rounded-2xl rounded-tl-none p-4 flex gap-1.5 items-center">
@@ -2653,11 +2518,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         </div>
                     </div>
                 )}
-
-                {/* ERROR STATE */}
+                
+                {/* ERROR STATE DA SESSÃO ATUAL */}
                 {error && (
                     <div className="flex justify-center animate-fade-in my-2">
-                        <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-2 rounded-lg text-xs flex items-center gap-2 shadow-lg">
+                        <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-2 rounded-lg text-xs flex items-center gap-2 shadow-lg">
                             <FaExclamationTriangle />
                             <span>{error}</span>
                         </div>
@@ -2672,7 +2537,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <div className="p-3 bg-gray-800 border-t border-gray-700 shrink-0">
                 <AgentInput 
                     mode="chat" 
-                    placeholder={`Pergunte ao ${contextScope === 'AI_AGENT_CHAT' ? 'Assistente' : contextScope}...`}
+                    placeholder={`Pergunte ao Filix`}
                     onSend={handleSendMessage}
                     isLoading={isLoading}
                 />
@@ -2683,6 +2548,132 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     </p>
                 </div>
             </div>
+        </div>
+    );
+};
+
+
+// ===== FILE: src/core/ai/components/ChatMessageItem.tsx =====
+
+// ===== FILE: src/core/ai/components/ChatMessageItem.tsx =====
+
+import React, { useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { AIMessage } from '../types/state/AIState';
+import { SmartProposalCard } from './SmartProposalCard';
+import { AIActionProposal } from '../types/dtos/AIActionProposal.dto';
+
+interface ChatMessageItemProps {
+    message: AIMessage;
+    isExecuting?: boolean;
+    onConfirmProposal?: (proposal: AIActionProposal, messageId: string) => void;
+    onRejectProposal?: (messageId: string) => void;
+}
+
+/**
+ * @component ChatMessageItem
+ * @description Renderiza individualmente um balão de conversa.
+ * [ATUALIZADO] Implementa o "Smart Chunking" (Fatiador Inteligente) para evitar blocos 
+ * gigantes de texto, quebrando os parágrafos em balões independentes (Efeito WhatsApp).
+ */
+export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
+    message,
+    isExecuting = false,
+    onConfirmProposal,
+    onRejectProposal
+}) => {
+    const isUser = message.role === 'user';
+    const isSystem = message.role === 'system';
+
+    // =========================================================================
+    // 🧠 SMART CHUNKER (O Fatiador de Pensamentos)
+    // Se a IA mandar um texto com parágrafos (\n\n), nós dividimos em um Array
+    // para renderizar múltiplos balõezinhos ao invés de um blocão gigante.
+    // =========================================================================
+    const textChunks = useMemo(() => {
+        if (!message.content) return [];
+        
+        // O usuário e o sistema mantém um balão só. Apenas a IA (assistant) é fatiada.
+        if (isUser || isSystem) return [message.content];
+
+        // Separa por quebra de linha dupla, filtrando pedaços vazios
+        return message.content.split(/\n\s*\n/).filter(chunk => chunk.trim() !== '');
+    }, [message.content, isUser, isSystem]);
+
+    return (
+        <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} w-full space-y-2 mb-2`}>
+            
+            {/* Renderiza um balão individual para CADA pensamento (chunk) da IA */}
+            {textChunks.map((chunk, index) => {
+                
+                // Lógica estética: se houver vários balões, arredonda as bordas de forma fluida
+                const isFirst = index === 0;
+                const isLast = index === textChunks.length - 1;
+                
+                let borderRadiusClass = '';
+                if (!isUser && !isSystem) {
+                    if (textChunks.length === 1) borderRadiusClass = 'rounded-tl-none'; // Único
+                    else if (isFirst) borderRadiusClass = 'rounded-bl-none rounded-tl-2xl'; // Primeiro
+                    else if (isLast) borderRadiusClass = 'rounded-tl-none rounded-bl-2xl'; // Último
+                    else borderRadiusClass = 'rounded-l-none'; // Meio
+                } else if (isUser) {
+                    borderRadiusClass = 'rounded-tr-none';
+                }
+
+                return (
+                    <div 
+                        key={`${message.id}-chunk-${index}`}
+                        className={`
+                            max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed shadow-sm relative animate-fade-in
+                            ${isUser 
+                                ? `bg-accent-primary text-base-dark font-medium ${borderRadiusClass}` 
+                                : isSystem
+                                    ? 'bg-transparent text-gray-500 text-xs italic border border-gray-800' 
+                                    : `bg-gray-800 text-gray-200 border border-gray-700 ${borderRadiusClass}`} 
+                        `}
+                    >
+                        <div className={`overflow-y-auto custom-scrollbar pr-1 ${!isUser ? 'markdown-body' : ''}`}>
+                            {isUser || isSystem ? (
+                                <p className="whitespace-pre-wrap">{chunk}</p>
+                            ) : (
+                                <ReactMarkdown 
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                                        ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
+                                        ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
+                                        strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
+                                        a: ({node, ...props}) => <a className="text-accent-primary hover:underline" {...props} />,
+                                    }}
+                                >
+                                    {chunk}
+                                </ReactMarkdown>
+                            )}
+                        </div>
+
+                        {/* A Hora só aparece no último balão do agrupamento para ficar mais limpo */}
+                        {isLast && (
+                            <span className={`text-[9px] block mt-1.5 opacity-40 font-mono ${isUser ? 'text-right' : 'text-left'}`}>
+                                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        )}
+                    </div>
+                );
+            })}
+
+            {/* O CARD DE PROPOSTA (Anexado sempre abaixo do último balão) */}
+            {message.proposal && onConfirmProposal && onRejectProposal && (
+                <div className="w-[90%] mt-1 animate-slide-up">
+                    <SmartProposalCard 
+                        proposal={message.proposal}
+                        status={message.proposalStatus}
+                        onConfirm={() => onConfirmProposal(message.proposal!, message.id)}
+                        onReject={() => onRejectProposal(message.id)}
+                        isExecuting={isExecuting && message.proposalStatus === 'EXECUTED'}
+                    />
+                </div>
+            )}
         </div>
     );
 };
@@ -2742,10 +2733,12 @@ export const FloatingWidget: React.FC = () => {
 
 // ===== FILE: src/core/ai/components/SmartProposalCard.tsx =====
 
+// ===== FILE: src/core/ai/components/SmartProposalCard.tsx =====
 
 import React, { useMemo } from 'react';
 import { FaCheck, FaTimes, FaMicrophone, FaInfoCircle } from 'react-icons/fa';
-import { AIActionProposal, ProposalStatus } from '../types/AITypes';
+import { AIActionProposal } from '../types/dtos/AIActionProposal.dto';
+import { ProposalStatus } from '../types/enums/AIEnums';
 
 interface SmartProposalCardProps {
     /**
@@ -2838,12 +2831,24 @@ export const SmartProposalCard: React.FC<SmartProposalCardProps> = ({
         return String(value);
     };
 
-    // Filtra chaves que não devem ser exibidas (ex: IDs internos, metadados)
+    // =========================================================================
+    // [CORREÇÃO] O FILTRO ANTI-VAZAMENTO
+    // Filtra chaves técnicas que o LLM usa para raciocínio interno.
+    // =========================================================================
     const displayData = useMemo(() => {
         if (!proposal.data) return [];
+        
+        // Blacklist de chaves internas do Motor V8 (Não mostrar ao usuário)
+        const ignoredKeys = [
+            'justification', 
+            'ui_message', 
+            'user_confirmed', 
+            'tenantId'
+        ];
+
         return Object.entries(proposal.data).filter(([key]) => {
-            // Esconde chaves que começam com underscore ou parecem IDs técnicos sem valor semântico
-            return !key.startsWith('_') && key !== 'tenantId';
+            // Esconde chaves da blacklist e chaves que começam com underscore (ex: _id)
+            return !key.startsWith('_') && !ignoredKeys.includes(key);
         });
     }, [proposal.data]);
 
@@ -2947,20 +2952,519 @@ export const SmartProposalCard: React.FC<SmartProposalCardProps> = ({
 };
 
 
-// ===== FILE: src/core/ai/context/FilixAIContext.tsx =====
+// ===== FILE: src/core/ai/components/agent-input/AgentInput.tsx =====
+
+import React, { useState, useRef, useEffect } from 'react';
+import { FaPaperPlane, FaMicrophone, FaPaperclip, FaSpinner } from 'react-icons/fa';
+import { useFilixAI } from '../../context/FilixAIContext';
+
+// --- IMPORTAÇÃO DOS FILHOS (Dumb Components) ---
+import { StagingArea } from './StagingArea';
+import { AutoResizeTextarea } from './AutoResizeTextarea';
+import { RecordingOverlay } from './RecordingOverlay';
+
+// --- IMPORTAÇÃO DOS SERVIÇOS E HOOKS (Trabalhadores Invisíveis) ---
+import { compressImage } from '../../utils/imageCompressor';
+import { useSpeechToText } from '../../hooks/useSpeechToText';
+
+interface AgentInputProps {
+    onSend: (message: string, attachments?: File[]) => Promise<void>;
+    mode?: 'chat' | 'compose';
+    isLoading?: boolean;
+    placeholder?: string;
+}
+
+/**
+ * @component AgentInput
+ * @description O Maestro da Entrada Multimodal.
+ * [FASE 3 ATIVA]: Integração completa com Web Speech API (Ditado de Voz).
+ * Orquestra texto, recortes pesados (Smart Paste) e áudio numa única interface.
+ */
+export const AgentInput: React.FC<AgentInputProps> = ({ 
+    onSend, 
+    mode = 'chat', 
+    isLoading = false, 
+    placeholder = "Digite, anexe um ficheiro ou grave um áudio..." 
+}) => {
+    // --- 1. CONTEXTO GLOBAL ---
+    const { inputDraft, setInputDraft } = useFilixAI();
+
+    // --- 2. ESTADOS LOCAIS (A Mesa de Rascunho) ---
+    const [text, setText] = useState('');
+    const [attachments, setAttachments] = useState<File[]>([]);
+    const [isCompressing, setIsCompressing] = useState(false);
+    
+    // Controle visual da tela de gravação (diferente de estar efetivamente a gravar)
+    const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+    
+    // Referências
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // --- 3. O TRABALHADOR DE VOZ (O Ouvido da IA) ---
+    const { 
+        transcript, 
+        error: speechError, 
+        startRecording, 
+        stopRecording, 
+        clearTranscript 
+    } = useSpeechToText();
+
+    // --- 4. EFEITOS DE SINCRONIZAÇÃO ---
+    useEffect(() => {
+        if (inputDraft && inputDraft.trim() !== '') {
+            setText(prev => prev + (prev ? ' ' : '') + inputDraft); 
+            setInputDraft('');
+        }
+    }, [inputDraft, setInputDraft]);
+
+    // --- 5. LÓGICA DE NEGÓCIO: VOZ ---
+
+    /** Abre a tela preta e manda o navegador ligar o microfone */
+    const handleStartRecording = () => {
+        setIsOverlayOpen(true);
+        startRecording();
+    };
+
+    /** O utilizador desistiu da gravação (Clica em Cancelar) */
+    const handleCancelRecording = () => {
+        stopRecording();
+        clearTranscript();
+        setIsOverlayOpen(false);
+    };
+
+    /** O utilizador gostou do texto ditado (Clica em Concluir) */
+    const handleConfirmRecording = () => {
+        if (transcript) {
+            // Inteligência UX: Se já houver texto na caixa, adiciona um espaço antes de colar o áudio
+            setText(prev => prev + (prev.endsWith(' ') || !prev ? '' : ' ') + transcript);
+        }
+        stopRecording();
+        clearTranscript();
+        setIsOverlayOpen(false);
+    };
+
+    // --- 6. LÓGICA DE NEGÓCIO: ARQUIVOS E ENVIO ---
+
+    const processAndAddFiles = async (rawFiles: File[]) => {
+        setIsCompressing(true);
+        try {
+            const processedFiles = await Promise.all(
+                rawFiles.map(file => compressImage(file))
+            );
+            setAttachments(prev => [...prev, ...processedFiles]);
+        } catch (error) {
+            console.error("❌ [AgentInput] Falha na compressão. Usando originais.", error);
+            setAttachments(prev => [...prev, ...rawFiles]);
+        } finally {
+            setIsCompressing(false);
+        }
+    };
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            await processAndAddFiles(Array.from(e.target.files));
+        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handleRemoveAttachment = (indexToRemove: number) => {
+        setAttachments(prev => prev.filter((_, index) => index !== indexToRemove));
+    };
+
+    const handleSubmit = async () => {
+        const trimmedText = text.trim();
+        
+        if ((!trimmedText && attachments.length === 0) || isLoading || isCompressing) return;
+
+        const messageToSend = trimmedText;
+        const filesToSend = [...attachments]; 
+
+        setText(''); 
+        setAttachments([]);
+        
+        // Garante que se havia gravação pendente, ela é morta
+        if (isOverlayOpen) handleCancelRecording();
+
+        await onSend(messageToSend, filesToSend);
+    };
+
+    // --- 7. RENDERIZAÇÃO ---
+    
+    const canSend = text.trim().length > 0 || attachments.length > 0;
+    const isBusy = isLoading || isCompressing || isOverlayOpen;
+
+    return (
+        <div className={`
+            relative flex flex-col rounded-xl border transition-all
+            ${mode === 'compose' ? 'min-h-[100px]' : ''}
+            border-base-metallic bg-base-metallic/30 focus-within:border-accent-primary/50 focus-within:bg-base-metallic/60
+            ${isCompressing ? 'opacity-80 pointer-events-none' : ''}
+        `}>
+            
+            <StagingArea 
+                files={attachments} 
+                onRemove={handleRemoveAttachment} 
+            />
+
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                multiple 
+                onChange={handleFileSelect}
+            />
+
+            <div className="flex items-end gap-2 p-2">
+                
+                <button 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()} 
+                    disabled={isBusy}
+                    className="p-2 text-gray-400 hover:text-base-text transition-colors rounded-full hover:bg-base-metallic disabled:opacity-50 focus:outline-none"
+                    title="Anexar documento ou imagem"
+                >
+                    <FaPaperclip size={16} />
+                </button>
+
+                <AutoResizeTextarea 
+                    value={text}
+                    onChange={setText}
+                    onEnterSubmit={handleSubmit}
+                    onPasteFiles={(files) => processAndAddFiles(files)} 
+                    placeholder={attachments.length > 0 ? "Adicione um comentário (opcional)..." : placeholder}
+                    disabled={isBusy}
+                />
+
+                <div className="flex gap-2 shrink-0">
+                    {canSend ? (
+                        <button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={isBusy}
+                            className="p-2 bg-accent-primary text-base-dark rounded-full hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-wait mb-1 shadow-md shadow-accent-primary/20 focus:outline-none"
+                            title="Enviar mensagem"
+                        >
+                            {isCompressing ? <FaSpinner className="animate-spin" size={16} /> : <FaPaperPlane size={16} />}
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={handleStartRecording}
+                            disabled={isBusy}
+                            className="p-2 text-gray-400 hover:text-base-text transition-colors rounded-full hover:bg-base-metallic disabled:opacity-50 mb-1 focus:outline-none"
+                            title="Gravar áudio"
+                        >
+                            <FaMicrophone size={16} />
+                        </button>
+                    )}
+                </div>
+            </div>
+            
+            {/* O TIJOLO VISUAL DA VOZ */}
+            {isOverlayOpen && (
+                <RecordingOverlay 
+                    transcript={transcript}
+                    error={speechError}
+                    onCancel={handleCancelRecording} 
+                    onConfirm={handleConfirmRecording}
+                />
+            )}
+        </div>
+    );
+};
+
+
+// ===== FILE: src/core/ai/components/agent-input/AutoResizeTextarea.tsx =====
+
+import React, { useRef, useEffect } from 'react';
+
+interface AutoResizeTextareaProps {
+    /** O texto atual (Controlled Component). A fonte da verdade é o Pai. */
+    value: string;
+    
+    /** Emite o novo texto para o Pai toda vez que o usuário digita algo. */
+    onChange: (newValue: string) => void;
+    
+    /** Emite um sinal para o Pai quando o usuário aperta 'Enter' (sem o Shift). */
+    onEnterSubmit: () => void;
+    
+    /** [NOVO] Emite um sinal para o Pai contendo os arquivos colados (Ctrl+V) */
+    onPasteFiles?: (files: File[]) => void;
+    
+    placeholder?: string;
+    disabled?: boolean;
+}
+
+/**
+ * @component AutoResizeTextarea
+ * @description O Cérebro da Caixa de Texto.
+ * Encapsula a lógica de manipulação direta de DOM para o auto-resize e 
+ * [NOVO] intercepta a Área de Transferência (Clipboard) para o Smart Paste.
+ */
+export const AutoResizeTextarea: React.FC<AutoResizeTextareaProps> = ({
+    value,
+    onChange,
+    onEnterSubmit,
+    onPasteFiles,
+    placeholder,
+    disabled = false
+}) => {
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // =========================================================================
+    // 🧠 O MOTOR DE REDIMENSIONAMENTO (A Mágica do Auto-Resize)
+    // =========================================================================
+    useEffect(() => {
+        const el = textareaRef.current;
+        if (!el) return;
+
+        el.style.height = 'auto';
+        el.style.height = `${el.scrollHeight}px`;
+        
+    }, [value]);
+
+    // =========================================================================
+    // ⌨️ INTERCEPTADORES DE TECLADO E ÁREA DE TRANSFERÊNCIA
+    // =========================================================================
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); 
+            if (value.trim().length > 0) {
+                onEnterSubmit();
+            }
+        }
+    };
+
+    /**
+     * @method handlePaste
+     * @description O "Smart Paste". Inspeciona o que o usuário colou.
+     * Se for texto, o navegador lida normalmente. Se for um Arquivo (print/imagem),
+     * nós interceptamos e enviamos para a Bandeja.
+     */
+    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        // Verifica se existem arquivos na área de transferência
+        if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+            // Evita que o navegador tente colar a imagem como se fosse texto (o que não funciona)
+            e.preventDefault(); 
+            
+            const pastedFiles = Array.from(e.clipboardData.files);
+            
+            // Avisa o Maestro que arquivos chegaram pelo Ctrl+V
+            if (onPasteFiles) {
+                onPasteFiles(pastedFiles);
+            }
+        }
+    };
+
+    return (
+        <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste} // [NOVO] O Ouvinte do Ctrl+V
+            placeholder={placeholder}
+            disabled={disabled}
+            rows={1}
+            className="flex-1 bg-transparent border-none outline-none text-base-text placeholder-gray-500 py-2 min-h-[44px] max-h-[40vh] resize-y overflow-y-auto custom-scrollbar"
+        />
+    );
+};
+
+
+// ===== FILE: src/core/ai/components/agent-input/RecordingOverlay.tsx =====
+
+import React, { useEffect, useRef } from 'react';
+import { FaCheck, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
+
+interface RecordingOverlayProps {
+    /** Função delegada para descartar a gravação atual */
+    onCancel: () => void;
+    /** Função delegada para aceitar o texto e inseri-lo no rascunho */
+    onConfirm: () => void;
+    /** O texto que está a ser reconhecido em tempo real (Ditado) */
+    transcript?: string;
+    /** Mensagem de erro, caso o utilizador negue o microfone */
+    error?: string | null;
+}
+
+/**
+ * @component RecordingOverlay
+ * @description A Camada de Feedback de Voz (Fase 3).
+ * Exibe o estado da gravação, os erros de hardware e o texto a ser ditado em tempo real.
+ * Mantém-se 100% Stateless (Dumb Component), recebendo tudo do Maestro.
+ */
+export const RecordingOverlay: React.FC<RecordingOverlayProps> = ({ 
+    onCancel,
+    onConfirm,
+    transcript = "",
+    error = null
+}) => {
+    // Referência para fazer o auto-scroll caso o utilizador dite um texto muito longo
+    const textContainerRef = useRef<HTMLDivElement>(null);
+
+    // Efeito de Qualidade Extrema (UX): Mantém o scroll sempre no final 
+    // enquanto o utilizador vai falando novas palavras.
+    useEffect(() => {
+        if (textContainerRef.current) {
+            textContainerRef.current.scrollTop = textContainerRef.current.scrollHeight;
+        }
+    }, [transcript]);
+
+    return (
+        // Layout flex-col para separar o cabeçalho (Ações) do corpo (Texto)
+        <div className="absolute inset-0 bg-base-dark/95 rounded-xl flex flex-col justify-start p-3 z-20 backdrop-blur-sm border border-danger/30 animate-fade-in shadow-inner shadow-danger/10">
+            
+            {/* --- CABEÇALHO: STATUS E AÇÕES --- */}
+            <div className="flex items-center justify-between mb-2 shrink-0 border-b border-gray-700/50 pb-2">
+                
+                {/* Lado Esquerdo: Indicador Visual */}
+                <div className="flex items-center gap-3">
+                    {!error && (
+                        <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-danger"></span>
+                        </span>
+                    )}
+                    <span className={`text-xs font-bold tracking-wide uppercase ${error ? 'text-danger' : 'text-danger'}`}>
+                        {error ? 'Erro no Microfone' : 'Escutando...'}
+                    </span>
+                </div>
+
+                {/* Lado Direito: Botões de Controle */}
+                <div className="flex items-center gap-4">
+                    <button 
+                        type="button"
+                        onClick={onCancel}
+                        className="text-xs font-semibold text-gray-400 hover:text-danger flex items-center gap-1.5 transition-colors focus:outline-none"
+                        title="Descartar gravação"
+                    >
+                        <FaTimes size={12} /> Cancelar
+                    </button>
+                    
+                    {!error && (
+                        <button 
+                            type="button"
+                            onClick={onConfirm}
+                            className="text-xs font-bold text-accent-primary hover:brightness-125 flex items-center gap-1.5 transition-colors focus:outline-none"
+                            title="Aceitar texto"
+                        >
+                            <FaCheck size={12} /> Concluir
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* --- CORPO: TRANSCRIÇÃO EM TEMPO REAL OU ERRO --- */}
+            <div 
+                ref={textContainerRef}
+                className="flex-1 overflow-y-auto custom-scrollbar text-sm"
+            >
+                {error ? (
+                    <div className="flex flex-col items-center justify-center h-full text-danger/80 gap-2 mt-2">
+                        <FaExclamationTriangle size={20} />
+                        <span className="text-center text-xs px-4">{error}</span>
+                    </div>
+                ) : (
+                    <p className="text-base-text/90 italic leading-relaxed">
+                        {transcript || <span className="text-gray-500">Pode começar a falar...</span>}
+                    </p>
+                )}
+            </div>
+            
+        </div>
+    );
+};
+
+
+// ===== FILE: src/core/ai/components/agent-input/StagingArea.tsx =====
+
+import React from 'react';
+import { FaTimes, FaFileAlt, FaFilePdf, FaImage } from 'react-icons/fa';
+
+interface StagingAreaProps {
+    /** Lista de arquivos físicos atualmente na memória (Mesa de Rascunho) */
+    files: File[];
+    /** Função delegada para remover um arquivo específico pelo índice */
+    onRemove: (indexToRemove: number) => void;
+}
+
+/**
+ * @component StagingArea
+ * @description A Bandeja de Preparação Multimodal.
+ * Um "Dumb Component" (Componente Burro) que apenas renderiza os arquivos 
+ * que estão aguardando envio. Isola a complexidade visual do input principal.
+ */
+export const StagingArea: React.FC<StagingAreaProps> = ({ files, onRemove }) => {
+    
+    // Se não houver arquivos, o componente "desaparece" sem quebrar o layout do pai
+    if (!files || files.length === 0) return null;
+
+    /**
+     * @helper getFileIcon
+     * @description Inspeciona o MIME type do arquivo e devolve o ícone semântico apropriado.
+     * Utiliza as cores de acento do Design System para fácil identificação visual.
+     */
+    const getFileIcon = (fileType: string) => {
+        if (fileType.includes('pdf')) {
+            return <FaFilePdf className="text-danger" />; // PDF = Vermelho (Padrão Adobe)
+        }
+        if (fileType.includes('image')) {
+            return <FaImage className="text-accent-secondary" />; // Imagem = Roxo do Tema
+        }
+        // Fallback genérico para planilhas, docs, etc.
+        return <FaFileAlt className="text-gray-400" />; 
+    };
+
+    return (
+        // Container principal da bandeja. 
+        // border-b sutil separa a bandeja da área de digitação que ficará logo abaixo.
+        <div className="flex flex-wrap gap-2 p-3 border-b border-base-metallic/50 bg-base-dark/30 rounded-t-xl">
+            
+            {files.map((file, index) => (
+                <div 
+                    // Usamos index no key porque arquivos podem ter o mesmo nome, 
+                    // e a ordem na bandeja importa.
+                    key={`${file.name}-${index}`} 
+                    className="flex items-center gap-2 bg-base-metallic px-2.5 py-1.5 rounded-lg border border-gray-700 shadow-sm animate-fade-in-down"
+                >
+                    {/* 1. Ícone Semântico */}
+                    {getFileIcon(file.type)}
+                    
+                    {/* 2. Nome do Arquivo com Truncate (evita quebrar o layout se o nome for gigante) */}
+                    <span 
+                        className="text-xs font-medium text-base-text truncate max-w-[120px] select-none" 
+                        title={file.name} // Tooltip nativo para ler o nome completo no hover
+                    >
+                        {file.name}
+                    </span>
+                    
+                    {/* 3. Botão de Remoção (O Poder do Arrependimento) */}
+                    <button 
+                        onClick={() => onRemove(index)}
+                        className="ml-1 text-gray-500 hover:text-danger hover:bg-danger/10 p-1 rounded-md transition-colors focus:outline-none"
+                        title="Remover anexo"
+                        type="button" // Evita submeter formulários acidentalmente
+                    >
+                        <FaTimes size={10} />
+                    </button>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 
 // ===== FILE: src/core/ai/context/FilixAIContext.tsx =====
 
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
-    FilixAIContextData, 
-    AIContextScope, 
-    AIContextMetadata, 
-    AIWidgetMode,
-    AIMessage // [NOVO] Importação do tipo de Mensagem (O "Tijolo")
-} from '../types/AITypes';
+import { AIMessage, AIMessageType, FilixAIContextData } from '../types/state/AIState'; // [ATUALIZADO] Importando o AIMessageType
+import { AIContextScope, AIWidgetMode } from '../types/enums/AIEnums';
+import { AIContextMetadata } from '../types/dtos/AIChatRequest.dto';
+import { api } from '@/core/services/api'; 
+import { fetchAIHistory } from '../hooks/AIHistoryService';
 
 // Chave para persistência local (Salva apenas se o usuário desligou a IA)
 const STORAGE_KEY = '@filix-ai/preferences-v2'; // Mudamos a versão para evitar conflito com cache antigo
@@ -2979,6 +3483,8 @@ interface FilixAIProviderProps {
  * Removida toda a carga de Drag & Drop e coordenadas (x,y).
  * Agora o Contexto gerencia puramente o Estado Lógico (Aberto/Fechado), Semântico (Vendas/Fiscal)
  * e atua como a Memória Central (Histórico de Mensagens).
+ * * OPÇÃO B APLICADA: O Contexto é o único dono e buscador do Histórico.
+ * * [NOVO] Aplica a tipagem visual (Crachá) na remontagem do histórico.
  */
 export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) => {
     
@@ -3000,7 +3506,7 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
     const [inputDraft, setInputDraft] = useState('');
 
     // =======================================================
-    // 🧠 [NOVO] A MEMÓRIA DO CHAT (Histórico Global)
+    // 🧠 A MEMÓRIA DO CHAT (Histórico Global)
     // =======================================================
     // Movemos o histórico do componente visual para o Cérebro. 
     // Assim a conversa não se perde quando o chat é minimizado.
@@ -3008,7 +3514,7 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
 
     // Trava de segurança para não recarregar o histórico infinitamente
     const [hasLoadedHistory, setHasLoadedHistory] = useState<boolean>(false);
-    
+
     // --- 2. Persistência e Inicialização ---
 
     useEffect(() => {
@@ -3036,13 +3542,39 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
     }, [isEnabled]);
 
     // =======================================================
-    // 🧹 [NOVO] LÓGICA DE LIMPEZA CONTEXTUAL
+    // 🧹 [ATUALIZADO] LÓGICA DE LIMPEZA E BUSCA CONTEXTUAL
     // =======================================================
-    // Sempre que o Escopo (Módulo) mudar, resetamos a memória para evitar
-    // que o histórico de um módulo (ex: Vendas) se misture com outro (ex: Estoque).
+    // Sempre que o Escopo (Módulo) mudar, O PRÓPRIO CONTEXTO limpa 
+    // a memória velha e busca a memória nova (Single Source of Truth).
     useEffect(() => {
-        setMessages([]);
-        setHasLoadedHistory(false);
+        let isMounted = true; 
+
+        const loadHistory = async () => {
+            // 1. Apagão Imediato
+            setMessages([]);
+            setHasLoadedHistory(false);
+
+            if (!contextScope) return;
+
+            try {
+                // 2. O Contexto delega o trabalho sujo para o Serviço Puro!
+                const historyData = await fetchAIHistory(contextScope);
+                
+                // Se o componente não morreu no meio do caminho, salva na memória RAM
+                if (isMounted) {
+                    setMessages(historyData);
+                    setHasLoadedHistory(true);
+                }
+
+            } catch (error) {
+                // O serviço falhou, garantimos a memória vazia
+                if (isMounted) setMessages([]); 
+            }
+        };
+
+        loadHistory();
+
+        return () => { isMounted = false; };
     }, [contextScope]);
 
     // --- 3. Ações (Actions) ---
@@ -3058,7 +3590,7 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
     };
 
     // =======================================================
-    // 🚀 [NOVO] COMANDO DE ABERTURA DIRETA
+    // 🚀 COMANDO DE ABERTURA DIRETA
     // =======================================================
     // Usado por botões no Dashboard para garantir que a janela abra,
     // em vez de usar o toggle (que poderia fechar se já estivesse aberto).
@@ -3073,11 +3605,6 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
         setInternalContextScope(scope);
         // Se metadata for undefined, limpa o estado anterior
         setContextMetadata(metadata);
-        
-        // Debug em Dev
-        // if (process.env.NODE_ENV === 'development') {
-        //     console.debug(`🧠 [AI Context] Scope: ${scope}`);
-        // }
     };
 
     // --- 4. Exposição do Contexto ---
@@ -3096,13 +3623,13 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
             inputDraft,
             setInputDraft,
 
-            // [NOVO] Memória do Chat
+            // Memória do Chat
             messages,
             setMessages,
 
             // Ações
             toggleVisibility,
-            openChat, // [NOVO] Exportado para os componentes usarem
+            openChat, 
             setMode,
             toggleEnabled,
             setContext
@@ -3126,28 +3653,85 @@ export const useFilixAI = (): FilixAIContextData => {
 };
 
 
-// ===== FILE: src/core/ai/hooks/useAIChatService.ts =====
+// ===== FILE: src/core/ai/hooks/AIHistoryService.ts =====
+
+import { api } from '@/core/services/api';
+import { AIMessage, AIMessageType } from '../types/state/AIState';
+
+/**
+ * @class AIHistoryService
+ * @description Serviço Puro de Leitura (Read-Only).
+ * Faz a chamada HTTP e traduz o DTO do Backend para o formato visual do Frontend.
+ * NÃO guarda estado local (Stateless), evitando conflitos com o Contexto Global.
+ */
+export const fetchAIHistory = async (routineKey: string): Promise<AIMessage[]> => {
+    
+    console.log('FRONT [1]: Disparando fetchAIHistory (Serviço Puro) para a rotina:', routineKey);
+    
+    if (!routineKey) return [];
+
+    try {
+        const response = await api.get<any[]>(`/ai/history/${routineKey}`);
+        
+        console.log('FRONT [2]: Resposta da API recebida. Mapeando crachás...');
+
+        const formattedHistory: AIMessage[] = response.data.map((msg: any) => {
+            const role = msg.role as 'user' | 'assistant' | 'system';
+            const hasProposal = !!msg.proposal;
+            
+            // Lógica do Crachá Visual
+            let messageType: AIMessageType = 'TEXT';
+            if (role === 'system') messageType = 'SYSTEM_ACTION';
+            else if (hasProposal) messageType = 'PROPOSAL';
+
+            return {
+                id: msg.id,
+                role: role,
+                type: messageType,
+                content: msg.content,
+                timestamp: new Date(msg.timestamp),
+                toolUsed: msg.toolUsed,
+                proposal: msg.proposal,
+                proposalStatus: msg.proposalStatus
+            };
+        });
+
+        return formattedHistory;
+
+    } catch (err: any) {
+        console.error(`❌ [AIHistoryService] Erro ao carregar histórico:`, err);
+        throw err; // Repassa o erro para quem chamou (O Contexto) lidar com ele
+    }
+};
+
 
 // ===== FILE: src/core/ai/hooks/useAIChatService.ts =====
 
 import { useState, useCallback } from 'react';
 import { api } from '@/core/services/api';
 import { useFilixAI } from '../context/FilixAIContext'; // [NOVO] Acesso ao Cérebro Global
-import { 
-    AIMessage, 
-    AIActionProposal, 
-    AIContextScope, 
-    AIContextMetadata,
-    UIActionType, 
-    AIResponseDto,
-    AIChatRequestDto
-} from '../types/AITypes';
+import { AIActionProposal } from '../types/dtos/AIActionProposal.dto';
+import { AIChatRequestDto } from '../types/dtos/AIChatRequest.dto';
+import { AIResponseDto } from '../types/dtos/AIResponse.dto';
+import { AIMessage, AIMessageType } from '../types/state/AIState'; // [ATUALIZADO] Importando o novo Crachá (AIMessageType)
+import { StorageService } from '@/core/services/StorageService';
 
+/**
+ * @interface AIChatSendMessageParams
+ * @description Extensão do DTO original para uso interno do Hook.
+ * Permite que a UI passe arquivos físicos (File[]), que o Hook converterá em URLs (string[]).
+ */
+export interface AIChatSendMessageParams extends AIChatRequestDto {
+    attachments?: File[];
+}
 
 /**
  * @hook useAIChatService
  * @description Camada de Serviço responsável pela comunicação com o Orchestrator V8.
  * Agora capaz de injetar automaticamente metadados contextuais (Sniper).
+ * [NOVO] Executa propostas consultivas com segurança máxima (Chave do Cofre).
+ * [ATUALIZADO] Atribui o Crachá Visual (type) para garantir a renderização correta.
+ * [FASE 2 ATIVA] Orquestra o upload de arquivos via StorageService antes de chamar a IA.
  */
 export const useAIChatService = () => {
     // 1. Acesso ao Contexto Global para injeção automática
@@ -3158,55 +3742,83 @@ export const useAIChatService = () => {
 
     /**
      * Mapper: Transforma a resposta crua da API no formato de Mensagem da UI.
+     * [CORREÇÃO ARQUITETURAL]: Injeta o 'type' baseado no conteúdo do DTO.
      */
     const mapResponseToMessage = (dto: AIResponseDto): AIMessage => {
+        const hasProposal = !!dto.proposal;
+        
         return {
             id: dto.interactionId || Date.now().toString(),
             role: 'assistant',
+            
+            // ==========================================
+            // O CRACHÁ VISUAL: Define o que a tela vai desenhar
+            // ==========================================
+            type: hasProposal ? 'PROPOSAL' : 'TEXT', 
+            
             content: dto.text,
             timestamp: new Date(),
-            proposal: dto.proposal ? {
-                ui_action: dto.proposal.ui_action,
-                label: dto.proposal.label,
-                actionIntent: dto.proposal.actionIntent,
-                data: dto.proposal.data
+            proposal: hasProposal ? {
+                type: dto.proposal!.type,
+                label: dto.proposal!.label,
+                actionIntent: dto.proposal!.actionIntent,
+                data: dto.proposal!.data
             } : undefined,
-            proposalStatus: dto.proposal ? 'PENDING' : undefined
+            proposalStatus: hasProposal ? 'PENDING' : undefined
         };
     };
 
     /**
-     * Envia uma mensagem de texto natural para o Agente.
+     * Envia uma mensagem de texto natural (e agora arquivos) para o Agente.
      */
     const sendMessage = useCallback(async ({ 
         message, 
         routineKey, 
         tenantId, 
         planId,
-        metadata // Pode vir sobrescrito pelo chamador
-    }: AIChatRequestDto): Promise<AIMessage | null> => {
+        metadata, // Pode vir sobrescrito pelo chamador
+        attachments // [NOVO] Array de arquivos físicos vindos do Input
+    }: AIChatSendMessageParams): Promise<AIMessage | null> => {
         setIsLoading(true);
         setError(null);
 
         // LÓGICA DE OURO: Usa o metadata passado OU o global (Sniper Automática)
         const effectiveMetadata = metadata || globalMetadata;
+        let uploadedUrls: string[] = [];
 
         try {
-            // Chamada real ao Backend V8
-            const { data } = await api.post<AIResponseDto>('/ai/chat', {
+            // ==========================================
+            // PASSO 1: O UPLOAD FÍSICO (Se existirem arquivos)
+            // ==========================================
+            if (attachments && attachments.length > 0) {
+                // Delegamos o trabalho pesado ao Carteiro.
+                // Criamos uma subpasta organizada baseada na rotina atual.
+                uploadedUrls = await StorageService.uploadFiles(attachments, `ai-${routineKey.toLowerCase()}`);
+            }
+
+            // ==========================================
+            // PASSO 2: A CHAMADA REAL AO BACKEND V8
+            // ==========================================
+            const requestPayload: AIChatRequestDto = {
                 message,
                 routineKey,
                 tenantId,
                 planId,
                 
                 // [NOVO] Envia a Sniper se ela estiver montada
-                metadata: effectiveMetadata 
-            });
+                metadata: effectiveMetadata,
+                
+                // Injetamos as URLs que acabaram de ser geradas (ou um array vazio se não houver)
+                attachmentsUrls: uploadedUrls.length > 0 ? uploadedUrls : undefined
+            };
+
+            // Chamada real ao Backend V8
+            const { data } = await api.post<AIResponseDto>('/ai/chat', requestPayload);
 
             return mapResponseToMessage(data);
 
         } catch (err: any) {
-            console.error('❌ [AI Service] Erro ao enviar mensagem:', err);
+            console.error('❌ [AI Service] Erro ao enviar mensagem/arquivos:', err);
             const errorMessage = err.response?.data?.message || 'Falha de conexão com a Inteligência.';
             setError(errorMessage);
             return null;
@@ -3216,42 +3828,38 @@ export const useAIChatService = () => {
     }, [globalMetadata]); // Importante: recria a função se o contexto global mudar
 
     /**
-     * Envia uma confirmação de execução.
+     * Envia uma confirmação de execução de proposta para o Agente.
+     * @param proposal Os dados visuais da proposta (mantido por integridade)
+     * @param interactionId [NOVO] A Chave do Cofre (O ID da mensagem no banco)
+     * @param context [OPCIONAL] Mantido apenas para evitar quebras de tipagem em componentes não atualizados
      */
     const confirmAction = useCallback(async (
         proposal: AIActionProposal,
-        context: Omit<AIChatRequestDto, 'message'>
+        interactionId: string, 
+        context?: Omit<AIChatRequestDto, 'message'> 
     ): Promise<AIMessage | null> => {
         setIsLoading(true);
         setError(null);
 
-        // Lógica de Ouro também na confirmação
-        const effectiveMetadata = context.metadata || globalMetadata;
-
         try {
-            const commandMessage = `[SYSTEM_CONFIRMATION]: O usuário APROVOU a execução da ferramenta '${proposal.actionIntent}'. Prossiga com a execução.`;
-
-            const { data } = await api.post<AIResponseDto>('/ai/chat', {
-                message: commandMessage,
-                routineKey: context.routineKey,
-                tenantId: context.tenantId,
-                planId: context.planId,
-                metadata: effectiveMetadata, // Mantém o contexto durante a execução
-                overrides: {
-                    mode: 'AUTONOMOUS'
-                }
+            // [NOVO] Lógica Padrão Ouro: Não enviamos mais textos falsos ou o JSON da proposta.
+            // Batemos direto na nossa nova rota segura passando APENAS a Chave do Cofre.
+            // O Backend resolve o tenant, o usuário e a segurança através do Token JWT.
+            const { data } = await api.post<AIResponseDto>('/ai/execute-proposal', {
+                interactionId
             });
 
             return mapResponseToMessage(data);
 
         } catch (err: any) {
             console.error('❌ [AI Service] Erro ao confirmar ação:', err);
-            setError('Não foi possível processar a confirmação.');
+            const errorMessage = err.response?.data?.message || 'Não foi possível confirmar a ação. A proposta pode ter expirado.';
+            setError(errorMessage);
             return null;
         } finally {
             setIsLoading(false);
         }
-    }, [globalMetadata]);
+    }, []);
 
     /**
      * Busca o histórico de conversas da rotina atual no banco de dados.
@@ -3266,12 +3874,27 @@ export const useAIChatService = () => {
             const { data } = await api.get<any[]>(`/ai/history/${routineKey}`);
 
             // Mapeia o JSON bruto do Backend para a tipagem rigorosa do Frontend (AIMessage)
-            const formattedHistory: AIMessage[] = data.map((msg) => ({
-                id: msg.id,
-                role: msg.role as 'user' | 'assistant',
-                content: msg.content,
-                timestamp: new Date(msg.timestamp)
-            }));
+            const formattedHistory: AIMessage[] = data.map((msg) => {
+                const role = msg.role as 'user' | 'assistant' | 'system';
+                const hasProposal = !!msg.proposal;
+                
+                // ==========================================
+                // LÓGICA DO CRACHÁ PARA O HISTÓRICO:
+                // ==========================================
+                let messageType: AIMessageType = 'TEXT';
+                if (role === 'system') messageType = 'SYSTEM_ACTION';
+                else if (hasProposal) messageType = 'PROPOSAL';
+
+                return {
+                    id: msg.id,
+                    role: role,
+                    type: messageType, // Injeta a tipagem rigorosa para renderização!
+                    content: msg.content,
+                    timestamp: new Date(msg.timestamp),
+                    proposal: msg.proposal,
+                    proposalStatus: msg.proposalStatus
+                };
+            });
 
             return formattedHistory;
 
@@ -3303,7 +3926,8 @@ export const useAIChatService = () => {
 
 import { useEffect } from 'react';
 import { useFilixAI } from '../context/FilixAIContext';
-import { AIContextScope, AIContextMetadata } from '../types/AITypes';
+import { AIContextMetadata } from '../types/dtos/AIChatRequest.dto';
+import { AIContextScope } from '../types/enums/AIEnums';
 
 /**
  * @hook useAIContextInjector
@@ -3349,134 +3973,214 @@ export const useAIContextInjector = (
 };
 
 
-// ===== FILE: src/core/ai/hooks/useAIHistory.ts =====
+// ===== FILE: src/core/ai/hooks/useSpeechToText.ts =====
 
-import { useState, useCallback, useEffect } from 'react';
-import { api } from '@/core/services/api';
-import { AIMessage } from '../types/AITypes';
+import { useState, useEffect, useRef, useCallback } from 'react';
+
+// Extensão das tipagens globais para suportar a Web Speech API no TypeScript
+// (Como é uma API nativa do navegador, o TS precisa de saber que ela existe)
+declare global {
+    interface Window {
+        SpeechRecognition: any;
+        webkitSpeechRecognition: any;
+    }
+}
+
+interface UseSpeechToTextReturn {
+    /** Indica se o microfone está ativamente a escutar */
+    isRecording: boolean;
+    /** O texto que está a ser reconhecido em tempo real */
+    transcript: string;
+    /** Mensagem de erro, caso o utilizador negue o microfone ou não haja suporte */
+    error: string | null;
+    /** Indica se o navegador atual suporta esta tecnologia */
+    isSupported: boolean;
+    /** Inicia a gravação */
+    startRecording: () => void;
+    /** Para a gravação e consolida o texto final */
+    stopRecording: () => void;
+    /** Limpa a transcrição atual da memória */
+    clearTranscript: () => void;
+}
 
 /**
- * @hook useAIHistory
- * @description Hook de "Query" (Leitura). Responsável exclusivamente por buscar 
- * o histórico de conversas da IA e manter esse estado na tela.
- * Padrão Arquitetural: Separation of Concerns (Isolado das Mutations de envio).
+ * @hook useSpeechToText
+ * @description Trabalhador invisível para reconhecimento de voz nativo do navegador (Free).
+ * Isola a complexidade da Web Speech API, gerindo permissões e transcrição em tempo real.
  */
-export const useAIHistory = (routineKey: string | null) => {
-    // 1. O "Cache" local da tela
-    const [data, setData] = useState<AIMessage[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
+export const useSpeechToText = (): UseSpeechToTextReturn => {
+    const [isRecording, setIsRecording] = useState(false);
+    const [transcript, setTranscript] = useState('');
     const [error, setError] = useState<string | null>(null);
+    
+    // Guardamos a instância da API numa referência para não a perdermos a cada renderização
+    const recognitionRef = useRef<any>(null);
 
-    /**
-     * @method fetchHistory
-     * @description Faz a chamada HTTP e formata os dados para o padrão da UI.
-     */
-    const fetchHistory = useCallback(async () => {
-        // Se a tela abriu mas a rotina ainda não foi injetada, não faz nada
-        if (!routineKey) return;
+    // Verificamos o suporte do navegador (Chrome, Edge e Safari suportam, Firefox requer flags)
+    const isSupported = typeof window !== 'undefined' && 
+                       (!!window.SpeechRecognition || !!window.webkitSpeechRecognition);
 
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            // Chama a rota GET que criamos no Backend V8
-            const response = await api.get<any[]>(`/ai/history/${routineKey}`);
-
-            // Transforma o JSON bruto do Backend na tipagem estrita do Frontend
-            const formattedHistory: AIMessage[] = response.data.map((msg) => ({
-                id: msg.id,
-                role: msg.role as 'user' | 'assistant',
-                content: msg.content,
-                timestamp: new Date(msg.timestamp),
-                // Se o backend devolver toolUsed na história, repassamos para a UI
-                toolUsed: msg.toolUsed 
-            }));
-
-            setData(formattedHistory);
-
-        } catch (err: any) {
-            console.error(`❌ [useAIHistory] Erro ao carregar histórico da rotina ${routineKey}:`, err);
-            // Erro suave: não estouramos a tela vermelha do React, apenas avisamos o estado
-            setError('Não foi possível carregar as mensagens anteriores.');
-            setData([]); // Garante que a tela não fique travada com lixo de memória
-        } finally {
-            setIsLoading(false);
-        }
-    }, [routineKey]);
-
-    // 2. O Despertar Automático (Auto-Fetch)
-    // Quando o componente que usar esse hook nascer na tela, ele busca os dados sozinho.
+    // Inicialização da API apenas uma vez quando o componente é montado
     useEffect(() => {
-        fetchHistory();
-    }, [fetchHistory]);
+        if (!isSupported) return;
+
+        // Instancia o construtor correto dependendo do navegador
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognitionRef.current = new SpeechRecognition();
+        
+        // Configurações de Qualidade Extrema
+        recognitionRef.current.continuous = true; // Continua a gravar mesmo que o utilizador faça pausas
+        recognitionRef.current.interimResults = true; // Mostra as palavras enquanto estão a ser ditas (Feedback em tempo real)
+        recognitionRef.current.lang = 'pt-BR'; // Forçamos o idioma (pode ser ajustado conforme a localização do seu ERP)
+
+        // Handlers de Eventos da API
+        recognitionRef.current.onstart = () => {
+            setIsRecording(true);
+            setError(null);
+        };
+
+        recognitionRef.current.onresult = (event: any) => {
+            let currentTranscript = '';
+            // A API devolve os resultados em blocos, iteramos sobre eles para montar a frase
+            for (let i = 0; i < event.results.length; i++) {
+                currentTranscript += event.results[i][0].transcript;
+            }
+            setTranscript(currentTranscript);
+        };
+
+        recognitionRef.current.onerror = (event: any) => {
+            console.error('❌ [Web Speech API] Erro:', event.error);
+            setIsRecording(false);
+            
+            // Tradução dos erros comuns para o utilizador
+            if (event.error === 'not-allowed') {
+                setError('Permissão do microfone negada. Por favor, autorize no navegador.');
+            } else if (event.error === 'no-speech') {
+                // Não é um erro crítico, apenas silêncio. Não bloqueamos a UI.
+            } else {
+                setError(`Erro no reconhecimento de voz: ${event.error}`);
+            }
+        };
+
+        recognitionRef.current.onend = () => {
+            setIsRecording(false);
+        };
+
+        // Limpeza (Cleanup) ao desmontar o componente
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.abort();
+            }
+        };
+    }, [isSupported]);
+
+    /** Inicia a escuta */
+    const startRecording = useCallback(() => {
+        if (!isSupported) {
+            setError('O seu navegador não suporta reconhecimento de voz. Recomendamos o Google Chrome.');
+            return;
+        }
+        setError(null);
+        try {
+            recognitionRef.current.start();
+        } catch (err) {
+            console.warn('Gravação já estava iniciada.');
+        }
+    }, [isSupported]);
+
+    /** Para a escuta */
+    const stopRecording = useCallback(() => {
+        if (recognitionRef.current && isRecording) {
+            recognitionRef.current.stop();
+        }
+    }, [isRecording]);
+
+    /** Limpa o texto da memória local */
+    const clearTranscript = useCallback(() => {
+        setTranscript('');
+    }, []);
 
     return {
-        data,           // As mensagens prontas
-        isLoading,      // Para a bolinha de "Carregando..."
-        error,          // Para mostrar um aviso sutil se a rede cair
-        refetch: fetchHistory // Exposto caso precisemos forçar um recarregamento manual
+        isRecording,
+        transcript,
+        error,
+        isSupported,
+        startRecording,
+        stopRecording,
+        clearTranscript
     };
 };
 
 
-// ===== FILE: src/core/ai/types/AITypes.ts =====
-
+// ===== FILE: src/core/ai/types/dtos/AIActionProposal.dto.ts =====
 
 /**
- * @file AITypes.ts
- * @description Definições de Tipos para o Ecossistema Filix IA.
- * * PADRÃO V8 (Native Tooling & Governance):
- * Este arquivo reflete o contrato de dados estabelecido pelo AIOrchestrator V3.
- * Ele suporta respostas híbridas (Texto + Propostas de Ação) e Contexto Dinâmico (Sniper).
+ * @file AIActionProposal.dto.ts
+ * @description Contrato de Dados para a Proposta de Ação.
+ * Se este objeto vier preenchido na resposta da IA, o Frontend deve 
+ * pausar o chat e mostrar a UI correspondente (SmartCards, Modais, etc).
+ * [ESPELHO PERFEITO DA CLASSE AIActionProposal DO BACKEND]
  */
 
-import { Dispatch, SetStateAction } from "react";
+import { UIActionType } from '../enums/AIEnums';
 
-// --- 1. Contexto & Estado Global ---
+/**
+ * @interface AIActionProposal
+ * @description A Estrutura da Proposta.
+ */
+export interface AIActionProposal {
+    /**
+     * O tipo de componente visual a ser renderizado.
+     * (Corrigido de 'ui_action' para 'type' para parear com o backend).
+     */
+    type: UIActionType;
 
-export enum AIContextScopeEnum {
-    CHAT = 'AI_AGENT_CHAT',                   // (Antigo WORKSPACE_OVERVIEW) Assistente Geral
-    SALES = 'AI_SALES_AGENT',                 // (Antigo CRM_SALES) Vendas: Pipeline, Deals
-    INVENTORY = 'AI_INVENTORY_AGENT',         // (Antigo SUPPLY_CHAIN) Estoque: Produtos, Movimentações
-    FISCAL = 'AI_FISCAL_AUDITOR',             // (Antigo FISCAL) Fiscal: NFe, Impostos
-    SCHEDULER = 'AI_SCHEDULER_AGENT'          // (Antigo SCHEDULER) Agenda, Eventos
+    /**
+     * Título amigável para a ação (Ex: "Cadastrar Novo Cliente").
+     */
+    label: string;
+
+    /**
+     * O payload de dados para a ação.
+     * O Frontend usa isso para preencher os campos automaticamente ou exibir tabelas.
+     */
+    data: Record<string, any>;
+
+    /**
+     * (Opcional) A intenção técnica por trás da ação.
+     * Ex: 'CREATE_CLIENT', 'UPDATE_STOCK'.
+     * Serve para o Frontend saber qual endpoint acionar ao confirmar.
+     */
+    actionIntent?: string;
 }
 
-/**
- * Contextos possíveis onde a IA pode operar.
- * Define qual "Persona" e quais "Tools" o Backend irá carregar.
- * [ATUALIZADO]: Nomenclatura unificada com o Backend (Features.ts).
- */
-export type AIContextScope = `${AIContextScopeEnum}`;
+
+// ===== FILE: src/core/ai/types/dtos/AIChatRequest.dto.ts =====
 
 /**
- * Classificador de Entidades.
- * Vocabulário controlado para o Backend saber onde buscar o 'refId'.
+ * @file AIChatRequest.dto.ts
+ * @description Contrato de Envio (Request) para o Motor V8.
+ * Define a estrutura exata do que o Frontend envia para o endpoint POST /ai/chat.
  */
-export type AIEntityRefType = 
-    | 'CLIENT' 
-    | 'DEAL' 
-    | 'PRODUCT' 
-    | 'WAREHOUSE' 
-    | 'EVENT'
-    | 'SETUP'; // [NOVO] Para contextos de criação de estrutura (ex: Criar Funil)
+
+import { AIContextScope, AIEntityRefType } from '../enums/AIEnums';
 
 /**
- * [NOVO] Metadados de Contexto Fino (A "Sniper").
- * Se este objeto existir, ele DEVE conter os 4 campos principais para precisão total.
- * Permite que a IA saiba exatamente com quem o usuário está interagindo.
+ * @interface AIContextMetadata
+ * @description Metadados de Contexto Fino (A "Sniper").
+ * Permite que a IA saiba exatamente com quem ou com o que o utilizador está a interagir.
  */
 export interface AIContextMetadata {
     /** O QUE É: Classificador da entidade (ex: 'CLIENT' ou 'SETUP'). */
     refType: AIEntityRefType;
 
-    /** QUAL É: UUID do registro ou identificador do fluxo (ex: 'PIPELINE_CREATION'). */
+    /** QUAL É: UUID do registo ou identificador do fluxo. */
     refId: string;
 
-    /** QUEM É: Nome legível (ex: 'Miguel Prado' ou 'Configuração de Funil'). */
+    /** QUEM É: Nome legível (ex: 'Miguel Prado'). */
     refName: string;
 
-    /** ONDE ESTÁ: Contexto visual/navegacional (ex: 'KANBAN_BOARD', 'EMPTY_STATE'). */
+    /** ONDE ESTÁ: Contexto visual/navegacional (ex: 'KANBAN_BOARD'). */
     featureLocation: string;
 
     /** Sub-contexto opcional para detalhes visuais extras. */
@@ -3484,176 +4188,357 @@ export interface AIContextMetadata {
 }
 
 /**
- * Estado Visual do Widget Flutuante.
- */
-export type AIWidgetMode = 'HIDDEN' | 'MINIMIZED' | 'EXPANDED';
-
-/**
- * Coordenadas para persistência da posição do Widget (Draggable).
- */
-export interface AIPosition {
-    x: number;
-    y: number;
-}
-
-// --- 2. Estruturas de Ação (O "Motor V8") ---
-
-/**
- * Define o tipo de interação visual que a IA está solicitando.
- * Mapeado diretamente do DTO do Backend (UIActionType).
- */
-export type UIActionType = 
-    | 'FORM_REVIEW'   // Exibe um card com dados para revisar e aprovar/rejeitar
-    | 'CONFIRMATION'  // Exibe um simples Sim/Não
-    | 'INFO_CARD';    // Exibe dados ricos apenas para leitura (ex: Resumo do Cliente)
-
-/**
- * O Objeto de Proposta.
- * Quando o Agente está em modo CONSULTIVO, ele não executa a ação,
- * ele retorna este objeto para o Frontend renderizar o "Smart Card".
- */
-export interface AIActionProposal {
-    /**
-     * O tipo de UI a ser renderizada.
-     */
-    ui_action: UIActionType;
-
-    /**
-     * Título amigável para o card (ex: "Confirmar Criação de Oportunidade").
-     */
-    label: string;
-
-    /**
-     * O nome técnico da ferramenta que a IA queria usar (ex: 'create_sales_deal').
-     * Necessário para enviar de volta ao Backend na confirmação.
-     */
-    actionIntent: string;
-
-    /**
-     * Payload Polimórfico.
-     * Contém os dados que a ferramenta precisa (ex: { title: "Venda X", value: 500 }).
-     * O componente SmartCard irá iterar sobre estas chaves dinamicamente.
-     */
-    data: Record<string, any>;
-}
-
-/**
- * Status visual da proposta no chat.
- * Controlado pelo FRONTEND para dar feedback instantâneo ao usuário.
- */
-export type ProposalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXECUTED';
-
-// --- 3. Mensageria ---
-
-export type AIRole = 'user' | 'assistant' | 'system' | 'function';
-
-/**
- * Estrutura de uma mensagem no chat.
- * Atualizada para suportar o fluxo híbrido (Texto + Proposta).
- */
-export interface AIMessage {
-    id: string;
-    role: AIRole;
-    content: string; // O texto da conversa (obrigatório, mesmo que seja "Confirme abaixo")
-    timestamp: Date;
-    
-    /**
-     * [NOVO V8] Proposta de Ação (Modo Consultivo).
-     * Se existir, o Frontend deve renderizar o card de aprovação logo após o texto.
-     */
-    proposal?: AIActionProposal;
-
-    /**
-     * [NOVO V8] Controle de Estado Local.
-     * Define se o card desta mensagem ainda é interativo.
-     */
-    proposalStatus?: ProposalStatus;
-
-    /**
-     * [LEGADO/DEBUG] Registro técnico de tools executadas no modo Autônomo.
-     * Útil para mostrar "checkzinhos" de ações automáticas no futuro.
-     */
-    toolCalls?: {
-        name: string;
-        arguments: Record<string, any>;
-        status: 'pending' | 'success' | 'error';
-    }[];
-}
-
-// --- 4. Interface do Contexto (React Context) ---
-
-export interface FilixAIContextData {
-    // Estado Visual
-    mode: AIWidgetMode;
-    
-    // Estado de Inteligência
-    contextScope: AIContextScope;          // A Pistola (Macro)
-    contextMetadata?: AIContextMetadata;   // A Sniper (Micro - Opcional)
-    
-    // Estado de Interação [NOVO] - A Ponte para preencher o chat
-    inputDraft: string;
-    setInputDraft: (text: string) => void;
-
-    // Ações de Interface
-    toggleVisibility: () => void;
-    setMode: (mode: AIWidgetMode) => void;
-    
-    // Ações de Inteligência
-    setContext: (scope: AIContextScope, metadata?: AIContextMetadata) => void;
-    
-    // Soberania
-    isEnabled: boolean;
-    toggleEnabled: () => void;
-
-    // =======================================================
-    // 🧠 [NOVO] A MEMÓRIA DO CHAT (Histórico Global)
-    // =======================================================
-    
-    // 1. A Lista de Mensagens: Um array de "tijolos"
-    messages: AIMessage[]; 
-    
-    // 2. O Manipulador da Lista: Permite adicionar novas mensagens 
-    // e atualizar o status dos cards (Aprovado/Pendente) de qualquer lugar
-    setMessages: Dispatch<SetStateAction<AIMessage[]>>;
-
-    // =======================================================
-    // 🚀 [NOVO] COMANDO DE ABERTURA DIRETA
-    // =======================================================
-    
-    // 3. Comando direto para os botões do Kanban usarem sem fechar o chat sem querer
-    openChat: () => void;
-}
-
-// --- 5. DTOs (Data Transfer Objects - Contratos de API) ---
-
-/**
- * Payload enviado para o endpoint /ai/chat.
+ * @interface AIChatRequestDto
+ * @description Payload completo a ser processado pelo AIOrchestrator.
  */
 export interface AIChatRequestDto {
+    /** A mensagem de texto do utilizador ou comando interno de sistema. */
     message: string;
-    routineKey: AIContextScope; // Mapeado de 'scope'
+
+    /** A chave de rotina macro (A "Pistola" - ex: AI_SALES_AGENT). */
+    routineKey: AIContextScope;
+
+    /** Identificação do Tenant para isolamento de dados e permissões no Backend. */
     tenantId: string;
+
+    /** Identificação do Plano para controlo de quotas e rate-limits. */
     planId: string;
+
+    /** (Opcional) Contexto microscópico focado injetado pela tela atual. */
     metadata?: AIContextMetadata;
+
+    attachmentsUrls?: string[];
+
+    /** (Opcional) Sobrescrita de comportamentos dinâmicos do Motor V8. */
     overrides?: {
+        /** * Define se a IA deve agir sozinha (AUTONOMOUS) 
+         * ou pedir permissão para a interface (CONSULTATIVE). 
+         */
         mode?: 'AUTONOMOUS' | 'CONSULTATIVE';
     };
 }
 
+
+// ===== FILE: src/core/ai/types/dtos/AIResponse.dto.ts =====
+
 /**
- * Resposta recebida do endpoint /ai/chat.
+ * @file AIResponse.dto.ts
+ * @description O envelope principal da resposta da IA.
+ * Define como o Backend entrega inteligência para o Frontend.
+ * [ESPELHO PERFEITO DA CLASSE AIResponseDto DO BACKEND]
  */
+
+import { AIActionProposal } from './AIActionProposal.dto';
+
 export interface AIResponseDto {
+    /**
+     * A resposta textual da IA (chat convencional).
+     * Pode conter markdown.
+     */
     text: string;
-    interactionId?: string;
+
+    /**
+     * ID de rastreamento da interação (para logs e auditoria).
+     */
+    interactionId: string;
+
+    /**
+     * (Debug) Qual ferramenta foi utilizada para gerar essa resposta.
+     * Útil para o desenvolvedor entender o fluxo no frontend.
+     */
     toolUsed?: string;
-    proposal?: {
-        ui_action: UIActionType;
-        label: string;
-        actionIntent: string;
-        data: any;
+
+    /**
+     * (Inovação) A Proposta de Ação.
+     * Se for omitido ou null, é apenas uma conversa normal.
+     * Se existir, o Frontend deve renderizar a UI correspondente.
+     */
+    proposal?: AIActionProposal | null;
+
+    /**
+     * Metadados de consumo de tokens (opcional, para controle interno).
+     */
+    usage?: {
+        inputTokens: number;
+        outputTokens: number;
     };
 }
+
+
+// ===== FILE: src/core/ai/types/enums/AIEnums.ts =====
+
+/**
+ * @file AIEnums.ts
+ * @description Vocabulário Universal da IA.
+ * Contém apenas as enumerações e tipos literais compartilhados.
+ * Espelho exato do Backend para garantir integridade de dados (SRP).
+ */
+
+/**
+ * @enum UIActionType
+ * @description O Vocabulário Visual da IA.
+ * Define quais tipos de interface a IA pode "invocar" no Frontend.
+ * [ESPELHO PERFEITO DO BACKEND]
+ */
+export enum UIActionType {
+    /** Apenas exibe uma notificação toast */
+    NOTIFICATION = 'NOTIFICATION',
+    
+    /** Exibe um Card de Decisão com Sim/Não ou opções */
+    CONFIRMATION_CARD = 'CONFIRMATION_CARD',
+    
+    /** Abre um Modal/Formulário preenchido para edição */
+    FORM_REVIEW = 'FORM_REVIEW',
+    
+    /** Navega o usuário para outra tela */
+    NAVIGATION = 'NAVIGATION',
+    
+    /** Exibe dados tabulares ou listas ricas */
+    DATA_VIEW = 'DATA_VIEW'
+}
+
+/**
+ * @enum AIContextScopeEnum
+ * @description Contextos possíveis onde a IA pode operar (A Pistola - Macro).
+ */
+export enum AIContextScopeEnum {
+    CHAT = 'AI_AGENT_CHAT',
+    SALES = 'AI_SALES_AGENT',
+    INVENTORY = 'AI_INVENTORY_AGENT',
+    FISCAL = 'AI_FISCAL_AUDITOR',
+    SCHEDULER = 'AI_SCHEDULER_AGENT'
+}
+
+export type AIContextScope = `${AIContextScopeEnum}`;
+
+/**
+ * @type AIEntityRefType
+ * @description Classificador de Entidades. Vocabulário controlado para o Backend saber onde buscar o 'refId'.
+ */
+export type AIEntityRefType = 
+    | 'CLIENT' 
+    | 'DEAL' 
+    | 'PRODUCT' 
+    | 'WAREHOUSE' 
+    | 'EVENT'
+    | 'SETUP';
+
+/**
+ * @type AIRole
+ * @description Papéis na conversação da IA.
+ */
+export type AIRole = 'user' | 'assistant' | 'system' | 'function';
+
+/**
+ * @type AIWidgetMode
+ * @description Estado Visual do Widget Flutuante.
+ */
+export type AIWidgetMode = 'HIDDEN' | 'MINIMIZED' | 'EXPANDED';
+
+/**
+ * @type ProposalStatus
+ * @description Status visual da proposta no chat (Controlado pelo FRONTEND).
+ */
+export type ProposalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXECUTED';
+
+
+// ===== FILE: src/core/ai/types/state/AIState.ts =====
+
+/**
+ * @file AIState.ts
+ * @description O Estado do React (O Mundo da Tela).
+ * Junta os contratos de rede com as necessidades visuais da interface (UI).
+ */
+
+import { Dispatch, SetStateAction } from 'react';
+import { 
+    AIWidgetMode, 
+    AIRole, 
+    AIContextScope, 
+    ProposalStatus 
+} from '../enums/AIEnums';
+import { AIActionProposal } from '../dtos/AIActionProposal.dto';
+import { AIContextMetadata } from '../dtos/AIChatRequest.dto';
+
+// --- 1. A Mensagem (O "Tijolo" da Interface) ---
+
+/**
+ * @type AIMessageType
+ * @description [NOVO] O "Crachá" de Renderização Visual (Discriminated Union).
+ * Define EXATAMENTE qual componente o React deve desenhar na tela, 
+ * eliminando a necessidade de "adivinhar" o layout.
+ */
+export type AIMessageType = 
+    | 'TEXT'            // Balão de conversa normal (Chat Bubble)
+    | 'PROPOSAL'        // Card interativo de confirmação (SmartProposalCard)
+    | 'SYSTEM_ACTION'   // Log de execução de background ou ação autônoma
+    | 'ERROR';          // Box de falha/erro do sistema
+
+/**
+ * @interface AIMessage
+ * @description Estrutura de uma mensagem renderizada no chat.
+ * É a evolução do AIResponseDto, adicionando controle de estado local (UI).
+ */
+export interface AIMessage {
+    id: string;
+    role: AIRole;
+    
+    // ==========================================
+    // [NOVO] O CONTRATO VISUAL ESTrito
+    // ==========================================
+    type: AIMessageType; 
+    
+    content: string; 
+    timestamp: Date;
+    
+    /**
+     * Proposta de Ação (Modo Consultivo) vinda do Backend.
+     */
+    proposal?: AIActionProposal;
+
+    /**
+     * Controle de Estado Local (Exclusivo do Frontend).
+     * Define se os botões do card desta mensagem estão ativos ou bloqueados.
+     */
+    proposalStatus?: ProposalStatus;
+
+    /**
+     * (Debug/Histórico) Registro técnico de tools executadas de forma autônoma.
+     */
+    toolUsed?: string;
+}
+
+// --- 2. O Cérebro Global (React Context) ---
+
+/**
+ * @interface FilixAIContextData
+ * @description O contrato do Estado Global do Assistente.
+ */
+export interface FilixAIContextData {
+    // === Estado Visual ===
+    mode: AIWidgetMode;
+    isEnabled: boolean;
+    
+    // === Estado Semântico ===
+    contextScope: AIContextScope;          // A Pistola (Macro)
+    contextMetadata?: AIContextMetadata;   // A Sniper (Micro - Opcional)
+    
+    // === Estado de Interação (Rascunho) ===
+    inputDraft: string;
+    setInputDraft: (text: string) => void;
+
+    // === A Memória Central ===
+    messages: AIMessage[]; 
+    setMessages: Dispatch<SetStateAction<AIMessage[]>>;
+
+    // === Ações (Actions) ===
+    toggleVisibility: () => void;
+    setMode: (mode: AIWidgetMode) => void;
+    toggleEnabled: () => void;
+    setContext: (scope: AIContextScope, metadata?: AIContextMetadata) => void;
+    openChat: () => void;
+}
+
+
+// ===== FILE: src/core/ai/utils/imageCompressor.ts =====
+
+/**
+ * @file imageCompressor.ts
+ * @description Utilitário puro para compressão de imagens no lado do cliente (Browser).
+ * * OBJETIVO: Reduzir drásticamente o tamanho de imagens (fotos/prints) antes de enviá-las 
+ * para a IA, economizando consumo de banda e cota de tokens (Redução de custos).
+ */
+
+interface CompressOptions {
+    /** Largura máxima permitida (Mantém a proporção) @default 1024 */
+    maxWidth?: number;
+    /** Altura máxima permitida (Mantém a proporção) @default 1024 */
+    maxHeight?: number;
+    /** Qualidade do JPEG/WEBP final (0.1 a 1.0) @default 0.8 (80%) */
+    quality?: number;
+}
+
+/**
+ * Comprime uma imagem File para economizar tokens do LLM.
+ * Se o arquivo não for uma imagem, ele é devolvido intacto.
+ */
+export const compressImage = async (file: File, options: CompressOptions = {}): Promise<File> => {
+    // Se não for imagem (ex: PDF, DOCX), ignora a compressão e devolve o arquivo original
+    if (!file.type.startsWith('image/')) {
+        return file;
+    }
+
+    const { maxWidth = 1024, maxHeight = 1024, quality = 0.8 } = options;
+
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target?.result as string;
+            
+            img.onload = () => {
+                // 1. Calcula as novas dimensões mantendo a proporção exata (Aspect Ratio)
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width = Math.round((width * maxHeight) / height);
+                        height = maxHeight;
+                    }
+                }
+
+                // 2. Cria um Canvas invisível em memória para desenhar a imagem menor
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Falha ao obter contexto 2D do Canvas'));
+                    return;
+                }
+
+                // Desenha a imagem redimensionada no canvas
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // 3. Extrai o arquivo final comprimido (Convertendo para JPEG para máximo ganho)
+                // O tipo original é substituído por image/jpeg, que é mais leve que PNGs pesados de print de tela
+                canvas.toBlob(
+                    (blob) => {
+                        if (blob) {
+                            // Reconstrói o objeto File do JavaScript
+                            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                                type: 'image/jpeg',
+                                lastModified: Date.now(),
+                            });
+                            
+                            // Log opcional para você ver a mágica acontecendo (Pode remover em prod)
+                            // console.log(`Compressão: ${(file.size / 1024).toFixed(2)}KB -> ${(compressedFile.size / 1024).toFixed(2)}KB`);
+                            
+                            resolve(compressedFile);
+                        } else {
+                            reject(new Error('Falha ao converter canvas para Blob'));
+                        }
+                    },
+                    'image/jpeg',
+                    quality
+                );
+            };
+            
+            img.onerror = (err) => reject(err);
+        };
+        
+        reader.onerror = (err) => reject(err);
+    });
+};
 
 
 // ===== FILE: src/core/components/auth/AuthGuard.tsx =====
@@ -5375,6 +6260,86 @@ export const GoogleProvider: React.FC<GoogleProviderProps> = ({ children }) => {
 };
 
 
+// ===== FILE: src/core/services/StorageService.ts =====
+
+// ===== FILE: src/core/services/StorageService.ts =====
+
+/**
+ * @class StorageService
+ * @description O "Carteiro" de Infraestrutura do Frontend.
+ * * RESPONSABILIDADE (SRP):
+ * Isolar toda a complexidade de envio de arquivos binários (Multipart/Form-Data) 
+ * para o Backend. Totalmente agnóstico, pode ser usado pela IA, pelo CRM ou pelo Catálogo.
+ */
+export class StorageService {
+    
+    /**
+     * @method uploadFiles
+     * @description Empacota os arquivos físicos e envia para a rota de storage.
+     * * @param files Array de arquivos nativos do navegador (File[]).
+     * @param folder Opcional. A subpasta no servidor para manter a organização (ex: 'ai-attachments').
+     * @returns Promise<string[]> Um array com as URLs públicas/seguras geradas pelo Backend.
+     */
+    public static async uploadFiles(files: File[], folder: string = 'general'): Promise<string[]> {
+        
+        // 1. Trava de Segurança (Fail-Fast)
+        if (!files || files.length === 0) {
+            return [];
+        }
+
+        // 2. A Construção do Pacote (FormData)
+        // O FormData é a única forma nativa do navegador transmitir bytes binários com segurança.
+        const formData = new FormData();
+
+        // Anexamos os arquivos um a um. O nome 'files' deve bater EXATAMENTE 
+        // com o que o Multer espera lá no Backend: upload.array('files', 10)
+        files.forEach((file) => {
+            formData.append('files', file);
+        });
+
+        // Anexamos o metadado de roteamento para o Controller saber em qual pasta guardar
+        formData.append('folder', folder);
+
+        try {
+            // 3. Recuperação de Credenciais
+            // Ajuste a chave do localStorage para a que o seu ERP Filix utiliza atualmente para guardar o token JWT.
+            const token = localStorage.getItem('token') || localStorage.getItem('@Filix:token');
+
+            // 4. O Despacho (HTTP POST)
+            // Usamos a API nativa fetch para não dependermos de configurações complexas do Axios para FormData.
+            const response = await fetch('/api/v1/storage/upload', {
+                method: 'POST',
+                headers: {
+                    // ⚠️ SEGREDO DE ARQUITETO SÊNIOR: 
+                    // NUNCA defina o 'Content-Type': 'multipart/form-data' manualmente aqui!
+                    // O navegador precisa gerar um "boundary" (fronteira) dinâmico e aleatório 
+                    // para separar os arquivos. Se você forçar o header, o upload quebra.
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            // 5. Validação de Contrato de Resposta
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Falha HTTP: ${response.status}`);
+            }
+
+            // 6. O Recibo (Extração das URLs)
+            const data = await response.json();
+            
+            // O nosso StorageController devolve { status: 'success', urls: [...] }
+            return data.urls || [];
+
+        } catch (error: any) {
+            console.error('❌ [StorageService] Falha crítica de rede ou servidor ao enviar arquivos:', error.message);
+            // Propaga o erro de forma limpa para a Interface tratar (ex: mostrar um Toast vermelho)
+            throw new Error(`Não foi possível enviar os anexos: ${error.message}`);
+        }
+    }
+}
+
+
 // ===== FILE: src/core/services/api.ts =====
 
 // src/core/services/api.ts
@@ -6132,7 +7097,7 @@ import { FaBell, FaRobot } from 'react-icons/fa'; // Importado o ícone do Robô
 import { TenantSelector } from '@/core/components/tenant/TenantSelector';
 import { UserMenu } from '@/core/ui/layout/UserMenu';
 import { useFilixAI } from '@/core/ai/context/FilixAIContext'; // [NOVO] Import do Cérebro da IA
-import { AIContextScopeEnum } from '@/core/ai/types/AITypes';
+import { AIContextScopeEnum } from '@/core/ai/types/enums/AIEnums';
 
 /**
  * @component TopNavigation
@@ -11500,7 +12465,7 @@ import { FaStream, FaColumns, FaCalendarAlt, FaFilter } from 'react-icons/fa';
 import { ConfigStage } from '../components/pipeline-manager/StageList';
 import { Client } from '@/core/types/client';
 import { DashboardMode } from '../components/client-dashboard/ClientDashboard';
-import { AIContextMetadata } from '@/core/ai/types/AITypes';
+import { AIContextMetadata } from '@/core/ai/types/dtos/AIChatRequest.dto';
 
 // Definição das Views do CRM
 export type CRMViewType = 'WORKSTATION' | 'KANBAN' | 'AGENDA';
@@ -11590,6 +12555,7 @@ export const CRMContainer: React.FC = () => {
         if (!loadingPipelines && pipelines.length > 0 && !selectedPipelineId) {
             setSelectedPipelineId(pipelines[0].id);
         }
+        // setContext('AI_SALES_AGENT')
     }, [pipelines, loadingPipelines, selectedPipelineId]);
 
     // ============================================================================

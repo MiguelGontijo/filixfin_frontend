@@ -2,7 +2,6 @@ import React, { useRef, useEffect } from 'react';
 import { FaRobot, FaTimes, FaExpandAlt, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
 
 // --- COMPONENTES & UI ---
-import { AgentInput } from './AgentInput';
 import { SmartProposalCard } from './SmartProposalCard';
 import { ChatMessageItem } from './ChatMessageItem';
 
@@ -13,6 +12,7 @@ import { useFilixAI } from '../context/FilixAIContext';
 // --- TIPAGENS ISOLADAS (PADRÃO SRP) ---
 import { AIMessage } from '../types/state/AIState';
 import { AIActionProposal } from '../types/dtos/AIActionProposal.dto';
+import { AgentInput } from './agent-input/AgentInput';
 
 // ============================================================================
 // TIPOS E INTERFACES
@@ -77,26 +77,30 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     // --- 3. LÓGICA DE NEGÓCIO (Handlers de Interação) ---
 
-    /**
-     * Processa o envio de texto pelo usuário.
+/**
+     * @method handleSendMessage
+     * @description Processa o envio de texto e arquivos (Multimodal) pelo usuário.
      */
-    const handleSendMessage = async (text: string) => {
-        if (!text.trim()) return;
+    const handleSendMessage = async (text: string, attachments?: File[]) => {
+        // Validação: Só cancela se não houver NADA (nem texto, nem imagem)
+        if (!text.trim() && (!attachments || attachments.length === 0)) return;
 
-        // Optimistic UI: Cria a mensagem do usuário visualmente antes da API responder
-        // [CORREÇÃO]: Injetado o crachá type: 'TEXT' para obedecer ao novo contrato
+        // Optimistic UI: Se mandou só imagem, colocamos um texto visual genérico
+        const displayContent = text.trim() ? text : '📸 [Imagem anexada]';
+
         const userMsg: AIMessage = {
             id: Date.now().toString(),
             role: 'user',
             type: 'TEXT', 
-            content: text,
+            content: displayContent,
             timestamp: new Date()
         };
         setMessages(prev => [...prev, userMsg]);
 
-        // Dispara a requisição real de conversação
+        // Dispara a requisição real de conversação (Agora Multimodal!)
         const response = await sendMessage({
             message: text,
+            attachments: attachments, // <--- O ELO PERDIDO FOI LIGADO AQUI!
             routineKey: contextScope,
             tenantId,
             planId
@@ -278,7 +282,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <div className="p-3 bg-gray-800 border-t border-gray-700 shrink-0">
                 <AgentInput 
                     mode="chat" 
-                    placeholder={`Pergunte ao ${contextScope === 'AI_AGENT_CHAT' ? 'Assistente' : contextScope}...`}
+                    placeholder={`Pergunte ao Filix`}
                     onSend={handleSendMessage}
                     isLoading={isLoading}
                 />
