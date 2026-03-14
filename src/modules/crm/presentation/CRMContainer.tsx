@@ -9,7 +9,6 @@ import { CRMWorkstation } from './CRMWorkstation';
 // --- HOOKS DE DADOS & IA ---
 import { useDeals } from '../hooks/useDeals';
 import { usePipelines } from '../hooks/usePipelines';
-import { useCRMIntelligence } from '../hooks/useCRMIntelligence';
 import { useAIContextInjector } from '@/core/ai/hooks/useAIContextInjector'; // [IA] Hook Sniper
 import { useFilixAI } from '@/core/ai/context/FilixAIContext'; // [IA] Hook Widget & Draft
 
@@ -19,6 +18,7 @@ import { ConfigStage } from '../components/pipeline-manager/StageList';
 import { Client } from '@/core/types/client';
 import { DashboardMode } from '../components/client-dashboard/ClientDashboard';
 import { AIContextMetadata } from '@/core/ai/types/dtos/AIChatRequest.dto';
+import { AppModules, FeatureKeys } from '@/core/ai/types/enums/AIEnums';
 
 // Definição das Views do CRM
 export type CRMViewType = 'WORKSTATION' | 'KANBAN' | 'AGENDA';
@@ -52,7 +52,7 @@ export const CRMContainer: React.FC = () => {
         // Se estiver na Workstation com cliente selecionado -> Contexto: CLIENTE
         if (activeView === 'WORKSTATION' && selectedClient) {
             return {
-                refType: 'CLIENT',
+                module: AppModules.CLIENTE,
                 refId: selectedClient.id,
                 refName: selectedClient.name,
                 featureLocation: 'WORKSTATION_DETAIL'
@@ -61,7 +61,7 @@ export const CRMContainer: React.FC = () => {
         // Se estiver no Kanban -> Contexto: FUNIL DE VENDAS
         if (activeView === 'KANBAN') {
             return {
-                refType: 'DEAL', 
+                module: AppModules.CRM, 
                 refId: selectedPipelineId || 'general',
                 refName: 'Pipeline View',
                 featureLocation: 'KANBAN_BOARD'
@@ -71,7 +71,7 @@ export const CRMContainer: React.FC = () => {
     }, [activeView, selectedClient, selectedPipelineId]);
 
     // Injeta o contexto no Cérebro Global (Monitoramento Passivo)
-    useAIContextInjector('AI_SALES_AGENT', aiMetadata);
+    useAIContextInjector(FeatureKeys.AI_SALES_MICRO, aiMetadata);
 
     // ============================================================================
     // 3. ESTADOS DA WORKSTATION
@@ -80,14 +80,6 @@ export const CRMContainer: React.FC = () => {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [aiInputText, setAiInputText] = useState('');
     const [activeChatTab, setActiveChatTab] = useState<'WA' | 'TG' | 'AGENDA'>('WA');
-
-    const { 
-        analyzeText, 
-        analysisResult, 
-        isAnalyzing, 
-        error: aiError, 
-        clearAnalysis 
-    } = useCRMIntelligence();
 
     // ============================================================================
     // 4. ESTADOS DO KANBAN & DADOS
@@ -108,7 +100,6 @@ export const CRMContainer: React.FC = () => {
         if (!loadingPipelines && pipelines.length > 0 && !selectedPipelineId) {
             setSelectedPipelineId(pipelines[0].id);
         }
-        // setContext('AI_SALES_AGENT')
     }, [pipelines, loadingPipelines, selectedPipelineId]);
 
     // ============================================================================
@@ -119,14 +110,12 @@ export const CRMContainer: React.FC = () => {
     const handleSelectClient = (client: Client | null) => {
         setSelectedClient(client);
         setDashboardMode('VIEW');
-        clearAnalysis(); 
         setAiInputText(''); 
     };
 
     const handleOpenNewClient = () => {
         setSelectedClient(null); 
         setDashboardMode('CREATE'); 
-        clearAnalysis();
     };
 
     const handleOpenEditClient = (client: Client) => {
@@ -137,12 +126,7 @@ export const CRMContainer: React.FC = () => {
     const handleUpdateSuccess = () => {
         setRefreshTrigger(prev => prev + 1); 
         setDashboardMode('VIEW'); 
-        clearAnalysis(); 
         setAiInputText('');
-    };
-
-    const handleAnalyzeRequest = (text: string) => {
-        analyzeText(text, selectedClient?.id);
     };
 
     // --- KANBAN ---
@@ -170,8 +154,8 @@ export const CRMContainer: React.FC = () => {
         
         // 2. Define o Contexto de Setup (Sniper)
         // Isso avisa a IA que estamos configurando o sistema, não vendendo
-        setContext('AI_SALES_AGENT', { 
-            refType: 'SETUP', 
+        setContext(FeatureKeys.AI_SALES_MICRO, { 
+            module: AppModules.CRM, 
             refId: 'PIPELINE_CREATION', 
             refName: 'Novo Funil',
             featureLocation: 'EMPTY_STATE_SUGGESTION'
@@ -267,16 +251,7 @@ export const CRMContainer: React.FC = () => {
                         contextClient={selectedClient}
                         dashboardMode={dashboardMode}
                         refreshListTrigger={refreshTrigger}
-                        aiInputText={aiInputText}
-                        isAnalyzing={isAnalyzing}
-                        analysisResult={analysisResult}
-                        aiError={aiError}
-                        originalText={aiInputText}
                         activeChatTab={activeChatTab}
-                        onAiInputChange={setAiInputText}
-                        onAnalyzeRequest={handleAnalyzeRequest}
-                        onClearAnalysis={clearAnalysis}
-                        onAnalysisSuccess={handleUpdateSuccess}
                         onSelectClient={handleSelectClient}
                         onOpenNewClient={handleOpenNewClient}
                         onOpenEditClient={handleOpenEditClient}

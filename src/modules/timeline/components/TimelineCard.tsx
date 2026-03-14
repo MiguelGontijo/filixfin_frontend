@@ -40,7 +40,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
      */
     const getVisuals = (type: TimelineEntryType) => {
         switch (type) {
-            case 'CALL':
+            case TimelineEntryType.CALL:
                 return { 
                     icon: FaPhone, 
                     color: 'text-blue-400', 
@@ -48,7 +48,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
                     borderColor: 'border-blue-500/20',
                     label: 'Ligação'
                 };
-            case 'EMAIL':
+            case TimelineEntryType.EMAIL:
                 return { 
                     icon: FaEnvelope, 
                     color: 'text-yellow-400', 
@@ -56,7 +56,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
                     borderColor: 'border-yellow-500/20',
                     label: 'E-mail'
                 };
-            case 'WHATSAPP':
+            case TimelineEntryType.WHATSAPP:
                 return { 
                     icon: FaWhatsapp, 
                     color: 'text-green-400', 
@@ -64,7 +64,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
                     borderColor: 'border-green-500/20',
                     label: 'WhatsApp'
                 };
-            case 'AI_INSIGHT':
+            case TimelineEntryType.AI_INSIGHT:
                 return { 
                     icon: FaRobot, 
                     color: 'text-accent-primary', 
@@ -72,7 +72,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
                     borderColor: 'border-accent-primary/30',
                     label: 'Análise IA'
                 };
-            case 'AUDIO':
+            case TimelineEntryType.AUDIO:
                 return { 
                     icon: FaMicrophone, 
                     color: 'text-pink-400', 
@@ -80,7 +80,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
                     borderColor: 'border-pink-500/20',
                     label: 'Áudio'
                 };
-            case 'FILE':
+            case TimelineEntryType.FILE:
                 return { 
                     icon: FaPaperclip, 
                     color: 'text-cyan-400', 
@@ -88,7 +88,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
                     borderColor: 'border-cyan-500/20',
                     label: 'Anexo'
                 };
-            case 'NOTE':
+            case TimelineEntryType.NOTE:
             default:
                 return { 
                     icon: FaStickyNote, 

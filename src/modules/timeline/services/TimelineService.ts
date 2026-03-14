@@ -1,12 +1,10 @@
-// ===== FILE: src/modules/timeline/services/TimelineService.ts =====
-
 import { api } from '@/core/services/api'; // Ajuste conforme o path do seu Axios configurado
 import { 
     TimelineEvent, 
     TimelineResponse, 
     CreateTimelineEntryPayload, 
-    TimelineEntityType 
 } from '../types/TimelineTypes';
+import { AppModule } from '@/core/ai/types/enums/AIEnums';
 
 /**
  * @service TimelineService
@@ -24,7 +22,7 @@ export const TimelineService = {
      * @param limit Itens por página (default backend costuma ser 50)
      */
     getTimeline: async (
-        entityType: TimelineEntityType, 
+        entityType: AppModule, 
         entityId: string, 
         page: number = 1,
         limit: number = 50

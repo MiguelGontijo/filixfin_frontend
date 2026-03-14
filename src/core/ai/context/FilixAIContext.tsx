@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AIMessage, AIMessageType, FilixAIContextData } from '../types/state/AIState'; // [ATUALIZADO] Importando o AIMessageType
-import { AIContextScope, AIWidgetMode } from '../types/enums/AIEnums';
+import { AIWidgetMode, FeatureKey, FeatureKeys } from '../types/enums/AIEnums';
 import { AIContextMetadata } from '../types/dtos/AIChatRequest.dto';
 import { api } from '@/core/services/api'; 
 import { fetchAIHistory } from '../hooks/AIHistoryService';
@@ -38,7 +38,7 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
     const [mode, setMode] = useState<AIWidgetMode>('MINIMIZED');
     
     // Contexto Semântico (A Pistola - Macro)
-    const [contextScope, setInternalContextScope] = useState<AIContextScope>('AI_AGENT_CHAT');
+    const [featureKey, setInternalFeatureKey] = useState<FeatureKey>(FeatureKeys.AI_CONCIERGE_MICRO);
 
     // Contexto de Metadados (A Sniper - Micro)
     const [contextMetadata, setContextMetadata] = useState<AIContextMetadata | undefined>(undefined);
@@ -95,11 +95,11 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
             setMessages([]);
             setHasLoadedHistory(false);
 
-            if (!contextScope) return;
+            if (!featureKey) return;
 
             try {
                 // 2. O Contexto delega o trabalho sujo para o Serviço Puro!
-                const historyData = await fetchAIHistory(contextScope);
+                const historyData = await fetchAIHistory(featureKey);
                 
                 // Se o componente não morreu no meio do caminho, salva na memória RAM
                 if (isMounted) {
@@ -116,7 +116,7 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
         loadHistory();
 
         return () => { isMounted = false; };
-    }, [contextScope]);
+    }, [featureKey]);
 
     // --- 3. Ações (Actions) ---
 
@@ -142,8 +142,8 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
     /**
      * Define o contexto completo da IA (Macro + Micro).
      */
-    const setContext = (scope: AIContextScope, metadata?: AIContextMetadata) => {
-        setInternalContextScope(scope);
+    const setContext = (scope: FeatureKey, metadata?: AIContextMetadata) => {
+        setInternalFeatureKey(scope);
         // Se metadata for undefined, limpa o estado anterior
         setContextMetadata(metadata);
     };
@@ -157,7 +157,7 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
             isEnabled,
             
             // Estado de Inteligência
-            contextScope,
+            featureKey,
             contextMetadata,
             
             // Estado de Interação

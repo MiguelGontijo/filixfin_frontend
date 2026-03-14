@@ -4,7 +4,7 @@
  * Define a estrutura exata do que o Frontend envia para o endpoint POST /ai/chat.
  */
 
-import { AIContextScope, AIEntityRefType } from '../enums/AIEnums';
+import { AppModule, FeatureKey } from '../enums/AIEnums';
 
 /**
  * @interface AIContextMetadata
@@ -13,7 +13,7 @@ import { AIContextScope, AIEntityRefType } from '../enums/AIEnums';
  */
 export interface AIContextMetadata {
     /** O QUE É: Classificador da entidade (ex: 'CLIENT' ou 'SETUP'). */
-    refType: AIEntityRefType;
+    module: AppModule;
 
     /** QUAL É: UUID do registo ou identificador do fluxo. */
     refId: string;
@@ -37,7 +37,7 @@ export interface AIChatRequestDto {
     message: string;
 
     /** A chave de rotina macro (A "Pistola" - ex: AI_SALES_AGENT). */
-    routineKey: AIContextScope;
+    routineKey: FeatureKey;
 
     /** Identificação do Tenant para isolamento de dados e permissões no Backend. */
     tenantId: string;

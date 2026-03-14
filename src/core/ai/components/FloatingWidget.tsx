@@ -29,7 +29,7 @@ export const FloatingWidget: React.FC = () => {
         // 'translate-x-full' esconde a gaveta jogando-a para fora da tela pela direita
         <div 
             className={`
-                fixed top-16 right-0 h-[calc(100vh-4rem)] w-[400px] max-w-[100vw]
+                fixed top-16 right-0 h-[calc(100vh-4rem)] w-[650px] max-w-[100vw]
                 bg-gray-900 border-l border-gray-700 shadow-2xl
                 transform transition-transform duration-300 ease-in-out z-40
                 flex flex-col

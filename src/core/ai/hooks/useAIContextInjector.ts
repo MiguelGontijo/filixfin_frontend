@@ -1,11 +1,9 @@
-// ===== FILE: src/core/ai/hooks/useAIContextInjector.ts =====
-
 'use client';
 
 import { useEffect } from 'react';
 import { useFilixAI } from '../context/FilixAIContext';
 import { AIContextMetadata } from '../types/dtos/AIChatRequest.dto';
-import { AIContextScope } from '../types/enums/AIEnums';
+import { FeatureKey } from '../types/enums/AIEnums';
 
 /**
  * @hook useAIContextInjector
@@ -16,14 +14,14 @@ import { AIContextScope } from '../types/enums/AIEnums';
  * * @example
  * // Uso Avançado (Com Metadados - "Sniper")
  * useAIContextInjector('CRM_SALES', {
- * refType: 'CLIENT',
+ * module: 'CLIENT',
  * refId: client.id,
  * refName: client.name,
  * featureLocation: 'CLIENT_DASHBOARD'
  * });
  */
 export const useAIContextInjector = (
-    scope: AIContextScope, 
+    scope: FeatureKey, 
     metadata?: AIContextMetadata
 ) => {
     // Consome a nova função setContext do Provider (Fase 2)
@@ -45,6 +43,7 @@ export const useAIContextInjector = (
         // Desconstruímos o metadata para evitar loops infinitos caso o objeto seja recriado,
         // mas o conteúdo seja o mesmo. O contexto só atualiza se o ID ou o Local mudarem.
         metadata?.refId,
+        metadata?.module,
         metadata?.featureLocation,
         metadata?.subContext
     ]);

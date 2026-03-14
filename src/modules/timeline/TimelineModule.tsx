@@ -1,10 +1,9 @@
-// ===== FILE: src/modules/timeline/TimelineModule.tsx =====
-
 import React from 'react';
-import { TimelineEntityType, TimelineEntryType } from './types/TimelineTypes';
+import { TimelineEntryType } from './types/TimelineTypes';
 import { useTimeline } from './hooks/useTimeline';
 import { TimelineFeed } from './components/TimelineFeed';
 import { TimelineInput } from './components/TimelineInput';
+import { AppModule } from '@/core/ai/types/enums/AIEnums';
 
 export interface TimelineModuleProps {
     /**
@@ -16,7 +15,7 @@ export interface TimelineModuleProps {
     /**
      * O contexto da timeline (Tabela polimórfica).
      */
-    entityType: TimelineEntityType;
+    module: AppModule;
 
     /**
      * Modo somente leitura (esconde o input).
@@ -35,11 +34,11 @@ export interface TimelineModuleProps {
  * @description O Módulo Soberano de Timeline.
  * Encapsula toda a lógica de busca, exibição e criação de eventos.
  * * @usage
- * <TimelineModule entityId={client.id} entityType="CLIENT" className="h-[600px]" />
+ * <TimelineModule entityId={client.id} module="CLIENT" className="h-[600px]" />
  */
 export const TimelineModule: React.FC<TimelineModuleProps> = ({ 
     entityId, 
-    entityType, 
+    module, 
     readOnly = false,
     className = ''
 }) => {
@@ -53,7 +52,7 @@ export const TimelineModule: React.FC<TimelineModuleProps> = ({
         addEntry, 
         togglePin, 
         removeEntry 
-    } = useTimeline(entityType, entityId);
+    } = useTimeline(module, entityId);
 
     // --- 2. Handlers de Integração ---
 

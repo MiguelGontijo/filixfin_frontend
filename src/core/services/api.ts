@@ -13,7 +13,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/a
 export const api = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true, 
-    timeout: 15000, // 15 segundos: Tempo máximo de espera antes de abortar
+    timeout: 60000, // 15 segundos: Tempo máximo de espera antes de abortar
     headers: {
         'Content-Type': 'application/json',
     }

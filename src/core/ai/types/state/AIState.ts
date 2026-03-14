@@ -8,7 +8,7 @@ import { Dispatch, SetStateAction } from 'react';
 import { 
     AIWidgetMode, 
     AIRole, 
-    AIContextScope, 
+    FeatureKey, 
     ProposalStatus 
 } from '../enums/AIEnums';
 import { AIActionProposal } from '../dtos/AIActionProposal.dto';
@@ -74,7 +74,7 @@ export interface FilixAIContextData {
     isEnabled: boolean;
     
     // === Estado Semântico ===
-    contextScope: AIContextScope;          // A Pistola (Macro)
+    featureKey: FeatureKey;          // A Pistola (Macro)
     contextMetadata?: AIContextMetadata;   // A Sniper (Micro - Opcional)
     
     // === Estado de Interação (Rascunho) ===
@@ -89,6 +89,6 @@ export interface FilixAIContextData {
     toggleVisibility: () => void;
     setMode: (mode: AIWidgetMode) => void;
     toggleEnabled: () => void;
-    setContext: (scope: AIContextScope, metadata?: AIContextMetadata) => void;
+    setContext: (scope: FeatureKey, metadata?: AIContextMetadata) => void;
     openChat: () => void;
 }

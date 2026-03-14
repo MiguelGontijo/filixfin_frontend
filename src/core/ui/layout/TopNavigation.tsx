@@ -7,7 +7,7 @@ import { FaBell, FaRobot } from 'react-icons/fa'; // Importado o ícone do Robô
 import { TenantSelector } from '@/core/components/tenant/TenantSelector';
 import { UserMenu } from '@/core/ui/layout/UserMenu';
 import { useFilixAI } from '@/core/ai/context/FilixAIContext'; // [NOVO] Import do Cérebro da IA
-import { AIContextScopeEnum } from '@/core/ai/types/enums/AIEnums';
+import { AppModule, AppModules } from '@/core/ai/types/enums/AIEnums';
 
 /**
  * @component TopNavigation
@@ -21,7 +21,7 @@ export const TopNavigation: React.FC = () => {
 
     // --- Hooks da IA ---
     // Puxamos o estado visual e semântico para o botão refletir o momento atual
-    const { toggleVisibility, contextScope, isEnabled, mode } = useFilixAI();
+    const { toggleVisibility, contextMetadata, isEnabled, mode } = useFilixAI();
 
     // Helper para definir a cor do botão da IA baseado no módulo onde o usuário está
     const getAIBtnColor = () => {
@@ -30,10 +30,10 @@ export const TopNavigation: React.FC = () => {
         // Se estiver aberto, mantemos uma cor sólida neutra para não ofuscar
         if (mode === 'EXPANDED') return 'text-white bg-accent-primary shadow-lg shadow-accent-primary/20';
 
-        switch (contextScope) {
-            case AIContextScopeEnum.INVENTORY: return 'text-orange-400 hover:bg-orange-400/10 hover:text-orange-300';
-            case AIContextScopeEnum.SALES: return 'text-blue-400 hover:bg-blue-400/10 hover:text-blue-300';
-            case AIContextScopeEnum.FISCAL: return 'text-emerald-400 hover:bg-emerald-400/10 hover:text-emerald-300';
+        switch (contextMetadata?.module) {
+            case AppModules.ESTOQUE: return 'text-orange-400 hover:bg-orange-400/10 hover:text-orange-300';
+            case AppModules.CRM: return 'text-blue-400 hover:bg-blue-400/10 hover:text-blue-300';
+            case AppModules.FINANCEIRO: return 'text-emerald-400 hover:bg-emerald-400/10 hover:text-emerald-300';
             default: return 'text-purple-400 hover:bg-purple-400/10 hover:text-purple-300'; // Geral
         }
     };

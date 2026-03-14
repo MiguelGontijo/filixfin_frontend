@@ -1,30 +1,48 @@
-// ===== FILE: src/modules/timeline/types/TimelineTypes.ts =====
-
-/**
- * Define os contextos possíveis onde a Timeline pode ser instanciada.
- * Deve estar sincronizado com o Backend (TimelineEntityType).
- */
-export type TimelineEntityType = 
-    | 'CLIENT' 
-    | 'DEAL' 
-    | 'PRODUCT' 
-    | 'SUPPLIER' 
-    | 'ORDER';
+import { AppModule } from "@/core/ai/types/enums/AIEnums";
 
 /**
  * Define o tipo de conteúdo de cada item da timeline.
  * Isso ditará qual ícone e qual layout o Card vai renderizar.
  */
-export type TimelineEntryType = 
-    | 'NOTE'          // Nota de texto simples
-    | 'CALL'          // Registro de ligação
-    | 'MEETING'       // Registro de reunião
-    | 'EMAIL'         // Email enviado/recebido
-    | 'WHATSAPP'      // Conversa de Zap
-    | 'AUDIO'         // Áudio gravado (Voice Note)
-    | 'FILE'          // Upload de arquivo genérico
-    | 'AI_INSIGHT'    // Análise gerada pelo Robô V8
-    | 'SYSTEM_ALERT'; // Log automático do sistema (ex: "Mudou de fase")
+export enum TimelineEventType {
+    
+    // =========================================================================
+    // 🗣️ CATEGORIA 1: INTERAÇÕES HUMANAS E COMUNICAÇÃO
+    // Fatos manuais. A IA lê estes eventos para deduzir o tom da negociação.
+    // =========================================================================
+    NOTE = 'NOTE',                 // Anotação manual de um usuário
+    CALL = 'CALL',                 // Registro de ligação (pode conter transcrição no content)
+    MEETING = 'MEETING',           // Reunião (presencial ou vídeo)
+    EMAIL = 'EMAIL',               // E-mail enviado/recebido
+    WHATSAPP = 'WHATSAPP',         // Mensagem ou thread de WhatsApp
+    AUDIO = 'AUDIO',               // Áudio enviado/recebido
+    FILE = 'FILE',                 // Documento ou anexo genérico
+
+    // =========================================================================
+    // ⚙️ CATEGORIA 2: EVENTOS DE SISTEMA E MUTAÇÕES
+    // O sistema narra sozinho o que mudou (Ex: Vendedor arrastou um card).
+    // =========================================================================
+    SYSTEM_ALERT = 'SYSTEM_ALERT',           // Alertas e bloqueios (Ex: "Cliente negativado")
+    SYSTEM_CHANGE = 'SYSTEM_CHANGE',         // Mudança de status (Ex: "Deal movido para Ganho")
+    DOCUMENT_GENERATED = 'DOCUMENT_GENERATED', // Ex: "Contrato em PDF gerado"
+
+    // =========================================================================
+    // 🧠 CATEGORIA 3: INTELIGÊNCIA CONTÍNUA (AI WORKERS)
+    // Recibos de que os Operários de Background trabalharam.
+    // =========================================================================
+    AI_INSIGHT = 'AI_INSIGHT',                   // Dica rápida proativa (Ex: "Alerta de Churn detectado")
+    
+    // [Micro/Meso] Atualização de dossiês de Entidades ou Módulos (Ex: Cliente, Estoque)
+    AI_ANALYSIS = 'AI_ANALYSIS',                 
+    
+    // [Macro] Relatório exclusivo do CEO Virtual cruzando dados de toda a empresa
+    AI_STRATEGIC_REPORT = 'AI_STRATEGIC_REPORT'  
+}
+
+// A Mágica da Retrocompatibilidade e Single Source of Truth
+export type TimelineEntryType = TimelineEventType;
+// Exporta também o valor (runtime) para o DTO e o TypeORM usarem
+export const TimelineEntryType = TimelineEventType;
 
 /**
  * Estrutura de um anexo (Arquivo/Mídia).
@@ -59,7 +77,7 @@ export interface TimelineEvent {
     
     // Polimorfismo (A quem pertence isso?)
     entityId: string;
-    entityType: TimelineEntityType;
+    entityType: AppModule;
 
     // Conteúdo
     type: TimelineEntryType;
@@ -89,7 +107,7 @@ export interface TimelineEvent {
  */
 export interface CreateTimelineEntryPayload {
     entityId: string;
-    entityType: TimelineEntityType;
+    entityType: AppModule;
     type: TimelineEntryType;
     content?: string;
     

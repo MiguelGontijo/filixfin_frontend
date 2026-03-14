@@ -29,30 +29,43 @@ export enum UIActionType {
 }
 
 /**
- * @enum AIContextScopeEnum
+ * @enum FeatureKeys
  * @description Contextos possíveis onde a IA pode operar (A Pistola - Macro).
+ * [NOVO]: Agora espelha estritamente as 'FeatureKeys' (Inteligência) do Backend.
  */
-export enum AIContextScopeEnum {
-    CHAT = 'AI_AGENT_CHAT',
-    SALES = 'AI_SALES_AGENT',
-    INVENTORY = 'AI_INVENTORY_AGENT',
-    FISCAL = 'AI_FISCAL_AUDITOR',
-    SCHEDULER = 'AI_SCHEDULER_AGENT'
+export enum FeatureKeys {
+    // Assistentes Interativos (Micro)
+    AI_CONCIERGE_MICRO = 'AI_CONCIERGE_MICRO',
+    AI_SALES_MICRO = 'AI_SALES_MICRO',
+    AI_INVENTORY_MICRO = 'AI_INVENTORY_MICRO',
+    AI_FISCAL_MICRO = 'AI_FISCAL_MICRO',
+    
+    // Background Workers (Micro / Meso / Macro)
+    AI_CLIENT_MICRO = 'AI_CLIENT_MICRO',
+    AI_CLIENT_MESO = 'AI_CLIENT_MESO',
+    AI_SALES_MESO = 'AI_SALES_MESO',
+    AI_INVENTORY_MESO = 'AI_INVENTORY_MESO',
+    AI_TENANT_MACRO = 'AI_TENANT_MACRO'
 }
 
-export type AIContextScope = `${AIContextScopeEnum}`;
+export type FeatureKey = `${FeatureKeys}`;
 
 /**
- * @type AIEntityRefType
- * @description Classificador de Entidades. Vocabulário controlado para o Backend saber onde buscar o 'refId'.
+ * @enum AppModules
+ * @description Classificador de Entidades.
+ * [NOVO]: Agora espelha estritamente o 'AppModule' do Backend. O Eixo Universal de Domínio.
  */
-export type AIEntityRefType = 
-    | 'CLIENT' 
-    | 'DEAL' 
-    | 'PRODUCT' 
-    | 'WAREHOUSE' 
-    | 'EVENT'
-    | 'SETUP';
+export enum AppModules {
+    CORE = 'CORE',
+    CLIENTE = 'CLIENTE',
+    CRM = 'CRM',
+    FINANCEIRO = 'FINANCEIRO',
+    ESTOQUE = 'ESTOQUE',
+    ACL = 'ACL',
+    TENANT = 'TENANT'
+}
+
+export type AppModule = `${AppModules}`;
 
 /**
  * @type AIRole

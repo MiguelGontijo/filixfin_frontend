@@ -1,188 +1,81 @@
 'use client';
 
-import React, { useState } from 'react';
-import { 
-    FaPlus, 
-    FaSearch, 
-    FaEdit, 
-    FaTrash, 
-    FaTags 
-} from 'react-icons/fa';
+import React from 'react';
+import { z } from 'zod';
 
-// Importando o Hook de Negócio existente (Reuso de Lógica)
+import { CrudLayout } from '@/core/components/crud/CrudLayout';
+import { CrudConfig, CrudHooks } from '@/core/components/crud/types';
 import { useCategories } from '@/modules/categories/hooks/useCategories';
 import { useCategoryMutation } from '@/modules/categories/hooks/useCategoryMutation';
-import { Category } from '@/modules/categories/types';
+import { Category } from '@/modules/categories/types'; // Entidade do Banco (TData)
 
-// Importando o componente local do Drawer
-import { CategoryFormDrawer } from './CategoryFormDrawer';
+// =========================================================================
+// 1. O DTO DE CRIAÇÃO/EDIÇÃO (TForm)
+// Somente o que o usuário interage. O Backend resolve tenantId e Datas.
+// =========================================================================
+const CategoryFormSchema = z.object({
+    name: z.string().min(3, 'O nome deve ter no mínimo 3 caracteres'),
+    isActive: z.boolean().default(true),
+    categoryId: z.string().optional().nullable(), // Sub-categoria (Pai) - Opcional
+});
 
-/**
- * @component CategoriesTab
- * @description Gestão de Categorias embarcada no módulo de Produtos.
- * @style Dark/Metallic (Design System)
- */
-export const CategoriesTab: React.FC = () => {
-    // Integração com a Camada de Dados (Leitura e Escrita)
-    const { categories, isLoading } = useCategories();
-    const { deleteCategory } = useCategoryMutation();
+// Inferimos o tipo do formulário automaticamente a partir do Zod
+type CategoryFormData = z.infer<typeof CategoryFormSchema>;
+
+// =========================================================================
+// 2. A PLANTA (Configuração da Interface)
+// Passamos os dois mundos: <TData, TForm>
+// =========================================================================
+const categoryConfig: CrudConfig<Category, CategoryFormData> = {
+    title: 'Categorias de Produtos',
+    description: 'Organize seu catálogo e a vitrine do e-commerce.',
+    schema: CategoryFormSchema,
     
-    // Estados Locais de Interface (UI State)
-    const [searchTerm, setSearchTerm] = useState('');
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+    // A Tabela enxerga o TData (Category)
+    columns: [
+        { key: 'name', label: 'Nome da Categoria', type: 'text' },
+        { key: 'isActive', label: 'Status', type: 'boolean', align: 'center' },
+    ],
+    
+    // O Formulário enxerga o TForm (CategoryFormData)
+    fields: [
+        { 
+            name: 'name', 
+            label: 'Nome da Categoria', 
+            type: 'text', 
+            placeholder: 'Ex: Eletrônicos, Vestuário...' 
+        },
+        { 
+            name: 'isActive', 
+            label: 'Status Ativo', 
+            type: 'boolean' 
+        },
+        // Se quisermos que o usuário escolha uma Categoria Pai, descomentamos abaixo:
+        // {
+        //     name: 'categoryId',
+        //     label: 'Categoria Principal (Pai)',
+        //     type: 'select',
+        //     options: [{ label: 'Nenhuma', value: '' }] // Aqui poderíamos injetar opções dinâmicas
+        // }
+    ]
+};
 
-    // Filtragem Local (Client-Side)
-    const filteredCategories = categories?.filter(cat => 
-        cat.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ) || [];
+// =========================================================================
+// 3. O COMPONENTE MESTRE
+// =========================================================================
+export const CategoriesTab: React.FC = () => {
+    const { categories, isLoading, refreshCategories } = useCategories();
+    const { createCategory, updateCategory, deleteCategory, error: mutationError } = useCategoryMutation();
 
-    // Handlers
-    const handleNewCategory = () => {
-        setEditingCategory(null); // Limpa seleção para criar novo
-        setIsDrawerOpen(true);
+    const crudHooks: CrudHooks<Category, CategoryFormData> = {
+        data: categories || [],
+        isLoading: isLoading,
+        error: mutationError || null,
+        onCreate: createCategory,
+        onUpdate: updateCategory,
+        onDelete: deleteCategory,
+        onRefresh: refreshCategories || (() => window.location.reload())
     };
 
-    const handleEditCategory = (category: Category) => {
-        setEditingCategory(category); // Passa dados para edição
-        setIsDrawerOpen(true);
-    };
-
-    const handleDelete = async (id: string) => {
-        // Futuro: Substituir por Modal de Confirmação customizado ou IA
-        if (window.confirm('Tem certeza que deseja excluir esta categoria?')) {
-            await deleteCategory(id);
-        }
-    };
-
-    if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center h-64 space-y-4 animate-pulse">
-                <div className="h-8 w-8 bg-gray-700 rounded-full"></div>
-                <span className="text-gray-400">Carregando categorias...</span>
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-6 animate-fade-in">
-            
-            {/* --- Toolbar (Busca e Ações) --- */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-                
-                {/* Barra de Busca Dark */}
-                <div className="relative w-full md:w-96 group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <FaSearch className="text-gray-500 group-focus-within:text-accent-primary transition-colors" />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="Buscar categoria..."
-                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-700 rounded-lg leading-5 bg-gray-900 text-base-text placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-accent-primary focus:border-accent-primary sm:text-sm transition-colors"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-
-                {/* Botão de Criação */}
-                <button
-                    onClick={handleNewCategory}
-                    className="flex items-center justify-center gap-2 bg-accent-primary hover:bg-accent-primary/90 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg shadow-black/20 active:scale-95"
-                >
-                    <FaPlus className="w-3 h-3" />
-                    <span>Nova Categoria</span>
-                </button>
-            </div>
-
-            {/* --- Tabela de Categorias --- */}
-            <div className="bg-base-metallic rounded-xl border border-gray-700 shadow-xl overflow-hidden">
-                
-                {filteredCategories.length === 0 ? (
-                    // Empty State Dark
-                    <div className="flex flex-col items-center justify-center p-16 text-center">
-                        <div className="p-4 bg-gray-900 rounded-full mb-4 border border-gray-700">
-                            <FaTags className="w-8 h-8 text-gray-600" />
-                        </div>
-                        <h3 className="text-lg font-medium text-base-text">Nenhuma categoria encontrada</h3>
-                        <p className="text-gray-400 mt-1">Crie categorias para organizar seus produtos.</p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-700">
-                            
-                            {/* THEAD */}
-                            <thead className="bg-gray-900/50">
-                                <tr>
-                                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Nome</th>
-                                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
-                                    <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">Ações</th>
-                                </tr>
-                            </thead>
-
-                            {/* TBODY */}
-                            <tbody className="divide-y divide-gray-700/50">
-                                {filteredCategories.map((category) => (
-                                    <tr key={category.id} className="hover:bg-gray-700/30 transition-colors group">
-                                        
-                                        {/* Coluna Nome */}
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className="h-8 w-8 flex-shrink-0 bg-gray-800 rounded flex items-center justify-center border border-gray-600 text-gray-400">
-                                                    <span className="text-xs font-bold">{category.name.substring(0, 2).toUpperCase()}</span>
-                                                </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-medium text-base-text group-hover:text-accent-primary transition-colors">
-                                                        {category.name}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        {/* Coluna Status */}
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${
-                                                category.isActive 
-                                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                                                : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                                            }`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${category.isActive ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                                                {category.isActive ? 'Ativa' : 'Inativa'}
-                                            </span>
-                                        </td>
-
-                                        {/* Coluna Ações */}
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button 
-                                                    onClick={() => handleEditCategory(category)}
-                                                    className="text-gray-400 hover:text-accent-primary transition-colors" 
-                                                    title="Editar"
-                                                >
-                                                    <FaEdit className="w-4 h-4" />
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleDelete(category.id)}
-                                                    className="text-gray-400 hover:text-danger transition-colors" 
-                                                    title="Excluir"
-                                                >
-                                                    <FaTrash className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-
-            {/* Integração do Drawer de Formulário */}
-            <CategoryFormDrawer 
-                isOpen={isDrawerOpen} 
-                onClose={() => setIsDrawerOpen(false)}
-                initialData={editingCategory}
-            />
-        </div>
-    );
+    return <CrudLayout<Category, CategoryFormData> config={categoryConfig} hooks={crudHooks} />;
 };

@@ -12,6 +12,7 @@ import { ClientForm } from '@/core/components/client/ClientForm';
 
 // --- AQUI ESTÁ A MUDANÇA: Importamos o Módulo Soberano ---
 import { TimelineModule } from '@/modules/timeline/TimelineModule';
+import { AppModules } from '@/core/ai/types/enums/AIEnums';
 
 export type DashboardMode = 'VIEW' | 'EDIT' | 'CREATE';
 
@@ -291,7 +292,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
                             <div className="h-full w-full animate-fade-in">
                                 <TimelineModule 
                                     entityId={displayClient.id} 
-                                    entityType="CLIENT"
+                                    module={AppModules.CLIENTE}
                                     className="h-full" // Garante que o scroll interno funcione
                                 />
                             </div>

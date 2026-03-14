@@ -112,6 +112,11 @@
 │   │   │   │   ├── ClientModal.tsx
 │   │   │   │   ├── ClientTable.tsx
 │   │   │   │   └── ClientTablePage.tsx
+│   │   │   ├── crud
+│   │   │   │   ├── CrudForm.tsx
+│   │   │   │   ├── CrudLayout.tsx
+│   │   │   │   ├── CrudTable.tsx
+│   │   │   │   └── types.ts
 │   │   │   └── tenant
 │   │   │       └── TenantSelector.tsx
 │   │   ├── hooks
@@ -133,6 +138,8 @@
 │   │   │   ├── api.ts
 │   │   │   └── StorageService.ts
 │   │   ├── types
+│   │   │   ├── dtos
+│   │   │   │   └── StorageUploadResponse.dto.ts
 │   │   │   ├── acl.ts
 │   │   │   ├── auth.ts
 │   │   │   ├── client.ts
@@ -190,15 +197,13 @@
 │   │   │   │   │   ├── EmptyPipelineState.tsx
 │   │   │   │   │   ├── KanbanBoard.tsx
 │   │   │   │   │   └── KanbanColumn.tsx
-│   │   │   │   ├── pipeline-manager
-│   │   │   │   │   ├── index.ts
-│   │   │   │   │   ├── PipelineDrawer.tsx
-│   │   │   │   │   ├── StageItem.tsx
-│   │   │   │   │   └── StageList.tsx
-│   │   │   │   └── AnalysisActionCard.tsx
+│   │   │   │   └── pipeline-manager
+│   │   │   │       ├── index.ts
+│   │   │   │       ├── PipelineDrawer.tsx
+│   │   │   │       ├── StageItem.tsx
+│   │   │   │       └── StageList.tsx
 │   │   │   ├── hooks
 │   │   │   │   ├── useClientTimeline.ts
-│   │   │   │   ├── useCRMIntelligence.ts
 │   │   │   │   ├── useDeals.ts
 │   │   │   │   ├── useInteractionMutation.ts
 │   │   │   │   └── usePipelines.ts
@@ -249,7 +254,6 @@
 │   │   │   │   ├── tabs
 │   │   │   │   │   ├── CatalogTab.tsx
 │   │   │   │   │   ├── CategoriesTab.tsx
-│   │   │   │   │   ├── CategoryFormDrawer.tsx
 │   │   │   │   │   ├── MovementsTab.tsx
 │   │   │   │   │   ├── OverviewTab.tsx
 │   │   │   │   │   └── WarehousesTab.tsx
@@ -382,7 +386,7 @@ export default eslintConfig;
 
 /// <reference types="next" />
 /// <reference types="next/image-types/global" />
-import "./.next/dev/types/routes.d.ts";
+import "./.next/types/routes.d.ts";
 
 // NOTE: This file should not be edited
 // see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
@@ -417,6 +421,7 @@ export default nextConfig;
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
+    "@hookform/resolvers": "^5.2.2",
     "@react-oauth/google": "^0.12.2",
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",
@@ -425,6 +430,7 @@ export default nextConfig;
     "react": "19.2.0",
     "react-big-calendar": "^1.19.4",
     "react-dom": "19.2.0",
+    "react-hook-form": "^7.71.2",
     "react-icons": "^5.5.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"
@@ -1471,11 +1477,11 @@ H�@ ��P2v )~���@����z5��|����R�ֵ��
   ESTILOS DO BODY (CORPO DA PÁGINA)
   ===========================================
 */
-body {
+html, body {
   background: var(--background); /* Aplica o #111827 */
   color: var(--foreground);      /* Aplica o #F3F4F6 */
-  font-family: Arial, Helvetica, sans-serif;
-  
+  /* font-family: Arial, Helvetica, sans-serif; */
+  font-family: var(--font-sans), sans-serif;
   /* CORREÇÃO CRÍTICA (RODAPÉ BRANCO):
      Garante que o body ocupe no mínimo 100% da altura da viewport.
      Isso impede que sobre um espaço branco no final de páginas curtas.
@@ -2261,8 +2267,8 @@ import React, { useRef, useEffect } from 'react';
 import { FaRobot, FaTimes, FaExpandAlt, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
 
 // --- COMPONENTES & UI ---
-import { SmartProposalCard } from './SmartProposalCard';
 import { ChatMessageItem } from './ChatMessageItem';
+import { AgentInput } from './agent-input/AgentInput';
 
 // --- LÓGICA & SERVIÇOS (MOTOR V8) ---
 import { useAIChatService } from '../hooks/useAIChatService';
@@ -2271,42 +2277,29 @@ import { useFilixAI } from '../context/FilixAIContext';
 // --- TIPAGENS ISOLADAS (PADRÃO SRP) ---
 import { AIMessage } from '../types/state/AIState';
 import { AIActionProposal } from '../types/dtos/AIActionProposal.dto';
-import { AgentInput } from './agent-input/AgentInput';
+import { FeatureKeys } from '../types/enums/AIEnums';
 
 // ============================================================================
 // TIPOS E INTERFACES
 // ============================================================================
 
 interface ChatInterfaceProps {
-    /**
-     * Callback acionado ao clicar no 'X'.
-     */
+    /** Callback acionado ao clicar no 'X'. */
     onClose?: () => void;
-
-    /**
-     * ID do Tenant atual para validação de permissões no Backend.
-     * @default 'demo-tenant'
-     */
+    /** ID do Tenant atual para validação de permissões no Backend. */
     tenantId?: string;
-
-    /**
-     * ID do Plano atual para verificação de cotas.
-     * @default 'demo-plan'
-     */
+    /** ID do Plano atual para verificação de cotas. */
     planId?: string;
-    
     isExpanded?: boolean;
 }
 
 /**
  * @component ChatInterface
  * @description O Cockpit Principal da IA (Motor V8).
- * * RESPONSABILIDADES ATUALIZADAS (ARQUITETURA DE MÃO ÚNICA):
+ * * RESPONSABILIDADES ATUALIZADAS (ARQUITETURA V3 - ReAct & HITL):
  * 1. Componente 100% Visual (Dumb Component).
  * 2. Lê a memória global (Contexto) e desenha na tela.
- * 3. Delega ações de envio/confirmação para os Services.
- * 4. [NOVO] Funciona como um "Roteador Visual", renderizando componentes 
- * específicos baseados no crachá 'msg.type'.
+ * 3. Orquestra a Máquina de Estados das Propostas (PENDING -> APPROVED -> EXECUTED).
  */
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
     onClose,
@@ -2315,19 +2308,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
     
     // --- 1. HOOKS E CONTEXTO ---
-    
-    // O ChatInterface agora APENAS lê do Cérebro. Ele não decide mais quando buscar.
-    const { contextScope, messages, setMessages } = useFilixAI();
-    
-    // Hook de Serviço de comunicação com o Backend (Para novas mensagens)
+    const { featureKey, messages, setMessages } = useFilixAI();
     const { sendMessage, confirmAction, isLoading, error } = useAIChatService();
-
-    // Ref apenas para a rolagem automática (Lógica puramente visual)
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // --- 2. EFEITOS VISUAIS ---
-
-    // Rola suavemente para o final sempre que uma nova mensagem ou loading entrar na tela
     useEffect(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -2337,59 +2322,68 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // --- 3. LÓGICA DE NEGÓCIO (Handlers de Interação) ---
 
     /**
-     * Processa o envio de texto pelo usuário.
+     * @method handleSendMessage
+     * @description Processa o envio de texto e arquivos (Multimodal) pelo usuário.
      */
-    const handleSendMessage = async (text: string) => {
-        if (!text.trim()) return;
+    const handleSendMessage = async (text: string, attachments?: File[]) => {
+        if (!text.trim() && (!attachments || attachments.length === 0)) return;
 
-        // Optimistic UI: Cria a mensagem do usuário visualmente antes da API responder
-        // [CORREÇÃO]: Injetado o crachá type: 'TEXT' para obedecer ao novo contrato
+        const displayContent = text.trim() ? text : '📸 [Imagem anexada]';
+
         const userMsg: AIMessage = {
             id: Date.now().toString(),
             role: 'user',
             type: 'TEXT', 
-            content: text,
+            content: displayContent,
             timestamp: new Date()
         };
+        
         setMessages(prev => [...prev, userMsg]);
 
-        // Dispara a requisição real de conversação
+        // Dispara a requisição real de conversação para o Motor ReAct
         const response = await sendMessage({
             message: text,
-            routineKey: contextScope,
+            attachments: attachments, 
+            routineKey: featureKey,
             tenantId,
             planId
         });
 
-        // Adiciona a resposta da IA ao histórico global
         if (response) {
             setMessages(prev => [...prev, response]);
         }
     };
 
     /**
-     * Ação: Usuário clicou em [CONFIRMAR] no Card de Proposta.
+     * @method handleConfirmProposal
+     * @description Máquina de Estados Corrigida (Human-in-the-Loop).
      */
     const handleConfirmProposal = async (proposal: AIActionProposal, messageId: string) => {
-        updateMessageStatus(messageId, 'EXECUTED'); 
+        // 1. APROVAÇÃO HUMANA: Bloqueia o botão e gira o spinner
+        updateMessageStatus(messageId, 'APPROVED'); 
 
+        // 2. Chama a rota de descongelamento do Backend (/execute-proposal)
         const response = await confirmAction(proposal, messageId);
 
         if (response) {
-            updateMessageStatus(messageId, 'APPROVED');
+            // 3. SUCESSO: Ação executada no banco. Lacra o card e adiciona a resposta da IA.
+            updateMessageStatus(messageId, 'EXECUTED');
             setMessages(prev => [...prev, response]);
         } else {
+            // 4. FALHA: Volta para PENDENTE para permitir que o usuário tente novamente.
             updateMessageStatus(messageId, 'PENDING');
         }
     };
 
     /**
-     * Ação: Usuário clicou em [CANCELAR/REJEITAR].
+     * @method handleRejectProposal
+     * @description Ação: Usuário clicou em [CANCELAR/REJEITAR].
+     * Nota Arquitetural: Mantém a recusa apenas visual no Frontend. Como o Backend só 
+     * executa mediante o trigger explícito, a proposta fica "morta" no banco naturalmente.
      */
     const handleRejectProposal = (messageId: string) => {
         updateMessageStatus(messageId, 'REJECTED');
         
-        // [CORREÇÃO]: Injetado o crachá type: 'SYSTEM_ACTION' para renderizar como um Chip Central
         setMessages(prev => [...prev, {
             id: crypto.randomUUID(),
             role: 'system',
@@ -2415,7 +2409,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // ============================================================================
 
     return (
-        // CONTAINER PRINCIPAL (Mantém o layout clássico com cantos arredondados)
         <div className="flex flex-col h-full bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden font-sans">
             
             {/* === CABEÇALHO (HEADER) === */}
@@ -2431,7 +2424,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         </h3>
                         <span className="flex items-center gap-1.5 text-[10px] text-green-400 font-medium uppercase tracking-wider">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                            {contextScope === 'AI_AGENT_CHAT' ? 'Online' : `Contexto: ${contextScope}`}
+                            {featureKey === FeatureKeys.AI_CONCIERGE_MICRO ? 'Online' : `Contexto: ${featureKey}`}
                         </span>
                     </div>
                 </div>
@@ -2459,11 +2452,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {/* === CORPO DO CHAT (BODY) - O ROTEADOR VISUAL === */}
             <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5 custom-scrollbar bg-gray-900">
                 {messages.map((msg) => {
-                    // A MÁGICA DO SWITCH CASE (União Discriminada)
                     switch (msg.type) {
                         
                         case 'SYSTEM_ACTION':
-                            // Renderiza um "Chip" centralizado, discreto, como log do WhatsApp
                             return (
                                 <div key={msg.id} className="flex justify-center my-2 animate-fade-in">
                                     <span className="text-[11px] font-medium text-gray-400 bg-gray-800/80 px-4 py-1.5 rounded-full border border-gray-700/50 shadow-sm flex items-center gap-2">
@@ -2474,7 +2465,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                             );
 
                         case 'ERROR':
-                            // Box centralizado vermelho escuro para erros
                             return (
                                 <div key={msg.id} className="flex justify-center my-2 animate-fade-in">
                                     <span className="text-xs text-red-300 bg-red-900/30 px-4 py-2 rounded-lg border border-red-800/50 shadow-sm flex items-center gap-2">
@@ -2485,7 +2475,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                             );
 
                         case 'PROPOSAL':
-                            // O Card interativo completo
                             return (
                                 <ChatMessageItem 
                                     key={msg.id}
@@ -2498,7 +2487,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                         case 'TEXT':
                         default:
-                            // Balão de texto normal (sem botões)
                             return (
                                 <ChatMessageItem 
                                     key={msg.id}
@@ -2508,7 +2496,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     }
                 })}
                 
-                {/* LOADING STATE (Mantido igual) */}
+                {/* LOADING STATE */}
                 {isLoading && (
                     <div className="flex justify-start animate-pulse">
                         <div className="bg-gray-800 border border-gray-700 rounded-2xl rounded-tl-none p-4 flex gap-1.5 items-center">
@@ -2529,7 +2517,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     </div>
                 )}
                 
-                {/* Elemento invisível para forçar scroll para o final */}
                 <div ref={messagesEndRef} />
             </div>
 
@@ -2544,7 +2531,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 
                 <div className="mt-2 text-center select-none">
                     <p className="text-[10px] text-gray-500">
-                        Filix AI V8.0 - Modo: {contextScope}
+                        Filix AI V8.0 - Modo: {featureKey}
                     </p>
                 </div>
             </div>
@@ -2552,8 +2539,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     );
 };
 
-
-// ===== FILE: src/core/ai/components/ChatMessageItem.tsx =====
 
 // ===== FILE: src/core/ai/components/ChatMessageItem.tsx =====
 
@@ -2574,8 +2559,7 @@ interface ChatMessageItemProps {
 /**
  * @component ChatMessageItem
  * @description Renderiza individualmente um balão de conversa.
- * [ATUALIZADO] Implementa o "Smart Chunking" (Fatiador Inteligente) para evitar blocos 
- * gigantes de texto, quebrando os parágrafos em balões independentes (Efeito WhatsApp).
+ * Implementa o "Smart Chunking" (Fatiador Inteligente) e instancia os Cards de Proposta.
  */
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     message,
@@ -2588,16 +2572,10 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
     // =========================================================================
     // 🧠 SMART CHUNKER (O Fatiador de Pensamentos)
-    // Se a IA mandar um texto com parágrafos (\n\n), nós dividimos em um Array
-    // para renderizar múltiplos balõezinhos ao invés de um blocão gigante.
     // =========================================================================
     const textChunks = useMemo(() => {
         if (!message.content) return [];
-        
-        // O usuário e o sistema mantém um balão só. Apenas a IA (assistant) é fatiada.
         if (isUser || isSystem) return [message.content];
-
-        // Separa por quebra de linha dupla, filtrando pedaços vazios
         return message.content.split(/\n\s*\n/).filter(chunk => chunk.trim() !== '');
     }, [message.content, isUser, isSystem]);
 
@@ -2607,16 +2585,15 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             {/* Renderiza um balão individual para CADA pensamento (chunk) da IA */}
             {textChunks.map((chunk, index) => {
                 
-                // Lógica estética: se houver vários balões, arredonda as bordas de forma fluida
                 const isFirst = index === 0;
                 const isLast = index === textChunks.length - 1;
                 
                 let borderRadiusClass = '';
                 if (!isUser && !isSystem) {
-                    if (textChunks.length === 1) borderRadiusClass = 'rounded-tl-none'; // Único
-                    else if (isFirst) borderRadiusClass = 'rounded-bl-none rounded-tl-2xl'; // Primeiro
-                    else if (isLast) borderRadiusClass = 'rounded-tl-none rounded-bl-2xl'; // Último
-                    else borderRadiusClass = 'rounded-l-none'; // Meio
+                    if (textChunks.length === 1) borderRadiusClass = 'rounded-tl-none'; 
+                    else if (isFirst) borderRadiusClass = 'rounded-bl-none rounded-tl-2xl'; 
+                    else if (isLast) borderRadiusClass = 'rounded-tl-none rounded-bl-2xl'; 
+                    else borderRadiusClass = 'rounded-l-none'; 
                 } else if (isUser) {
                     borderRadiusClass = 'rounded-tr-none';
                 }
@@ -2652,7 +2629,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                             )}
                         </div>
 
-                        {/* A Hora só aparece no último balão do agrupamento para ficar mais limpo */}
+                        {/* A Hora só aparece no último balão do agrupamento */}
                         {isLast && (
                             <span className={`text-[9px] block mt-1.5 opacity-40 font-mono ${isUser ? 'text-right' : 'text-left'}`}>
                                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -2670,7 +2647,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                         status={message.proposalStatus}
                         onConfirm={() => onConfirmProposal(message.proposal!, message.id)}
                         onReject={() => onRejectProposal(message.id)}
-                        isExecuting={isExecuting && message.proposalStatus === 'EXECUTED'}
+                        // [CORREÇÃO]: O botão gira (isExecuting) se o chat estiver carregando E o status for APPROVED
+                        isExecuting={isExecuting && message.proposalStatus === 'APPROVED'}
                     />
                 </div>
             )}
@@ -2712,7 +2690,7 @@ export const FloatingWidget: React.FC = () => {
         // 'translate-x-full' esconde a gaveta jogando-a para fora da tela pela direita
         <div 
             className={`
-                fixed top-16 right-0 h-[calc(100vh-4rem)] w-[400px] max-w-[100vw]
+                fixed top-16 right-0 h-[calc(100vh-4rem)] w-[650px] max-w-[100vw]
                 bg-gray-900 border-l border-gray-700 shadow-2xl
                 transform transition-transform duration-300 ease-in-out z-40
                 flex flex-col
@@ -3461,7 +3439,7 @@ export const StagingArea: React.FC<StagingAreaProps> = ({ files, onRemove }) => 
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AIMessage, AIMessageType, FilixAIContextData } from '../types/state/AIState'; // [ATUALIZADO] Importando o AIMessageType
-import { AIContextScope, AIWidgetMode } from '../types/enums/AIEnums';
+import { AIWidgetMode, FeatureKey, FeatureKeys } from '../types/enums/AIEnums';
 import { AIContextMetadata } from '../types/dtos/AIChatRequest.dto';
 import { api } from '@/core/services/api'; 
 import { fetchAIHistory } from '../hooks/AIHistoryService';
@@ -3497,7 +3475,7 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
     const [mode, setMode] = useState<AIWidgetMode>('MINIMIZED');
     
     // Contexto Semântico (A Pistola - Macro)
-    const [contextScope, setInternalContextScope] = useState<AIContextScope>('AI_AGENT_CHAT');
+    const [featureKey, setInternalFeatureKey] = useState<FeatureKey>(FeatureKeys.AI_CONCIERGE_MICRO);
 
     // Contexto de Metadados (A Sniper - Micro)
     const [contextMetadata, setContextMetadata] = useState<AIContextMetadata | undefined>(undefined);
@@ -3554,11 +3532,11 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
             setMessages([]);
             setHasLoadedHistory(false);
 
-            if (!contextScope) return;
+            if (!featureKey) return;
 
             try {
                 // 2. O Contexto delega o trabalho sujo para o Serviço Puro!
-                const historyData = await fetchAIHistory(contextScope);
+                const historyData = await fetchAIHistory(featureKey);
                 
                 // Se o componente não morreu no meio do caminho, salva na memória RAM
                 if (isMounted) {
@@ -3575,7 +3553,7 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
         loadHistory();
 
         return () => { isMounted = false; };
-    }, [contextScope]);
+    }, [featureKey]);
 
     // --- 3. Ações (Actions) ---
 
@@ -3601,8 +3579,8 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
     /**
      * Define o contexto completo da IA (Macro + Micro).
      */
-    const setContext = (scope: AIContextScope, metadata?: AIContextMetadata) => {
-        setInternalContextScope(scope);
+    const setContext = (scope: FeatureKey, metadata?: AIContextMetadata) => {
+        setInternalFeatureKey(scope);
         // Se metadata for undefined, limpa o estado anterior
         setContextMetadata(metadata);
     };
@@ -3616,7 +3594,7 @@ export const FilixAIProvider: React.FC<FilixAIProviderProps> = ({ children }) =>
             isEnabled,
             
             // Estado de Inteligência
-            contextScope,
+            featureKey,
             contextMetadata,
             
             // Estado de Interação
@@ -3666,14 +3644,14 @@ import { AIMessage, AIMessageType } from '../types/state/AIState';
  */
 export const fetchAIHistory = async (routineKey: string): Promise<AIMessage[]> => {
     
-    console.log('FRONT [1]: Disparando fetchAIHistory (Serviço Puro) para a rotina:', routineKey);
+    // console.log('FRONT [1]: Disparando fetchAIHistory (Serviço Puro) para a rotina:', routineKey);
     
     if (!routineKey) return [];
 
     try {
         const response = await api.get<any[]>(`/ai/history/${routineKey}`);
         
-        console.log('FRONT [2]: Resposta da API recebida. Mapeando crachás...');
+        // console.log('FRONT [2]: Resposta da API recebida. Mapeando crachás...');
 
         const formattedHistory: AIMessage[] = response.data.map((msg: any) => {
             const role = msg.role as 'user' | 'assistant' | 'system';
@@ -3812,6 +3790,8 @@ export const useAIChatService = () => {
                 attachmentsUrls: uploadedUrls.length > 0 ? uploadedUrls : undefined
             };
 
+            console.log("🕵️‍♂️ [DEBUG FRONTEND] Payload sendo enviado para o Backend:", JSON.stringify(requestPayload, null, 2));
+            
             // Chamada real ao Backend V8
             const { data } = await api.post<AIResponseDto>('/ai/chat', requestPayload);
 
@@ -3920,14 +3900,12 @@ export const useAIChatService = () => {
 
 // ===== FILE: src/core/ai/hooks/useAIContextInjector.ts =====
 
-// ===== FILE: src/core/ai/hooks/useAIContextInjector.ts =====
-
 'use client';
 
 import { useEffect } from 'react';
 import { useFilixAI } from '../context/FilixAIContext';
 import { AIContextMetadata } from '../types/dtos/AIChatRequest.dto';
-import { AIContextScope } from '../types/enums/AIEnums';
+import { FeatureKey } from '../types/enums/AIEnums';
 
 /**
  * @hook useAIContextInjector
@@ -3938,14 +3916,14 @@ import { AIContextScope } from '../types/enums/AIEnums';
  * * @example
  * // Uso Avançado (Com Metadados - "Sniper")
  * useAIContextInjector('CRM_SALES', {
- * refType: 'CLIENT',
+ * module: 'CLIENT',
  * refId: client.id,
  * refName: client.name,
  * featureLocation: 'CLIENT_DASHBOARD'
  * });
  */
 export const useAIContextInjector = (
-    scope: AIContextScope, 
+    scope: FeatureKey, 
     metadata?: AIContextMetadata
 ) => {
     // Consome a nova função setContext do Provider (Fase 2)
@@ -3967,6 +3945,7 @@ export const useAIContextInjector = (
         // Desconstruímos o metadata para evitar loops infinitos caso o objeto seja recriado,
         // mas o conteúdo seja o mesmo. O contexto só atualiza se o ID ou o Local mudarem.
         metadata?.refId,
+        metadata?.module,
         metadata?.featureLocation,
         metadata?.subContext
     ]);
@@ -4163,7 +4142,7 @@ export interface AIActionProposal {
  * Define a estrutura exata do que o Frontend envia para o endpoint POST /ai/chat.
  */
 
-import { AIContextScope, AIEntityRefType } from '../enums/AIEnums';
+import { AppModule, FeatureKey } from '../enums/AIEnums';
 
 /**
  * @interface AIContextMetadata
@@ -4172,7 +4151,7 @@ import { AIContextScope, AIEntityRefType } from '../enums/AIEnums';
  */
 export interface AIContextMetadata {
     /** O QUE É: Classificador da entidade (ex: 'CLIENT' ou 'SETUP'). */
-    refType: AIEntityRefType;
+    module: AppModule;
 
     /** QUAL É: UUID do registo ou identificador do fluxo. */
     refId: string;
@@ -4196,7 +4175,7 @@ export interface AIChatRequestDto {
     message: string;
 
     /** A chave de rotina macro (A "Pistola" - ex: AI_SALES_AGENT). */
-    routineKey: AIContextScope;
+    routineKey: FeatureKey;
 
     /** Identificação do Tenant para isolamento de dados e permissões no Backend. */
     tenantId: string;
@@ -4298,30 +4277,43 @@ export enum UIActionType {
 }
 
 /**
- * @enum AIContextScopeEnum
+ * @enum FeatureKeys
  * @description Contextos possíveis onde a IA pode operar (A Pistola - Macro).
+ * [NOVO]: Agora espelha estritamente as 'FeatureKeys' (Inteligência) do Backend.
  */
-export enum AIContextScopeEnum {
-    CHAT = 'AI_AGENT_CHAT',
-    SALES = 'AI_SALES_AGENT',
-    INVENTORY = 'AI_INVENTORY_AGENT',
-    FISCAL = 'AI_FISCAL_AUDITOR',
-    SCHEDULER = 'AI_SCHEDULER_AGENT'
+export enum FeatureKeys {
+    // Assistentes Interativos (Micro)
+    AI_CONCIERGE_MICRO = 'AI_CONCIERGE_MICRO',
+    AI_SALES_MICRO = 'AI_SALES_MICRO',
+    AI_INVENTORY_MICRO = 'AI_INVENTORY_MICRO',
+    AI_FISCAL_MICRO = 'AI_FISCAL_MICRO',
+    
+    // Background Workers (Micro / Meso / Macro)
+    AI_CLIENT_MICRO = 'AI_CLIENT_MICRO',
+    AI_CLIENT_MESO = 'AI_CLIENT_MESO',
+    AI_SALES_MESO = 'AI_SALES_MESO',
+    AI_INVENTORY_MESO = 'AI_INVENTORY_MESO',
+    AI_TENANT_MACRO = 'AI_TENANT_MACRO'
 }
 
-export type AIContextScope = `${AIContextScopeEnum}`;
+export type FeatureKey = `${FeatureKeys}`;
 
 /**
- * @type AIEntityRefType
- * @description Classificador de Entidades. Vocabulário controlado para o Backend saber onde buscar o 'refId'.
+ * @enum AppModules
+ * @description Classificador de Entidades.
+ * [NOVO]: Agora espelha estritamente o 'AppModule' do Backend. O Eixo Universal de Domínio.
  */
-export type AIEntityRefType = 
-    | 'CLIENT' 
-    | 'DEAL' 
-    | 'PRODUCT' 
-    | 'WAREHOUSE' 
-    | 'EVENT'
-    | 'SETUP';
+export enum AppModules {
+    CORE = 'CORE',
+    CLIENTE = 'CLIENTE',
+    CRM = 'CRM',
+    FINANCEIRO = 'FINANCEIRO',
+    ESTOQUE = 'ESTOQUE',
+    ACL = 'ACL',
+    TENANT = 'TENANT'
+}
+
+export type AppModule = `${AppModules}`;
 
 /**
  * @type AIRole
@@ -4354,7 +4346,7 @@ import { Dispatch, SetStateAction } from 'react';
 import { 
     AIWidgetMode, 
     AIRole, 
-    AIContextScope, 
+    FeatureKey, 
     ProposalStatus 
 } from '../enums/AIEnums';
 import { AIActionProposal } from '../dtos/AIActionProposal.dto';
@@ -4420,7 +4412,7 @@ export interface FilixAIContextData {
     isEnabled: boolean;
     
     // === Estado Semântico ===
-    contextScope: AIContextScope;          // A Pistola (Macro)
+    featureKey: FeatureKey;          // A Pistola (Macro)
     contextMetadata?: AIContextMetadata;   // A Sniper (Micro - Opcional)
     
     // === Estado de Interação (Rascunho) ===
@@ -4435,7 +4427,7 @@ export interface FilixAIContextData {
     toggleVisibility: () => void;
     setMode: (mode: AIWidgetMode) => void;
     toggleEnabled: () => void;
-    setContext: (scope: AIContextScope, metadata?: AIContextMetadata) => void;
+    setContext: (scope: FeatureKey, metadata?: AIContextMetadata) => void;
     openChat: () => void;
 }
 
@@ -5215,6 +5207,740 @@ export const ClientTablePage: React.FC = () => {
             
         </div>
     );
+}
+
+
+// ===== FILE: src/core/components/crud/CrudForm.tsx =====
+
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useForm, Controller, FieldValues, SubmitHandler, DefaultValues } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { FaTimes, FaSave } from 'react-icons/fa';
+import { CrudConfig, CrudFieldConfig } from './types';
+
+interface CrudFormProps<TData, TForm extends FieldValues> {
+    isOpen: boolean;
+    onClose: () => void;
+    config: CrudConfig<TData, TForm>;
+    initialData?: TData | null;
+    onSubmit: (data: TForm) => Promise<void>;
+}
+
+/**
+ * @component CrudForm (A Impressora 3D)
+ * @description Drawer universal que desenha inputs automaticamente baseado na config.
+ * Utiliza Generics <T> para garantir que a tipagem do formulário seja idêntica à do Zod.
+ */
+export function CrudForm<TData, TForm extends FieldValues>({
+    isOpen,
+    onClose,
+    config,
+    initialData,
+    onSubmit
+}: CrudFormProps<TData, TForm>) {
+    
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // =========================================================================
+    // 🧠 O CÉREBRO DO FORMULÁRIO (React Hook Form + Zod)
+    // =========================================================================
+    const {
+        register,
+        handleSubmit,
+        reset,
+        control,
+        formState: { errors }
+    } = useForm<TForm>({
+        resolver: zodResolver(config.schema as any), // Conecta a validação Zod!
+        mode: 'onChange', // Valida em tempo real enquanto o usuário digita
+    });
+
+    // Hidratação: Preenche ou limpa o formulário sempre que abrir/fechar
+    useEffect(() => {
+        if (isOpen) {
+            if (initialData) {
+                // MODO EDIÇÃO: Preenche com os dados existentes
+                reset(initialData as DefaultValues<TForm>);
+            } else {
+                // MODO CRIAÇÃO: Reseta para vazio (pega defaults do Zod)
+                // O cast vazio {} as T é seguro pois o Zod resolverá os campos obrigatórios
+                reset({} as DefaultValues<TForm>); 
+            }
+        }
+    }, [isOpen, initialData, reset]);
+
+    // =========================================================================
+    // ⚙️ HANDLERS
+    // =========================================================================
+    const handleFormSubmit: SubmitHandler<TForm> = async (data) => {
+        setIsSubmitting(true);
+        try {
+            await onSubmit(data);
+            onClose(); // Só fecha se a mutação na API der sucesso
+        } catch (error) {
+            console.error('❌ [CrudForm] Erro ao salvar:', error);
+            // Os erros de API (como "Nome já existe") podem ser tratados pelo Toast global
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // =========================================================================
+    // 🎨 RENDERIZADOR POLIMÓRFICO (O "Pintor" de Inputs)
+    // =========================================================================
+    const renderField = (field: CrudFieldConfig<TForm>) => {
+        const fieldName = String(field.name);
+        const hasError = !!errors[fieldName];
+        const errorMessage = errors[fieldName]?.message as string;
+
+        // Classes base compartilhadas para manter o Design System (Dark/Metallic)
+        const baseInputClasses = `
+            w-full bg-gray-900 border rounded-lg px-3 py-2.5 text-sm text-white 
+            focus:outline-none transition-all placeholder-gray-600
+            ${hasError 
+                ? 'border-red-500 focus:ring-1 focus:ring-red-500' 
+                : 'border-gray-700 focus:border-accent-primary focus:ring-1 focus:ring-accent-primary'
+            }
+            ${field.disabled ? 'opacity-50 cursor-not-allowed' : ''}
+        `;
+
+        switch (field.type) {
+            case 'text':
+            case 'number':
+            case 'currency':
+                return (
+                    <input
+                        type={field.type === 'number' || field.type === 'currency' ? 'number' : 'text'}
+                        step={field.type === 'currency' ? '0.01' : undefined}
+                        {...register(field.name as any, { 
+                            // Garante que números não virem strings "10" na hora de enviar pro Zod
+                            setValueAs: v => (field.type === 'number' || field.type === 'currency') ? (v === '' ? undefined : Number(v)) : v 
+                        })}
+                        placeholder={field.placeholder}
+                        disabled={field.disabled || isSubmitting}
+                        className={baseInputClasses}
+                    />
+                );
+
+            case 'textarea':
+                return (
+                    <textarea
+                        {...register(field.name as any)}
+                        placeholder={field.placeholder}
+                        disabled={field.disabled || isSubmitting}
+                        rows={3}
+                        className={`${baseInputClasses} resize-y`}
+                    />
+                );
+
+            case 'select':
+                return (
+                    <select
+                        {...register(field.name as any)}
+                        disabled={field.disabled || isSubmitting}
+                        className={baseInputClasses}
+                    >
+                        <option value="">Selecione...</option>
+                        {field.options?.map(opt => (
+                            <option key={String(opt.value)} value={String(opt.value)}>
+                                {opt.label}
+                            </option>
+                        ))}
+                    </select>
+                );
+
+            case 'hidden':
+                return (
+                    <input type="hidden" {...register(field.name as any)} />
+                );
+
+            case 'boolean':
+                // Para booleanos (Toggle), usamos o Controller do React Hook Form
+                // pois elementos customizados precisam de gerenciamento de estado controlado
+                return (
+                    <Controller
+                        name={field.name as any}
+                        control={control}
+                        render={({ field: { onChange, value } }) => (
+                            <div className="flex items-center mt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => onChange(!value)}
+                                    disabled={field.disabled || isSubmitting}
+                                    className={`
+                                        relative inline-flex h-6 w-11 items-center rounded-full transition-colors 
+                                        focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2 focus:ring-offset-gray-900
+                                        ${value ? 'bg-emerald-500' : 'bg-gray-600'}
+                                        ${field.disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                                    `}
+                                >
+                                    <span
+                                        className={`
+                                            inline-block h-4 w-4 transform rounded-full bg-white transition-transform 
+                                            ${value ? 'translate-x-6' : 'translate-x-1'}
+                                        `}
+                                    />
+                                </button>
+                                <span className="ml-3 text-sm text-gray-300">
+                                    {value ? 'Ativo' : 'Inativo'}
+                                </span>
+                            </div>
+                        )}
+                    />
+                );
+
+            default:
+                return null;
+        }
+    };
+
+    // Se o Drawer estiver fechado, não carrega a árvore no DOM
+    if (!isOpen) return null;
+
+    // =========================================================================
+    // 🖼️ A ESTRUTURA VISUAL DO DRAWER
+    // =========================================================================
+    return (
+        <div className="fixed inset-0 z-50 flex justify-end">
+            
+            {/* Backdrop com Blur suave */}
+            <div 
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+                onClick={!isSubmitting ? onClose : undefined} // Previne fechar enquanto salva
+            ></div>
+
+            {/* Painel Lateral Metálico */}
+            <div className="relative w-full max-w-md h-full bg-base-metallic border-l border-gray-700 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col">
+                
+                {/* Header Dinâmico */}
+                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-700 bg-gray-900/50 flex-shrink-0">
+                    <div>
+                        <h3 className="text-lg font-semibold text-base-text leading-tight">
+                            {initialData ? `Editar ${config.title}` : `Novo(a) ${config.title}`}
+                        </h3>
+                        {config.description && (
+                            <p className="text-xs text-gray-400 mt-1">{config.description}</p>
+                        )}
+                    </div>
+                    <button 
+                        onClick={onClose}
+                        disabled={isSubmitting}
+                        className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                    >
+                        <FaTimes className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Corpo Form: O Loop Mágico */}
+                <form id="crud-form" onSubmit={handleSubmit(handleFormSubmit)} className="flex-1 p-6 space-y-5 overflow-y-auto custom-scrollbar">
+                    
+                    {config.fields.map((field) => {
+                        const fieldName = String(field.name);
+                        const hasError = !!errors[fieldName];
+
+                        return (
+                            <div key={fieldName} className="space-y-1.5 animate-fade-in">
+                                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                                    {field.label}
+                                    {/* Asterisco se o Zod exigir o campo (Não é opcional) */}
+                                    {!config.schema.isOptional() && <span className="text-accent-primary ml-1">*</span>}
+                                </label>
+                                
+                                {renderField(field)}
+                                
+                                {/* Mensagem de Erro Injetada Automaticamente pelo Zod */}
+                                {hasError && (
+                                    <p className="text-[10px] text-red-400 mt-1 font-medium">
+                                        {errors[fieldName]?.message as string}
+                                    </p>
+                                )}
+                            </div>
+                        );
+                    })}
+
+                </form>
+
+                {/* Footer (Ações) */}
+                <div className="p-6 border-t border-gray-700 bg-gray-900/30 flex justify-end gap-3 flex-shrink-0">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={isSubmitting}
+                        className="px-4 py-2 text-sm font-bold text-gray-400 bg-transparent border border-gray-600 rounded-lg hover:bg-gray-700 hover:text-white transition-colors disabled:opacity-50"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        form="crud-form"
+                        disabled={isSubmitting}
+                        className="flex items-center gap-2 px-6 py-2 text-sm font-bold text-base-dark bg-accent-primary rounded-lg hover:brightness-110 focus:outline-none transition-all shadow-lg shadow-accent-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-base-dark border-t-transparent"></div>
+                                <span>Salvando...</span>
+                            </>
+                        ) : (
+                            <>
+                                <FaSave className="w-4 h-4" />
+                                <span>{initialData ? 'Atualizar' : 'Salvar'}</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    );
+}
+
+
+// ===== FILE: src/core/components/crud/CrudLayout.tsx =====
+
+'use client';
+
+import React, { useState, useMemo } from 'react';
+import { FaSearch, FaPlus, FaSync } from 'react-icons/fa';
+import { CrudConfig, CrudHooks } from './types';
+import { CrudTable } from './CrudTable';
+import { CrudForm } from './CrudForm';
+import { FieldValues } from 'react-hook-form';
+
+interface CrudLayoutProps<TData extends FieldValues & { id: string }, TForm extends FieldValues> {
+    config: CrudConfig<TData, TForm>;
+    hooks: CrudHooks<TData, TForm>;
+}
+
+/**
+ * @component CrudLayout (O Maestro)
+ * @description O Layout Universal para Cadastros de Apoio e Master Data simples.
+ * Acopla a Tabela, o Formulário e os Hooks de mutação em uma única interface padronizada.
+ */
+export function CrudLayout<TData extends FieldValues & { id: string }, TForm extends FieldValues>({
+    config,
+    hooks
+}: CrudLayoutProps<TData, TForm>) {
+
+    // =========================================================================
+    // 🧠 ESTADOS DO ORQUESTRADOR
+    // =========================================================================
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState<TData | null>(null);
+
+    // =========================================================================
+    // 🔍 MOTOR DE BUSCA UNIVERSAL (Client-side)
+    // =========================================================================
+    const filteredData = useMemo(() => {
+        if (!searchTerm.trim()) return hooks.data;
+        
+        const lowerTerm = searchTerm.toLowerCase();
+        return hooks.data.filter((item) => {
+            // Percorre todos os valores do objeto procurando o termo digitado
+            return Object.values(item).some(val => 
+                String(val).toLowerCase().includes(lowerTerm)
+            );
+        });
+    }, [hooks.data, searchTerm]);
+
+    // =========================================================================
+    // ⚙️ HANDLERS DE AÇÃO
+    // =========================================================================
+    const handleOpenCreate = () => {
+        setEditingItem(null);
+        setIsDrawerOpen(true);
+    };
+
+    const handleOpenEdit = (item: TData) => {
+        setEditingItem(item);
+        setIsDrawerOpen(true);
+    };
+
+    const handleCloseDrawer = () => {
+        setIsDrawerOpen(false);
+        setEditingItem(null);
+    };
+
+    const handleSubmit = async (formData: TForm) => {
+        if (editingItem) {
+            // Se tem item em edição, chama o PUT/PATCH
+            await hooks.onUpdate(editingItem.id, formData);
+        } else {
+            // Se não tem, chama o POST
+            await hooks.onCreate(formData);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (window.confirm(`Tem certeza que deseja excluir este registro de ${config.title}?`)) {
+            await hooks.onDelete(id);
+        }
+    };
+
+    // =========================================================================
+    // 🖼️ RENDERIZAÇÃO MONUMENTAL
+    // =========================================================================
+    return (
+        <div className="space-y-6 animate-fade-in h-full flex flex-col min-h-0">
+            
+            {/* --- HEADER E TOOLBAR --- */}
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center flex-shrink-0">
+                
+                {/* Título e Botão de Refresh Opcional */}
+                <div className="flex items-center gap-3">
+                    <div>
+                        <h2 className="text-xl font-bold text-base-text tracking-tight">
+                            {config.title}
+                        </h2>
+                        {config.description && (
+                            <p className="text-sm text-gray-400">{config.description}</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    {/* Barra de Busca Universal */}
+                    <div className="relative w-full md:w-72 group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <FaSearch className="text-gray-500 group-focus-within:text-accent-primary transition-colors" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Buscar..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-700 rounded-lg leading-5 bg-gray-900 text-base-text placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-accent-primary focus:border-accent-primary sm:text-sm transition-colors shadow-inner"
+                        />
+                    </div>
+
+                    {/* Botão Novo Registro */}
+                    <button
+                        onClick={handleOpenCreate}
+                        className="flex items-center justify-center gap-2 bg-accent-primary hover:bg-accent-primary-hover text-base-dark px-5 py-2.5 rounded-lg font-bold transition-all shadow-lg shadow-accent-primary/20 active:scale-95 flex-shrink-0"
+                    >
+                        <FaPlus className="w-3 h-3" />
+                        <span className="hidden sm:inline">Novo</span>
+                    </button>
+
+                    {/* Botão de Refresh Silencioso */}
+                    <button
+                        onClick={() => hooks.onRefresh()}
+                        disabled={hooks.isLoading}
+                        className="p-2.5 text-gray-400 hover:text-white bg-gray-800 border border-gray-700 rounded-lg transition-colors disabled:opacity-50"
+                        title="Atualizar dados"
+                    >
+                        <FaSync className={hooks.isLoading ? 'animate-spin' : ''} />
+                    </button>
+                </div>
+            </div>
+
+            {/* --- VITRINE (A Tabela) --- */}
+            <div className="flex-1 min-h-0 overflow-hidden pb-2">
+                {/* Se der erro na API Global (ex: servidor caiu) */}
+                {hooks.error && (
+                    <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 text-red-400 rounded-lg text-sm text-center">
+                        {hooks.error}
+                    </div>
+                )}
+                
+                <CrudTable<TData>
+                    data={filteredData}
+                    columns={config.columns}
+                    isLoading={hooks.isLoading}
+                    onEdit={handleOpenEdit}
+                    onDelete={handleDelete}
+                />
+            </div>
+
+            {/* --- FÁBRICA (O Formulário Modal) --- */}
+            <CrudForm<TData, TForm>
+                isOpen={isDrawerOpen}
+                onClose={handleCloseDrawer}
+                config={config}
+                initialData={editingItem}
+                onSubmit={handleSubmit}
+            />
+
+        </div>
+    );
+}
+
+
+// ===== FILE: src/core/components/crud/CrudTable.tsx =====
+
+// ===== FILE: src/core/components/crud/CrudTable.tsx =====
+
+import React from 'react';
+import { FaEdit, FaTrash, FaInbox } from 'react-icons/fa';
+import { CrudColumnConfig } from './types';
+
+interface CrudTableProps<T> {
+    data: T[];
+    columns: CrudColumnConfig<T>[];
+    isLoading: boolean;
+    onEdit: (item: T) => void;
+    onDelete: (id: string) => void;
+}
+
+/**
+ * @component CrudTable
+ * @description O Motor de Exibição (Grid). 
+ * Renderiza os dados dinamicamente com base nas colunas configuradas.
+ * Possui estados nativos de Loading e Empty (Vazio) aderentes ao Design System.
+ */
+export function CrudTable<T extends { id: string } & Record<string, any>>({
+    data,
+    columns,
+    isLoading,
+    onEdit,
+    onDelete
+}: CrudTableProps<T>) {
+
+    // =========================================================================
+    // 🎨 FORMATADOR POLIMÓRFICO DE CÉLULAS (Cell Renderer)
+    // =========================================================================
+    const renderCell = (item: T, col: CrudColumnConfig<T>) => {
+        const value = item[col.key];
+
+        // Proteção contra dados nulos
+        if (value === null || value === undefined) {
+            return <span className="text-gray-600">-</span>;
+        }
+
+        switch (col.type) {
+            case 'boolean':
+                // Desenha a Badge Enterprise (Verde/Vermelha) para booleanos
+                const isTruthy = Boolean(value);
+                return (
+                    <span className={`
+                        inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border
+                        ${isTruthy 
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                            : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                        }
+                    `}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${isTruthy ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                        {isTruthy ? 'Ativo' : 'Inativo'}
+                    </span>
+                );
+
+            case 'currency':
+                // Formatação Monetária BR
+                const numValue = Number(value);
+                return (
+                    <span className="font-mono text-green-400 font-medium">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(isNaN(numValue) ? 0 : numValue)}
+                    </span>
+                );
+
+            case 'date':
+                // Formatação de Data
+                const dateValue = new Date(String(value));
+                return (
+                    <span className="text-gray-300">
+                        {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(dateValue)}
+                    </span>
+                );
+
+            case 'text':
+            default:
+                // Texto padrão com suporte a truncate se for muito longo
+                return (
+                    <span className="text-sm font-medium text-base-text transition-colors group-hover:text-accent-primary">
+                        {String(value)}
+                    </span>
+                );
+        }
+    };
+
+    // =========================================================================
+    // 🖼️ RENDERIZAÇÃO DA TABELA
+    // =========================================================================
+    return (
+        <div className="bg-base-metallic rounded-xl border border-gray-700 shadow-xl overflow-hidden animate-fade-in">
+            <div className="overflow-x-auto custom-scrollbar">
+                <table className="min-w-full divide-y divide-gray-700">
+                    
+                    {/* CABEÇALHO (Thead) */}
+                    <thead className="bg-gray-900/50">
+                        <tr>
+                            {columns.map((col) => (
+                                <th 
+                                    key={String(col.key)} 
+                                    scope="col" 
+                                    className={`px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-${col.align || 'left'}`}
+                                >
+                                    {col.label}
+                                </th>
+                            ))}
+                            {/* Coluna fixa de Ações à direita */}
+                            <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Ações
+                            </th>
+                        </tr>
+                    </thead>
+
+                    {/* CORPO DA TABELA (Tbody) */}
+                    <tbody className="divide-y divide-gray-700/50">
+                        
+                        {/* ESTADO 1: CARREGANDO */}
+                        {isLoading && data.length === 0 && (
+                            <tr>
+                                <td colSpan={columns.length + 1} className="px-6 py-12">
+                                    <div className="flex flex-col items-center justify-center space-y-3 animate-pulse">
+                                        <div className="h-8 w-8 rounded-full border-2 border-t-accent-primary border-r-transparent border-b-accent-primary/30 border-l-transparent animate-spin"></div>
+                                        <span className="text-gray-500 text-sm font-medium tracking-wide">Carregando registros...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        )}
+
+                        {/* ESTADO 2: VAZIO (Nenhum registro) */}
+                        {!isLoading && data.length === 0 && (
+                            <tr>
+                                <td colSpan={columns.length + 1} className="px-6 py-16">
+                                    <div className="flex flex-col items-center justify-center text-center">
+                                        <div className="p-4 bg-gray-900 rounded-full mb-4 border border-gray-700 shadow-inner">
+                                            <FaInbox className="w-8 h-8 text-gray-600" />
+                                        </div>
+                                        <h3 className="text-lg font-medium text-base-text mb-1">Nenhum registro encontrado</h3>
+                                        <p className="text-gray-500 text-sm max-w-sm">
+                                            Ainda não há dados cadastrados para esta entidade ou a sua busca não retornou resultados.
+                                        </p>
+                                    </div>
+                                </td>
+                            </tr>
+                        )}
+
+                        {/* ESTADO 3: LISTAGEM DE DADOS */}
+                        {!isLoading && data.map((item) => (
+                            <tr key={item.id} className="hover:bg-gray-700/30 transition-colors duration-200 group">
+                                
+                                {/* Células Dinâmicas */}
+                                {columns.map((col) => (
+                                    <td 
+                                        key={String(col.key)} 
+                                        className={`px-6 py-4 whitespace-nowrap text-${col.align || 'left'}`}
+                                    >
+                                        {renderCell(item, col)}
+                                    </td>
+                                ))}
+
+                                {/* Célula Fixa de Ações */}
+                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    {/* Botões ficam opacos até a linha receber hover (UX Clean) */}
+                                    <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                        <button 
+                                            onClick={() => onEdit(item)}
+                                            className="text-gray-400 hover:text-accent-primary p-1.5 hover:bg-gray-800 rounded transition-all" 
+                                            title="Editar registro"
+                                        >
+                                            <FaEdit className="w-4 h-4" />
+                                        </button>
+                                        <button 
+                                            onClick={() => onDelete(item.id)}
+                                            className="text-gray-400 hover:text-rose-500 p-1.5 hover:bg-rose-500/10 rounded transition-all" 
+                                            title="Excluir registro"
+                                        >
+                                            <FaTrash className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+
+                    </tbody>
+                </table>
+            </div>
+            
+            {/* RODAPÉ DO GRID (Contador) */}
+            {!isLoading && data.length > 0 && (
+                <div className="p-3 border-t border-gray-700 bg-gray-900/30 text-right">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">
+                        {data.length} registro(s) listado(s)
+                    </span>
+                </div>
+            )}
+        </div>
+    );
+}
+
+
+// ===== FILE: src/core/components/crud/types.ts =====
+
+import { z } from 'zod';
+
+/**
+ * @type FieldType
+ * @description Os tipos de inputs visuais que a nossa "Fábrica" consegue desenhar.
+ */
+export type FieldType = 
+    | 'text' 
+    | 'number' 
+    | 'boolean' // Renderiza um Toggle/Switch
+    | 'textarea' 
+    | 'select' 
+    | 'currency'
+    | 'hidden'
+    | 'date'
+    | 'datetime'
+    | 'time'
+    | 'file';
+
+/**
+ * @interface CrudFieldConfig
+ * @description Configuração visual de um campo do formulário.
+ * O <T> garante que o 'name' pertença estritamente ao Schema Zod fornecido.
+ */
+export interface CrudFieldConfig<TForm> {
+    name: keyof TForm;          // A chave exata do banco/zod (ex: 'name', 'isActive')
+    label: string;          // O rótulo humano (ex: 'Nome da Categoria')
+    type: FieldType;        // Como deve ser desenhado na tela
+    placeholder?: string;
+    options?: { label: string; value: string | number | boolean }[]; // Necessário se for 'select'
+    disabled?: boolean;
+}
+
+/**
+ * @interface CrudColumnConfig
+ * @description Configuração de como uma coluna deve aparecer no Grid (Tabela).
+ */
+export interface CrudColumnConfig<TData> {
+    key: keyof TData;
+    label: string;
+    type?: 'text' | 'boolean' | 'currency' | 'date'; // Formatação automática na tabela
+    align?: 'left' | 'center' | 'right';
+}
+
+/**
+ * @interface CrudConfig
+ * @description O Blueprint (A Planta) completa de uma tela de Cadastro.
+ * É isso que o desenvolvedor vai preencher para criar uma tela nova.
+ */
+export interface CrudConfig<TData, TForm> {
+    title: string;
+    description?: string;
+    schema: z.ZodSchema<TForm>;            // A validação matemática
+    fields: CrudFieldConfig<TForm>[];      // O desenho do Formulário
+    columns: CrudColumnConfig<TData>[];    // O desenho da Tabela
+}
+
+/**
+ * @interface CrudHooks
+ * @description O contrato de comunicação com o Backend.
+ * O Motor não faz fetch direto; ele pede para os seus Hooks de Domínio fazerem.
+ */
+export interface CrudHooks<TData, TForm> {
+    data: TData[];
+    isLoading: boolean;
+    error: string | null;
+    onCreate: (data: TForm) => Promise<any>;
+    onUpdate: (id: string, data: Partial<TForm>) => Promise<any>;
+    onDelete: (id: string) => Promise<any>;
+    onRefresh: () => void;
 }
 
 
@@ -6262,79 +6988,64 @@ export const GoogleProvider: React.FC<GoogleProviderProps> = ({ children }) => {
 
 // ===== FILE: src/core/services/StorageService.ts =====
 
-// ===== FILE: src/core/services/StorageService.ts =====
+import { api } from '@/core/services/api';
+import { StorageUploadResponseDto } from '../types/dtos/StorageUploadResponse.dto';
 
 /**
  * @class StorageService
- * @description O "Carteiro" de Infraestrutura do Frontend.
- * * RESPONSABILIDADE (SRP):
- * Isolar toda a complexidade de envio de arquivos binários (Multipart/Form-Data) 
- * para o Backend. Totalmente agnóstico, pode ser usado pela IA, pelo CRM ou pelo Catálogo.
+ * @description O Carteiro do Frontend.
+ * Responsável por empacotar os arquivos (FormData) e enviá-los para a Alfândega do Backend.
  */
 export class StorageService {
     
     /**
      * @method uploadFiles
-     * @description Empacota os arquivos físicos e envia para a rota de storage.
-     * * @param files Array de arquivos nativos do navegador (File[]).
-     * @param folder Opcional. A subpasta no servidor para manter a organização (ex: 'ai-attachments').
-     * @returns Promise<string[]> Um array com as URLs públicas/seguras geradas pelo Backend.
+     * @description Envia múltiplos arquivos para o Backend e retorna as URLs seguras.
      */
-    public static async uploadFiles(files: File[], folder: string = 'general'): Promise<string[]> {
-        
-        // 1. Trava de Segurança (Fail-Fast)
-        if (!files || files.length === 0) {
-            return [];
-        }
-
-        // 2. A Construção do Pacote (FormData)
-        // O FormData é a única forma nativa do navegador transmitir bytes binários com segurança.
-        const formData = new FormData();
-
-        // Anexamos os arquivos um a um. O nome 'files' deve bater EXATAMENTE 
-        // com o que o Multer espera lá no Backend: upload.array('files', 10)
-        files.forEach((file) => {
-            formData.append('files', file);
-        });
-
-        // Anexamos o metadado de roteamento para o Controller saber em qual pasta guardar
-        formData.append('folder', folder);
-
+    static async uploadFiles(files: File[], folder?: string): Promise<string[]> {
         try {
-            // 3. Recuperação de Credenciais
-            // Ajuste a chave do localStorage para a que o seu ERP Filix utiliza atualmente para guardar o token JWT.
-            const token = localStorage.getItem('token') || localStorage.getItem('@Filix:token');
-
-            // 4. O Despacho (HTTP POST)
-            // Usamos a API nativa fetch para não dependermos de configurações complexas do Axios para FormData.
-            const response = await fetch('/api/v1/storage/upload', {
-                method: 'POST',
-                headers: {
-                    // ⚠️ SEGREDO DE ARQUITETO SÊNIOR: 
-                    // NUNCA defina o 'Content-Type': 'multipart/form-data' manualmente aqui!
-                    // O navegador precisa gerar um "boundary" (fronteira) dinâmico e aleatório 
-                    // para separar os arquivos. Se você forçar o header, o upload quebra.
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
+            // 1. O Empacotamento (Form-Data é obrigatório para envio de binários)
+            const formData = new FormData();
+            
+            files.forEach(file => {
+                // O nome 'files' DEVE ser exatamente o mesmo que o Multer espera no Backend
+                formData.append('files', file); 
             });
 
-            // 5. Validação de Contrato de Resposta
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Falha HTTP: ${response.status}`);
+            if (folder) {
+                formData.append('folder', folder);
             }
 
-            // 6. O Recibo (Extração das URLs)
-            const data = await response.json();
-            
-            // O nosso StorageController devolve { status: 'success', urls: [...] }
-            return data.urls || [];
+            console.log(`📦 [StorageService] Iniciando upload de ${files.length} arquivo(s)...`);
+
+            // 2. O Envio Seguro (Usando o Axios configurado para a porta 8080)
+            const { data } = await api.post<StorageUploadResponseDto>('/storage/upload', formData, {
+                headers: {
+                    // O Axios cuida do boundary do multipart automaticamente, 
+                    // mas é boa prática sinalizar a intenção.
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            // 3. O Recibo (Retornando as URLs geradas pelo Google Cloud)
+            if (data.status === 'success') {
+                console.log('✅ [StorageService] Upload concluído com sucesso!');
+                return data.urls;
+            } else {
+                throw new Error(data.message || 'Erro desconhecido retornado pelo servidor.');
+            }
 
         } catch (error: any) {
-            console.error('❌ [StorageService] Falha crítica de rede ou servidor ao enviar arquivos:', error.message);
-            // Propaga o erro de forma limpa para a Interface tratar (ex: mostrar um Toast vermelho)
-            throw new Error(`Não foi possível enviar os anexos: ${error.message}`);
+            console.error('❌ [StorageService] Falha crítica ao enviar arquivos:', error);
+            
+            // Tratamento de erro elegante para o UI
+            if (error.response) {
+                throw new Error(`Falha HTTP: ${error.response.status} - ${error.response.data?.message || 'Erro no servidor'}`);
+            } else if (error.request) {
+                throw new Error('Servidor inacessível. Verifique sua conexão ou se o Backend está rodando.');
+            } else {
+                throw new Error(`Erro de processamento: ${error.message}`);
+            }
         }
     }
 }
@@ -6357,7 +7068,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/a
 export const api = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true, 
-    timeout: 15000, // 15 segundos: Tempo máximo de espera antes de abortar
+    timeout: 60000, // 15 segundos: Tempo máximo de espera antes de abortar
     headers: {
         'Content-Type': 'application/json',
     }
@@ -6576,6 +7287,29 @@ export interface UpdateClientDto {
     userNotes?: string;
 
     addresses?: AddressDto[];
+}
+
+
+// ===== FILE: src/core/types/dtos/StorageUploadResponse.dto.ts =====
+
+/**
+ * @interface StorageUploadResponseDto
+ * @description Contrato de rede para o retorno do upload de arquivos.
+ * Espelho exato da resposta gerada pelo `StorageController` no Backend.
+ */
+export interface StorageUploadResponseDto {
+    /** * O estado da transação HTTP no padrão da nossa API. 
+     */
+    status: 'success' | 'error';
+
+    /** * Mensagem amigável retornada pelo servidor. 
+     */
+    message: string;
+
+    /** * Array contendo as URLs seguras (Signed URLs) geradas pelo Cloud Storage.
+     * Estará presente e preenchido quando o status for 'success'.
+     */
+    urls: string[];
 }
 
 
@@ -7097,7 +7831,7 @@ import { FaBell, FaRobot } from 'react-icons/fa'; // Importado o ícone do Robô
 import { TenantSelector } from '@/core/components/tenant/TenantSelector';
 import { UserMenu } from '@/core/ui/layout/UserMenu';
 import { useFilixAI } from '@/core/ai/context/FilixAIContext'; // [NOVO] Import do Cérebro da IA
-import { AIContextScopeEnum } from '@/core/ai/types/enums/AIEnums';
+import { AppModule, AppModules } from '@/core/ai/types/enums/AIEnums';
 
 /**
  * @component TopNavigation
@@ -7111,7 +7845,7 @@ export const TopNavigation: React.FC = () => {
 
     // --- Hooks da IA ---
     // Puxamos o estado visual e semântico para o botão refletir o momento atual
-    const { toggleVisibility, contextScope, isEnabled, mode } = useFilixAI();
+    const { toggleVisibility, contextMetadata, isEnabled, mode } = useFilixAI();
 
     // Helper para definir a cor do botão da IA baseado no módulo onde o usuário está
     const getAIBtnColor = () => {
@@ -7120,10 +7854,10 @@ export const TopNavigation: React.FC = () => {
         // Se estiver aberto, mantemos uma cor sólida neutra para não ofuscar
         if (mode === 'EXPANDED') return 'text-white bg-accent-primary shadow-lg shadow-accent-primary/20';
 
-        switch (contextScope) {
-            case AIContextScopeEnum.INVENTORY: return 'text-orange-400 hover:bg-orange-400/10 hover:text-orange-300';
-            case AIContextScopeEnum.SALES: return 'text-blue-400 hover:bg-blue-400/10 hover:text-blue-300';
-            case AIContextScopeEnum.FISCAL: return 'text-emerald-400 hover:bg-emerald-400/10 hover:text-emerald-300';
+        switch (contextMetadata?.module) {
+            case AppModules.ESTOQUE: return 'text-orange-400 hover:bg-orange-400/10 hover:text-orange-300';
+            case AppModules.CRM: return 'text-blue-400 hover:bg-blue-400/10 hover:text-blue-300';
+            case AppModules.FINANCEIRO: return 'text-emerald-400 hover:bg-emerald-400/10 hover:text-emerald-300';
             default: return 'text-purple-400 hover:bg-purple-400/10 hover:text-purple-300'; // Geral
         }
     };
@@ -9334,322 +10068,6 @@ export interface CreateCategoryDto {
 export interface UpdateCategoryDto extends Partial<CreateCategoryDto> {}
 
 
-// ===== FILE: src/modules/crm/components/AnalysisActionCard.tsx =====
-
-// src/modules/crm/components/AnalysisActionCard.tsx
-
-import React, { useState, useEffect } from 'react';
-import { 
-    FaUser, FaEnvelope, FaPhone, FaBullseye, FaSave, FaLink, 
-    FaCheckCircle, FaExclamationTriangle, FaPen, FaMapMarkerAlt 
-} from 'react-icons/fa';
-import { InteractionAnalysis } from '../types';
-import { Client, AddressType } from '@/core/types/client';
-import { useInteractionMutation, ClientActionType } from '../hooks/useInteractionMutation';
-
-interface AnalysisActionCardProps {
-    analysis: InteractionAnalysis;
-    content: string;
-    contextClient: Client | null;
-    onSuccess: () => void;
-}
-
-export const AnalysisActionCard: React.FC<AnalysisActionCardProps> = ({
-    analysis,
-    content,
-    contextClient,
-    onSuccess
-}) => {
-    const { registerInteraction, isLoading, error, success } = useInteractionMutation();
-    
-    // Identidade extraída (atalho)
-    const identity = analysis.extractedIdentity || {
-        personName: '',
-        companyName: '',
-        email: '',
-        phone: '',
-        extractedAddresses: [],
-        intentType: 'UNKNOWN'
-    };
-
-    // --- ESTADO DO FORMULÁRIO ---
-    // Agora inclui dados de endereço aninhados
-    const [formData, setFormData] = useState({
-        name: '',
-        document: '',
-        email: '',
-        phone: '',
-        // Dados de Endereço (Focamos no endereço principal para este card rápido)
-        address: {
-            street: '',
-            number: '',
-            district: '',
-            city: '',
-            state: '',
-            zipCode: ''
-        }
-    });
-
-    // Sincroniza o form quando a análise muda
-    useEffect(() => {
-        // Tenta pegar o primeiro endereço extraído pela IA
-        const detectedAddress = identity.extractedAddresses?.[0];
-
-        setFormData({
-            name: identity.personName || 'Novo Lead',
-            document: '', 
-            email: identity.email || '',
-            phone: identity.phone || '',
-            address: {
-                street: detectedAddress?.street || '',
-                number: detectedAddress?.number || '',
-                district: detectedAddress?.district || '',
-                city: detectedAddress?.city || '',
-                state: detectedAddress?.state || '',
-                zipCode: detectedAddress?.zipCode || ''
-            }
-        });
-    }, [analysis]); 
-
-    const [mode, setMode] = useState<'VIEW' | 'CREATE_EDIT'>('VIEW');
-
-    // --- HANDLERS ---
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
-    // Handler específico para campos de endereço aninhados
-    const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({
-            ...formData,
-            address: {
-                ...formData.address,
-                [e.target.name]: e.target.value
-            }
-        });
-    };
-
-    const handleLinkExisting = async () => {
-        if (!contextClient) return;
-        await registerInteraction({
-            action: ClientActionType.LINK_EXISTING,
-            clientId: contextClient.id,
-            type: 'NOTE', 
-            content: content,
-            aiAnalysis: analysis
-        });
-        if (!error) onSuccess();
-    };
-
-    const handleCreateNew = async () => {
-        if (!formData.name.trim()) {
-            alert("O Nome do cliente é obrigatório.");
-            return;
-        }
-
-        // Monta o array de endereços apenas se houver dados mínimos (Rua)
-        const addressesToSend = formData.address.street.trim() ? [{
-            street: formData.address.street,
-            number: formData.address.number || 'S/N', // Fallback seguro
-            district: formData.address.district || 'Centro',
-            city: formData.address.city || 'Indefinida',
-            state: formData.address.state || 'UF',
-            zipCode: formData.address.zipCode || '00000-000',
-            type: AddressType.MAIN
-        }] : undefined;
-
-        await registerInteraction({
-            action: ClientActionType.CREATE_NEW,
-            type: 'NOTE',
-            content: content,
-            aiAnalysis: analysis,
-            newClientData: {
-                name: formData.name,
-                document: formData.document.trim() || undefined, 
-                email: formData.email.trim() || undefined,
-                phone: formData.phone.trim() || undefined,
-                addresses: addressesToSend
-            }
-        });
-
-        if (!error) onSuccess();
-    };
-
-    if (success) {
-        return (
-            <div className="bg-green-900/20 border border-green-500/50 p-6 rounded-xl text-center animate-fade-in">
-                <FaCheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-white">Registrado com Sucesso!</h3>
-                <button onClick={onSuccess} className="mt-4 text-sm text-green-400 hover:underline">Continuar</button>
-            </div>
-        );
-    }
-
-    // Helper para exibir endereço formatado
-    const formattedAddress = formData.address.street 
-        ? `${formData.address.street}, ${formData.address.number || 'S/N'} - ${formData.address.city}/${formData.address.state}`
-        : null;
-
-    return (
-        <div className="bg-gray-800 border border-gray-600 p-4 rounded-xl shadow-lg relative overflow-hidden transition-all">
-            <div className="absolute top-0 left-0 w-1 h-full bg-accent-secondary"></div>
-            
-            {/* Header */}
-            <div className="flex justify-between items-start mb-4 pl-2">
-                <div>
-                    <h3 className="text-sm font-bold text-white flex items-center">
-                        <FaUser className="mr-2 text-accent-secondary" /> 
-                        {mode === 'VIEW' ? 'Dados Detectados (IA)' : 'Revisão de Cadastro'}
-                    </h3>
-                    <p className="text-xs text-gray-400 mt-1">
-                        {mode === 'VIEW' ? 'Verifique os dados encontrados.' : 'Edite os dados antes de salvar.'}
-                    </p>
-                </div>
-                <div className="bg-gray-700 px-2 py-1 rounded text-[10px] text-accent-primary font-bold border border-gray-600 uppercase">
-                    <FaBullseye className="mr-1 inline" /> {identity.intentType}
-                </div>
-            </div>
-
-            {/* --- MODO VISUALIZAÇÃO (READ-ONLY) --- */}
-            {mode === 'VIEW' && (
-                <div className="grid grid-cols-2 gap-3 text-sm mb-4 pl-2">
-                    <div className="bg-gray-900 p-2 rounded border border-gray-700 col-span-2">
-                        <span className="text-[10px] text-gray-500 block uppercase font-bold">Nome</span>
-                        <span className="text-white font-medium">{identity.personName || '-'}</span>
-                    </div>
-                    
-                    <div className="bg-gray-900 p-2 rounded border border-gray-700">
-                        <span className="text-[10px] text-gray-500 block uppercase font-bold">E-mail</span>
-                        <div className="flex items-center text-white mt-1">
-                            <FaEnvelope className="mr-2 text-gray-600" />
-                            <span className="truncate text-xs">{identity.email || '-'}</span>
-                        </div>
-                    </div>
-                    <div className="bg-gray-900 p-2 rounded border border-gray-700">
-                        <span className="text-[10px] text-gray-500 block uppercase font-bold">Telefone</span>
-                        <div className="flex items-center text-white mt-1">
-                            <FaPhone className="mr-2 text-gray-600" />
-                            <span className="truncate text-xs">{identity.phone || '-'}</span>
-                        </div>
-                    </div>
-
-                    {/* Exibição de Endereço Detectado */}
-                    {formattedAddress && (
-                        <div className="bg-gray-900 p-2 rounded border border-gray-700 col-span-2">
-                            <span className="text-[10px] text-gray-500 block uppercase font-bold">Endereço Sugerido</span>
-                            <div className="flex items-center text-white mt-1">
-                                <FaMapMarkerAlt className="mr-2 text-accent-secondary" />
-                                <span className="truncate text-xs">{formattedAddress}</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* --- MODO EDIÇÃO (FORMULÁRIO COMPLETO) --- */}
-            {mode === 'CREATE_EDIT' && (
-                <div className="space-y-3 mb-4 pl-2 animate-fade-in">
-                    {/* Dados Básicos */}
-                    <div>
-                        <label className="text-[10px] text-accent-primary font-bold uppercase block mb-1">Nome *</label>
-                        <input type="text" name="name" value={formData.name} onChange={handleChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white focus:border-accent-primary focus:outline-none" />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1">E-mail</label>
-                            <input type="email" name="email" value={formData.email} onChange={handleChange}
-                                className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white focus:border-accent-primary focus:outline-none" />
-                        </div>
-                        <div>
-                            <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Telefone</label>
-                            <input type="text" name="phone" value={formData.phone} onChange={handleChange}
-                                className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white focus:border-accent-primary focus:outline-none" />
-                        </div>
-                    </div>
-
-                    {/* Seção de Endereço */}
-                    <div className="border-t border-gray-700 pt-3 mt-2">
-                        <label className="text-[10px] text-gray-300 font-bold uppercase block mb-2 flex items-center">
-                            <FaMapMarkerAlt className="mr-1" /> Endereço Principal
-                        </label>
-                        <div className="grid grid-cols-4 gap-2">
-                            <div className="col-span-3">
-                                <input type="text" name="street" placeholder="Rua / Logradouro" value={formData.address.street} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:border-accent-primary focus:outline-none" />
-                            </div>
-                            <div className="col-span-1">
-                                <input type="text" name="number" placeholder="Nº" value={formData.address.number} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:border-accent-primary focus:outline-none" />
-                            </div>
-                            <div className="col-span-2">
-                                <input type="text" name="district" placeholder="Bairro" value={formData.address.district} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:border-accent-primary focus:outline-none" />
-                            </div>
-                            <div className="col-span-2">
-                                <input type="text" name="city" placeholder="Cidade" value={formData.address.city} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:border-accent-primary focus:outline-none" />
-                            </div>
-                            <div className="col-span-1">
-                                <input type="text" name="state" placeholder="UF" maxLength={2} value={formData.address.state} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:border-accent-primary focus:outline-none uppercase" />
-                            </div>
-                            <div className="col-span-3">
-                                <input type="text" name="zipCode" placeholder="CEP" value={formData.address.zipCode} onChange={handleAddressChange}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white focus:border-accent-primary focus:outline-none" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1">CPF / CNPJ (Opcional)</label>
-                        <input type="text" name="document" value={formData.document} onChange={handleChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm text-white focus:border-accent-primary focus:outline-none" />
-                    </div>
-                </div>
-            )}
-
-            {/* Mensagem de Erro */}
-            {error && (
-                <div className="mb-4 p-3 bg-red-900/40 border border-red-500/50 rounded flex items-center text-xs text-red-200">
-                    <FaExclamationTriangle className="mr-2 flex-shrink-0" />
-                    {error}
-                </div>
-            )}
-
-            {/* Ações */}
-            <div className="pl-2 pt-2 border-t border-gray-700">
-                {mode === 'VIEW' ? (
-                    <div className="flex gap-2">
-                        {contextClient ? (
-                            <button onClick={handleLinkExisting} disabled={isLoading} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg text-xs font-bold transition border border-gray-500">
-                                {isLoading ? 'Vinculando...' : <><FaLink className="mr-2 inline" /> Vincular Existente</>}
-                            </button>
-                        ) : (
-                            <div className="flex-1 text-[10px] text-gray-500 flex items-center justify-center bg-gray-900/50 rounded border border-dashed border-gray-700 select-none">
-                                Selecione na lista p/ vincular
-                            </div>
-                        )}
-                        <button onClick={() => setMode('CREATE_EDIT')} className="flex-1 bg-accent-secondary hover:bg-violet-600 text-white py-2 rounded-lg text-xs font-bold transition shadow-lg">
-                            <FaPen className="mr-2 inline" /> Editar e Salvar
-                        </button>
-                    </div>
-                ) : (
-                    <div className="flex gap-2">
-                        <button onClick={() => setMode('VIEW')} className="flex-1 bg-gray-700 text-gray-300 py-2 rounded text-xs font-bold hover:bg-gray-600">Cancelar</button>
-                        <button onClick={handleCreateNew} disabled={isLoading} className="flex-1 bg-accent-primary hover:bg-orange-600 text-base-dark py-2 rounded text-xs font-bold shadow-lg">
-                            {isLoading ? 'Salvando...' : 'Confirmar Lead'}
-                        </button>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-
 // ===== FILE: src/modules/crm/components/client-dashboard/ClientDashboard.tsx =====
 
 // ===== FILE: src/modules/crm/components/client-dashboard/ClientDashboard.tsx =====
@@ -9666,6 +10084,7 @@ import { ClientForm } from '@/core/components/client/ClientForm';
 
 // --- AQUI ESTÁ A MUDANÇA: Importamos o Módulo Soberano ---
 import { TimelineModule } from '@/modules/timeline/TimelineModule';
+import { AppModules } from '@/core/ai/types/enums/AIEnums';
 
 export type DashboardMode = 'VIEW' | 'EDIT' | 'CREATE';
 
@@ -9945,7 +10364,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
                             <div className="h-full w-full animate-fade-in">
                                 <TimelineModule 
                                     entityId={displayClient.id} 
-                                    entityType="CLIENT"
+                                    module={AppModules.CLIENTE}
                                     className="h-full" // Garante que o scroll interno funcione
                                 />
                             </div>
@@ -11889,66 +12308,6 @@ export const StageList: React.FC<StageListProps> = ({ stages, onChange }) => {
 
 
 
-// ===== FILE: src/modules/crm/hooks/useCRMIntelligence.ts =====
-
-// src/modules/crm/hooks/useCRMIntelligence.ts
-
-import { useState } from 'react';
-import { api } from '@/core/services/api';
-import { InteractionAnalysis } from '../types';
-
-/**
- * @hook useCRMIntelligence
- * @description Gerencia a comunicação com os serviços de IA do CRM.
- * @update Agora suporta envio de clientId para análise contextual (RAG).
- */
-export function useCRMIntelligence() {
-    
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [analysisResult, setAnalysisResult] = useState<InteractionAnalysis | null>(null);
-    const [error, setError] = useState<string | null>(null);
-
-    /**
-     * @method analyzeText
-     * @description Envia um texto bruto para análise de IA no Backend.
-     * @param text O conteúdo da interação.
-     * @param clientId (Opcional) ID do cliente selecionado para dar contexto à IA.
-     */
-    const analyzeText = async (text: string, clientId?: string) => {
-        setIsAnalyzing(true);
-        setError(null);
-        setAnalysisResult(null); 
-
-        try {
-            // Monta o payload com ou sem contexto
-            const payload = { 
-                text, 
-                clientId: clientId || undefined 
-            };
-
-            const response = await api.post('/crm/analyze', payload);
-            
-            setAnalysisResult(response.data as InteractionAnalysis);
-            
-        } catch (err: any) {
-            console.error("Erro na análise de IA:", err);
-            const msg = err.response?.data?.message || "Falha ao processar a inteligência da interação.";
-            setError(msg);
-        } finally {
-            setIsAnalyzing(false);
-        }
-    };
-
-    return {
-        analyzeText,
-        isAnalyzing,
-        analysisResult,
-        error,
-        clearAnalysis: () => setAnalysisResult(null) 
-    };
-}
-
-
 // ===== FILE: src/modules/crm/hooks/useClientTimeline.ts =====
 
 import { useState, useCallback } from 'react';
@@ -12456,7 +12815,6 @@ import { CRMWorkstation } from './CRMWorkstation';
 // --- HOOKS DE DADOS & IA ---
 import { useDeals } from '../hooks/useDeals';
 import { usePipelines } from '../hooks/usePipelines';
-import { useCRMIntelligence } from '../hooks/useCRMIntelligence';
 import { useAIContextInjector } from '@/core/ai/hooks/useAIContextInjector'; // [IA] Hook Sniper
 import { useFilixAI } from '@/core/ai/context/FilixAIContext'; // [IA] Hook Widget & Draft
 
@@ -12466,6 +12824,7 @@ import { ConfigStage } from '../components/pipeline-manager/StageList';
 import { Client } from '@/core/types/client';
 import { DashboardMode } from '../components/client-dashboard/ClientDashboard';
 import { AIContextMetadata } from '@/core/ai/types/dtos/AIChatRequest.dto';
+import { AppModules, FeatureKeys } from '@/core/ai/types/enums/AIEnums';
 
 // Definição das Views do CRM
 export type CRMViewType = 'WORKSTATION' | 'KANBAN' | 'AGENDA';
@@ -12499,7 +12858,7 @@ export const CRMContainer: React.FC = () => {
         // Se estiver na Workstation com cliente selecionado -> Contexto: CLIENTE
         if (activeView === 'WORKSTATION' && selectedClient) {
             return {
-                refType: 'CLIENT',
+                module: AppModules.CLIENTE,
                 refId: selectedClient.id,
                 refName: selectedClient.name,
                 featureLocation: 'WORKSTATION_DETAIL'
@@ -12508,7 +12867,7 @@ export const CRMContainer: React.FC = () => {
         // Se estiver no Kanban -> Contexto: FUNIL DE VENDAS
         if (activeView === 'KANBAN') {
             return {
-                refType: 'DEAL', 
+                module: AppModules.CRM, 
                 refId: selectedPipelineId || 'general',
                 refName: 'Pipeline View',
                 featureLocation: 'KANBAN_BOARD'
@@ -12518,7 +12877,7 @@ export const CRMContainer: React.FC = () => {
     }, [activeView, selectedClient, selectedPipelineId]);
 
     // Injeta o contexto no Cérebro Global (Monitoramento Passivo)
-    useAIContextInjector('AI_SALES_AGENT', aiMetadata);
+    useAIContextInjector(FeatureKeys.AI_SALES_MICRO, aiMetadata);
 
     // ============================================================================
     // 3. ESTADOS DA WORKSTATION
@@ -12527,14 +12886,6 @@ export const CRMContainer: React.FC = () => {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [aiInputText, setAiInputText] = useState('');
     const [activeChatTab, setActiveChatTab] = useState<'WA' | 'TG' | 'AGENDA'>('WA');
-
-    const { 
-        analyzeText, 
-        analysisResult, 
-        isAnalyzing, 
-        error: aiError, 
-        clearAnalysis 
-    } = useCRMIntelligence();
 
     // ============================================================================
     // 4. ESTADOS DO KANBAN & DADOS
@@ -12555,7 +12906,6 @@ export const CRMContainer: React.FC = () => {
         if (!loadingPipelines && pipelines.length > 0 && !selectedPipelineId) {
             setSelectedPipelineId(pipelines[0].id);
         }
-        // setContext('AI_SALES_AGENT')
     }, [pipelines, loadingPipelines, selectedPipelineId]);
 
     // ============================================================================
@@ -12566,14 +12916,12 @@ export const CRMContainer: React.FC = () => {
     const handleSelectClient = (client: Client | null) => {
         setSelectedClient(client);
         setDashboardMode('VIEW');
-        clearAnalysis(); 
         setAiInputText(''); 
     };
 
     const handleOpenNewClient = () => {
         setSelectedClient(null); 
         setDashboardMode('CREATE'); 
-        clearAnalysis();
     };
 
     const handleOpenEditClient = (client: Client) => {
@@ -12584,12 +12932,7 @@ export const CRMContainer: React.FC = () => {
     const handleUpdateSuccess = () => {
         setRefreshTrigger(prev => prev + 1); 
         setDashboardMode('VIEW'); 
-        clearAnalysis(); 
         setAiInputText('');
-    };
-
-    const handleAnalyzeRequest = (text: string) => {
-        analyzeText(text, selectedClient?.id);
     };
 
     // --- KANBAN ---
@@ -12617,8 +12960,8 @@ export const CRMContainer: React.FC = () => {
         
         // 2. Define o Contexto de Setup (Sniper)
         // Isso avisa a IA que estamos configurando o sistema, não vendendo
-        setContext('AI_SALES_AGENT', { 
-            refType: 'SETUP', 
+        setContext(FeatureKeys.AI_SALES_MICRO, { 
+            module: AppModules.CRM, 
             refId: 'PIPELINE_CREATION', 
             refName: 'Novo Funil',
             featureLocation: 'EMPTY_STATE_SUGGESTION'
@@ -12714,16 +13057,7 @@ export const CRMContainer: React.FC = () => {
                         contextClient={selectedClient}
                         dashboardMode={dashboardMode}
                         refreshListTrigger={refreshTrigger}
-                        aiInputText={aiInputText}
-                        isAnalyzing={isAnalyzing}
-                        analysisResult={analysisResult}
-                        aiError={aiError}
-                        originalText={aiInputText}
                         activeChatTab={activeChatTab}
-                        onAiInputChange={setAiInputText}
-                        onAnalyzeRequest={handleAnalyzeRequest}
-                        onClearAnalysis={clearAnalysis}
-                        onAnalysisSuccess={handleUpdateSuccess}
                         onSelectClient={handleSelectClient}
                         onOpenNewClient={handleOpenNewClient}
                         onOpenEditClient={handleOpenEditClient}
@@ -12977,7 +13311,6 @@ import { FaWhatsapp, FaTelegram, FaPaperPlane, FaCalendarAlt } from 'react-icons
 
 // --- COMPONENTES ---
 import { ClientListWidget } from '@/modules/crm/components/client-widget/ClientListWidget';
-import { AnalysisActionCard } from '@/modules/crm/components/AnalysisActionCard';
 import { ClientDashboard, DashboardMode } from '@/modules/crm/components/client-dashboard/ClientDashboard';
 import { WhatsAppWidget } from '@/modules/crm/components/communication/WhatsAppWidget';
 import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget';
@@ -12995,21 +13328,9 @@ interface CRMWorkstationProps {
     dashboardMode: DashboardMode;
     refreshListTrigger: number;
     
-    // Estados de IA
-    aiInputText: string;
-    isAnalyzing: boolean;
-    analysisResult: InteractionAnalysis | null;
-    aiError: string | null;
-    originalText: string;
 
     // Estados de UI de Abas
     activeChatTab: 'WA' | 'TG' | 'AGENDA'; 
-
-    // Handlers (Ações)
-    onAiInputChange: (text: string) => void;
-    onAnalyzeRequest: (text: string) => void;
-    onClearAnalysis: () => void;
-    onAnalysisSuccess: () => void;
     
     onSelectClient: (client: Client | null) => void;
     onOpenNewClient: () => void;
@@ -13023,9 +13344,7 @@ interface CRMWorkstationProps {
 export const CRMWorkstation: React.FC<CRMWorkstationProps> = ({
     // Desestruturação das props para uso no JSX
     contextClient, dashboardMode, refreshListTrigger,
-    aiInputText, isAnalyzing, analysisResult, aiError, originalText,
     activeChatTab,
-    onAiInputChange, onAnalyzeRequest, onClearAnalysis, onAnalysisSuccess,
     onSelectClient, onOpenNewClient, onOpenEditClient, onModeChange, onUpdateSuccess,
     onTabChange
 }) => {
@@ -13056,37 +13375,14 @@ export const CRMWorkstation: React.FC<CRMWorkstationProps> = ({
                   Span: 6
                   ================================================================*/}
                 <div className="col-span-6 h-full flex flex-col gap-4">
-
-                    {/* ÁREA DE ERRO (GLOBAL DA IA) */}
-                    {aiError && (
-                        <div className="bg-red-900/40 border border-red-500/50 p-3 rounded-lg text-sm text-red-200 flex items-center justify-between animate-fade-in">
-                            <span><strong>Erro na IA:</strong> {aiError}</span>
-                            <button onClick={onClearAnalysis} className="text-xs underline hover:text-white">Fechar</button>
-                        </div>
-                    )}
-
-                    {/* CONTEÚDO DINÂMICO */}
-                    {analysisResult ? (
-                        // MODO AÇÃO IA
-                        <div className="flex-1 overflow-y-auto pr-1">
-                            <AnalysisActionCard 
-                                analysis={analysisResult}
-                                content={originalText}
-                                contextClient={contextClient}
-                                onSuccess={onAnalysisSuccess}
-                            />
-                        </div>
-                    ) : (
-                        // MODO DASHBOARD
-                        <div className="flex-1 h-full">
-                            <ClientDashboard 
-                                client={contextClient}
-                                mode={dashboardMode} 
-                                onModeChange={onModeChange} 
-                                onUpdateSuccess={onUpdateSuccess} 
-                            />
-                        </div>
-                    )}
+                    <div className="flex-1 h-full">
+                        <ClientDashboard 
+                            client={contextClient}
+                            mode={dashboardMode} 
+                            onModeChange={onModeChange} 
+                            onUpdateSuccess={onUpdateSuccess} 
+                        />
+                    </div>
                 </div>
 
                 {/* ================================================================
@@ -17735,374 +18031,84 @@ export function CatalogTab() {
 
 'use client';
 
-import React, { useState } from 'react';
-import { 
-    FaPlus, 
-    FaSearch, 
-    FaEdit, 
-    FaTrash, 
-    FaTags 
-} from 'react-icons/fa';
+import React from 'react';
+import { z } from 'zod';
 
-// Importando o Hook de Negócio existente (Reuso de Lógica)
+import { CrudLayout } from '@/core/components/crud/CrudLayout';
+import { CrudConfig, CrudHooks } from '@/core/components/crud/types';
 import { useCategories } from '@/modules/categories/hooks/useCategories';
 import { useCategoryMutation } from '@/modules/categories/hooks/useCategoryMutation';
-import { Category } from '@/modules/categories/types';
+import { Category } from '@/modules/categories/types'; // Entidade do Banco (TData)
 
-// Importando o componente local do Drawer
-import { CategoryFormDrawer } from './CategoryFormDrawer';
+// =========================================================================
+// 1. O DTO DE CRIAÇÃO/EDIÇÃO (TForm)
+// Somente o que o usuário interage. O Backend resolve tenantId e Datas.
+// =========================================================================
+const CategoryFormSchema = z.object({
+    name: z.string().min(3, 'O nome deve ter no mínimo 3 caracteres'),
+    isActive: z.boolean().default(true),
+    categoryId: z.string().optional().nullable(), // Sub-categoria (Pai) - Opcional
+});
 
-/**
- * @component CategoriesTab
- * @description Gestão de Categorias embarcada no módulo de Produtos.
- * @style Dark/Metallic (Design System)
- */
-export const CategoriesTab: React.FC = () => {
-    // Integração com a Camada de Dados (Leitura e Escrita)
-    const { categories, isLoading } = useCategories();
-    const { deleteCategory } = useCategoryMutation();
+// Inferimos o tipo do formulário automaticamente a partir do Zod
+type CategoryFormData = z.infer<typeof CategoryFormSchema>;
+
+// =========================================================================
+// 2. A PLANTA (Configuração da Interface)
+// Passamos os dois mundos: <TData, TForm>
+// =========================================================================
+const categoryConfig: CrudConfig<Category, CategoryFormData> = {
+    title: 'Categorias de Produtos',
+    description: 'Organize seu catálogo e a vitrine do e-commerce.',
+    schema: CategoryFormSchema,
     
-    // Estados Locais de Interface (UI State)
-    const [searchTerm, setSearchTerm] = useState('');
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-
-    // Filtragem Local (Client-Side)
-    const filteredCategories = categories?.filter(cat => 
-        cat.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ) || [];
-
-    // Handlers
-    const handleNewCategory = () => {
-        setEditingCategory(null); // Limpa seleção para criar novo
-        setIsDrawerOpen(true);
-    };
-
-    const handleEditCategory = (category: Category) => {
-        setEditingCategory(category); // Passa dados para edição
-        setIsDrawerOpen(true);
-    };
-
-    const handleDelete = async (id: string) => {
-        // Futuro: Substituir por Modal de Confirmação customizado ou IA
-        if (window.confirm('Tem certeza que deseja excluir esta categoria?')) {
-            await deleteCategory(id);
-        }
-    };
-
-    if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center h-64 space-y-4 animate-pulse">
-                <div className="h-8 w-8 bg-gray-700 rounded-full"></div>
-                <span className="text-gray-400">Carregando categorias...</span>
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-6 animate-fade-in">
-            
-            {/* --- Toolbar (Busca e Ações) --- */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-                
-                {/* Barra de Busca Dark */}
-                <div className="relative w-full md:w-96 group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <FaSearch className="text-gray-500 group-focus-within:text-accent-primary transition-colors" />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="Buscar categoria..."
-                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-700 rounded-lg leading-5 bg-gray-900 text-base-text placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-accent-primary focus:border-accent-primary sm:text-sm transition-colors"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-
-                {/* Botão de Criação */}
-                <button
-                    onClick={handleNewCategory}
-                    className="flex items-center justify-center gap-2 bg-accent-primary hover:bg-accent-primary/90 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg shadow-black/20 active:scale-95"
-                >
-                    <FaPlus className="w-3 h-3" />
-                    <span>Nova Categoria</span>
-                </button>
-            </div>
-
-            {/* --- Tabela de Categorias --- */}
-            <div className="bg-base-metallic rounded-xl border border-gray-700 shadow-xl overflow-hidden">
-                
-                {filteredCategories.length === 0 ? (
-                    // Empty State Dark
-                    <div className="flex flex-col items-center justify-center p-16 text-center">
-                        <div className="p-4 bg-gray-900 rounded-full mb-4 border border-gray-700">
-                            <FaTags className="w-8 h-8 text-gray-600" />
-                        </div>
-                        <h3 className="text-lg font-medium text-base-text">Nenhuma categoria encontrada</h3>
-                        <p className="text-gray-400 mt-1">Crie categorias para organizar seus produtos.</p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-700">
-                            
-                            {/* THEAD */}
-                            <thead className="bg-gray-900/50">
-                                <tr>
-                                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Nome</th>
-                                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
-                                    <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">Ações</th>
-                                </tr>
-                            </thead>
-
-                            {/* TBODY */}
-                            <tbody className="divide-y divide-gray-700/50">
-                                {filteredCategories.map((category) => (
-                                    <tr key={category.id} className="hover:bg-gray-700/30 transition-colors group">
-                                        
-                                        {/* Coluna Nome */}
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className="h-8 w-8 flex-shrink-0 bg-gray-800 rounded flex items-center justify-center border border-gray-600 text-gray-400">
-                                                    <span className="text-xs font-bold">{category.name.substring(0, 2).toUpperCase()}</span>
-                                                </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-medium text-base-text group-hover:text-accent-primary transition-colors">
-                                                        {category.name}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        {/* Coluna Status */}
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${
-                                                category.isActive 
-                                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                                                : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                                            }`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${category.isActive ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                                                {category.isActive ? 'Ativa' : 'Inativa'}
-                                            </span>
-                                        </td>
-
-                                        {/* Coluna Ações */}
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button 
-                                                    onClick={() => handleEditCategory(category)}
-                                                    className="text-gray-400 hover:text-accent-primary transition-colors" 
-                                                    title="Editar"
-                                                >
-                                                    <FaEdit className="w-4 h-4" />
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleDelete(category.id)}
-                                                    className="text-gray-400 hover:text-danger transition-colors" 
-                                                    title="Excluir"
-                                                >
-                                                    <FaTrash className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-
-            {/* Integração do Drawer de Formulário */}
-            <CategoryFormDrawer 
-                isOpen={isDrawerOpen} 
-                onClose={() => setIsDrawerOpen(false)}
-                initialData={editingCategory}
-            />
-        </div>
-    );
+    // A Tabela enxerga o TData (Category)
+    columns: [
+        { key: 'name', label: 'Nome da Categoria', type: 'text' },
+        { key: 'isActive', label: 'Status', type: 'boolean', align: 'center' },
+    ],
+    
+    // O Formulário enxerga o TForm (CategoryFormData)
+    fields: [
+        { 
+            name: 'name', 
+            label: 'Nome da Categoria', 
+            type: 'text', 
+            placeholder: 'Ex: Eletrônicos, Vestuário...' 
+        },
+        { 
+            name: 'isActive', 
+            label: 'Status Ativo', 
+            type: 'boolean' 
+        },
+        // Se quisermos que o usuário escolha uma Categoria Pai, descomentamos abaixo:
+        // {
+        //     name: 'categoryId',
+        //     label: 'Categoria Principal (Pai)',
+        //     type: 'select',
+        //     options: [{ label: 'Nenhuma', value: '' }] // Aqui poderíamos injetar opções dinâmicas
+        // }
+    ]
 };
 
+// =========================================================================
+// 3. O COMPONENTE MESTRE
+// =========================================================================
+export const CategoriesTab: React.FC = () => {
+    const { categories, isLoading, refreshCategories } = useCategories();
+    const { createCategory, updateCategory, deleteCategory, error: mutationError } = useCategoryMutation();
 
-// ===== FILE: src/modules/products/components/tabs/CategoryFormDrawer.tsx =====
-
-'use client';
-
-import React, { useEffect, useState } from 'react';
-import { FaTimes, FaSave } from 'react-icons/fa';
-import { useCategoryMutation } from '@/modules/categories/hooks/useCategoryMutation';
-import { Category } from '@/modules/categories/types';
-
-interface CategoryFormDrawerProps {
-    isOpen: boolean;
-    onClose: () => void;
-    initialData?: Category | null;
-}
-
-/**
- * @component CategoryFormDrawer
- * @description Painel lateral deslizante para Criação/Edição de Categorias.
- * @style Dark/Metallic (Design System)
- */
-export const CategoryFormDrawer: React.FC<CategoryFormDrawerProps> = ({ 
-    isOpen, 
-    onClose, 
-    initialData 
-}) => {
-    // Hooks de Mutação
-    const { createCategory, updateCategory } = useCategoryMutation();
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // Estado do Formulário
-    const [name, setName] = useState('');
-    const [isActive, setIsActive] = useState(true);
-
-    // Efeito: Popula o formulário ao abrir ou trocar o item selecionado
-    useEffect(() => {
-        if (isOpen) {
-            if (initialData) {
-                // Modo Edição
-                setName(initialData.name);
-                // Garante que o toggle reflita o estado real do banco
-                setIsActive(initialData.isActive);
-            } else {
-                // Modo Criação (Reset)
-                setName('');
-                setIsActive(true);
-            }
-        }
-    }, [isOpen, initialData]);
-
-    // Handler de Submissão
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        
-        if (!name.trim()) return;
-
-        setIsSubmitting(true);
-        try {
-            // Montamos o payload completo para respeitar o Toggle da UI
-            const payload = { name, isActive };
-
-            if (initialData) {
-                // Update: Obrigatório enviar isActive, senão não conseguimos inativar/ativar
-                await updateCategory(initialData.id, payload);
-            } else {
-                // Create: Enviamos para respeitar caso o usuário crie já inativo
-                await createCategory(payload);
-            }
-            onClose(); // Fecha o drawer após sucesso
-        } catch (error) {
-            console.error('Erro ao salvar categoria:', error);
-            // Idealmente aqui entraria um Toast de erro
-        } finally {
-            setIsSubmitting(false);
-        }
+    const crudHooks: CrudHooks<Category, CategoryFormData> = {
+        data: categories || [],
+        isLoading: isLoading,
+        error: mutationError || null,
+        onCreate: createCategory,
+        onUpdate: updateCategory,
+        onDelete: deleteCategory,
+        onRefresh: refreshCategories || (() => window.location.reload())
     };
 
-    // Se não estiver aberto, não renderiza nada
-    if (!isOpen) return null;
-
-    return (
-        // Overlay (Backdrop)
-        <div className="fixed inset-0 z-50 flex justify-end">
-            {/* Fundo escurecido (Clica fora para fechar) */}
-            <div 
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
-                onClick={onClose}
-            ></div>
-
-            {/* O Drawer em si (Painel Lateral) */}
-            <div className="relative w-full max-w-md h-full bg-base-metallic border-l border-gray-700 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col">
-                
-                {/* Cabeçalho */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-700 bg-gray-900/50">
-                    <h3 className="text-lg font-semibold text-base-text">
-                        {initialData ? 'Editar Categoria' : 'Nova Categoria'}
-                    </h3>
-                    <button 
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-700"
-                    >
-                        <FaTimes className="w-5 h-5" />
-                    </button>
-                </div>
-
-                {/* Corpo do Formulário (Scrollável) */}
-                <form id="category-form" onSubmit={handleSubmit} className="flex-1 p-6 space-y-6 overflow-y-auto">
-                    
-                    {/* Campo: Nome */}
-                    <div className="space-y-2">
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-400">
-                            Nome da Categoria <span className="text-accent-primary">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Ex: Bebidas, Eletrônicos..."
-                            className="block w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-base-text placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-transparent transition-all"
-                            autoFocus
-                        />
-                    </div>
-
-                    {/* Campo: Status (Toggle Visual) */}
-                    <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700">
-                        <div className="flex flex-col">
-                            <span className="text-sm font-medium text-base-text">Status Ativo</span>
-                            <span className="text-xs text-gray-500">Categorias inativas não aparecem no catálogo.</span>
-                        </div>
-                        
-                        <button
-                            type="button"
-                            onClick={() => setIsActive(!isActive)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2 focus:ring-offset-gray-900 ${
-                                isActive ? 'bg-emerald-500' : 'bg-gray-600'
-                            }`}
-                        >
-                            <span
-                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                    isActive ? 'translate-x-6' : 'translate-x-1'
-                                }`}
-                            />
-                        </button>
-                    </div>
-
-                </form>
-
-                {/* Rodapé (Ações Fixas) */}
-                <div className="p-6 border-t border-gray-700 bg-gray-900/30 flex justify-end gap-3">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-300 bg-transparent border border-gray-600 rounded-lg hover:bg-gray-700 hover:text-white transition-colors"
-                        disabled={isSubmitting}
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        form="category-form"
-                        disabled={isSubmitting || !name.trim()}
-                        className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-accent-primary rounded-lg hover:bg-accent-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-accent-primary/20"
-                    >
-                        {isSubmitting ? (
-                            <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                <span>Salvando...</span>
-                            </>
-                        ) : (
-                            <>
-                                <FaSave className="w-4 h-4" />
-                                <span>{initialData ? 'Atualizar' : 'Salvar'}</span>
-                            </>
-                        )}
-                    </button>
-                </div>
-
-            </div>
-        </div>
-    );
+    return <CrudLayout<Category, CategoryFormData> config={categoryConfig} hooks={crudHooks} />;
 };
 
 
@@ -18892,6 +18898,7 @@ import { CategoriesTab } from '../components/tabs/CategoriesTab'; // Novo Compon
 // --- Imports Cross-Module (Reutilização de Componentes Existentes) ---
 import { FiscalList } from '../../fiscal/components/FiscalList';
 import { useAIContextInjector } from '@/core/ai/hooks/useAIContextInjector';
+import { FeatureKeys } from '@/core/ai/types/enums/AIEnums';
 
 export type ProductViewType = 
     | 'OVERVIEW'
@@ -18914,7 +18921,7 @@ export const ProductContainer: React.FC<ProductContainerProps> = ({
     initialView = 'CATALOG' 
 }) => {
     
-    useAIContextInjector('AI_INVENTORY_AGENT');
+    useAIContextInjector(FeatureKeys.AI_INVENTORY_MICRO);
     
     const [activeView, setActiveView] = useState<ProductViewType>(initialView);
 
@@ -20416,13 +20423,12 @@ export const SettingsContainer: React.FC = () => {
 
 // ===== FILE: src/modules/timeline/TimelineModule.tsx =====
 
-// ===== FILE: src/modules/timeline/TimelineModule.tsx =====
-
 import React from 'react';
-import { TimelineEntityType, TimelineEntryType } from './types/TimelineTypes';
+import { TimelineEntryType } from './types/TimelineTypes';
 import { useTimeline } from './hooks/useTimeline';
 import { TimelineFeed } from './components/TimelineFeed';
 import { TimelineInput } from './components/TimelineInput';
+import { AppModule } from '@/core/ai/types/enums/AIEnums';
 
 export interface TimelineModuleProps {
     /**
@@ -20434,7 +20440,7 @@ export interface TimelineModuleProps {
     /**
      * O contexto da timeline (Tabela polimórfica).
      */
-    entityType: TimelineEntityType;
+    module: AppModule;
 
     /**
      * Modo somente leitura (esconde o input).
@@ -20453,11 +20459,11 @@ export interface TimelineModuleProps {
  * @description O Módulo Soberano de Timeline.
  * Encapsula toda a lógica de busca, exibição e criação de eventos.
  * * @usage
- * <TimelineModule entityId={client.id} entityType="CLIENT" className="h-[600px]" />
+ * <TimelineModule entityId={client.id} module="CLIENT" className="h-[600px]" />
  */
 export const TimelineModule: React.FC<TimelineModuleProps> = ({ 
     entityId, 
-    entityType, 
+    module, 
     readOnly = false,
     className = ''
 }) => {
@@ -20471,7 +20477,7 @@ export const TimelineModule: React.FC<TimelineModuleProps> = ({
         addEntry, 
         togglePin, 
         removeEntry 
-    } = useTimeline(entityType, entityId);
+    } = useTimeline(module, entityId);
 
     // --- 2. Handlers de Integração ---
 
@@ -20571,7 +20577,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
      */
     const getVisuals = (type: TimelineEntryType) => {
         switch (type) {
-            case 'CALL':
+            case TimelineEntryType.CALL:
                 return { 
                     icon: FaPhone, 
                     color: 'text-blue-400', 
@@ -20579,7 +20585,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
                     borderColor: 'border-blue-500/20',
                     label: 'Ligação'
                 };
-            case 'EMAIL':
+            case TimelineEntryType.EMAIL:
                 return { 
                     icon: FaEnvelope, 
                     color: 'text-yellow-400', 
@@ -20587,7 +20593,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
                     borderColor: 'border-yellow-500/20',
                     label: 'E-mail'
                 };
-            case 'WHATSAPP':
+            case TimelineEntryType.WHATSAPP:
                 return { 
                     icon: FaWhatsapp, 
                     color: 'text-green-400', 
@@ -20595,7 +20601,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
                     borderColor: 'border-green-500/20',
                     label: 'WhatsApp'
                 };
-            case 'AI_INSIGHT':
+            case TimelineEntryType.AI_INSIGHT:
                 return { 
                     icon: FaRobot, 
                     color: 'text-accent-primary', 
@@ -20603,7 +20609,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
                     borderColor: 'border-accent-primary/30',
                     label: 'Análise IA'
                 };
-            case 'AUDIO':
+            case TimelineEntryType.AUDIO:
                 return { 
                     icon: FaMicrophone, 
                     color: 'text-pink-400', 
@@ -20611,7 +20617,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
                     borderColor: 'border-pink-500/20',
                     label: 'Áudio'
                 };
-            case 'FILE':
+            case TimelineEntryType.FILE:
                 return { 
                     icon: FaPaperclip, 
                     color: 'text-cyan-400', 
@@ -20619,7 +20625,7 @@ export const TimelineCard: React.FC<TimelineCardProps> = ({
                     borderColor: 'border-cyan-500/20',
                     label: 'Anexo'
                 };
-            case 'NOTE':
+            case TimelineEntryType.NOTE:
             default:
                 return { 
                     icon: FaStickyNote, 
@@ -20956,7 +20962,7 @@ import {
     FaMicrophone, 
     FaSpinner 
 } from 'react-icons/fa';
-import { TimelineEntryType } from '../types/TimelineTypes';
+import { TimelineEntryType, TimelineEventType } from '../types/TimelineTypes';
 
 interface TimelineInputProps {
     /**
@@ -20996,7 +21002,7 @@ export const TimelineInput: React.FC<TimelineInputProps> = ({
     
     // Por padrão, toda entrada rápida é uma NOTA. 
     // Futuramente podemos adicionar um dropdown aqui para mudar para CALL/MEETING.
-    const [entryType] = useState<TimelineEntryType>('NOTE'); 
+    const [entryType] = useState<TimelineEntryType>(TimelineEventType.NOTE); 
     
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -21186,16 +21192,14 @@ export const TimelineSkeleton: React.FC = () => {
 
 // ===== FILE: src/modules/timeline/hooks/useTimeline.ts =====
 
-// ===== FILE: src/modules/timeline/hooks/useTimeline.ts =====
-
 import { useState, useEffect, useCallback } from 'react';
 import { TimelineService } from '../services/TimelineService';
 import { 
-    TimelineEvent, 
-    TimelineEntityType, 
-    TimelineEntryType, 
-    TimelineAttachment 
+    TimelineEvent,
+    TimelineEntryType,
+    TimelineAttachment
 } from '../types/TimelineTypes';
+import { AppModule } from '@/core/ai/types/enums/AIEnums';
 
 // Interface para feedback visual de operações
 interface UseTimelineState {
@@ -21209,10 +21213,10 @@ interface UseTimelineState {
  * @hook useTimeline
  * @description Hook inteligente para gerenciamento completo da Timeline.
  * Abstrai o fetch de dados, atualizações otimistas e lógica de envio.
- * * @param entityType O contexto (ex: 'CLIENT')
+ * * @param module O contexto (ex: 'CLIENT')
  * @param entityId O ID da entidade (ex: UUID do Cliente)
  */
-export const useTimeline = (entityType: TimelineEntityType, entityId?: string) => {
+export const useTimeline = (entityType: AppModule, entityId?: string) => {
     
     // --- ESTADO LOCAL ---
     const [items, setItems] = useState<TimelineEvent[]>([]);
@@ -21241,7 +21245,7 @@ export const useTimeline = (entityType: TimelineEntityType, entityId?: string) =
         } finally {
             setIsLoading(false);
         }
-    }, [entityId, entityType]);
+    }, [entityId, module]);
 
     // Efeito: Carrega automaticamente ao montar ou mudar o ID
     useEffect(() => {
@@ -21364,15 +21368,13 @@ export const useTimeline = (entityType: TimelineEntityType, entityId?: string) =
 
 // ===== FILE: src/modules/timeline/services/TimelineService.ts =====
 
-// ===== FILE: src/modules/timeline/services/TimelineService.ts =====
-
 import { api } from '@/core/services/api'; // Ajuste conforme o path do seu Axios configurado
 import { 
     TimelineEvent, 
     TimelineResponse, 
     CreateTimelineEntryPayload, 
-    TimelineEntityType 
 } from '../types/TimelineTypes';
+import { AppModule } from '@/core/ai/types/enums/AIEnums';
 
 /**
  * @service TimelineService
@@ -21390,7 +21392,7 @@ export const TimelineService = {
      * @param limit Itens por página (default backend costuma ser 50)
      */
     getTimeline: async (
-        entityType: TimelineEntityType, 
+        entityType: AppModule, 
         entityId: string, 
         page: number = 1,
         limit: number = 50
@@ -21439,33 +21441,51 @@ export const TimelineService = {
 
 // ===== FILE: src/modules/timeline/types/TimelineTypes.ts =====
 
-// ===== FILE: src/modules/timeline/types/TimelineTypes.ts =====
-
-/**
- * Define os contextos possíveis onde a Timeline pode ser instanciada.
- * Deve estar sincronizado com o Backend (TimelineEntityType).
- */
-export type TimelineEntityType = 
-    | 'CLIENT' 
-    | 'DEAL' 
-    | 'PRODUCT' 
-    | 'SUPPLIER' 
-    | 'ORDER';
+import { AppModule } from "@/core/ai/types/enums/AIEnums";
 
 /**
  * Define o tipo de conteúdo de cada item da timeline.
  * Isso ditará qual ícone e qual layout o Card vai renderizar.
  */
-export type TimelineEntryType = 
-    | 'NOTE'          // Nota de texto simples
-    | 'CALL'          // Registro de ligação
-    | 'MEETING'       // Registro de reunião
-    | 'EMAIL'         // Email enviado/recebido
-    | 'WHATSAPP'      // Conversa de Zap
-    | 'AUDIO'         // Áudio gravado (Voice Note)
-    | 'FILE'          // Upload de arquivo genérico
-    | 'AI_INSIGHT'    // Análise gerada pelo Robô V8
-    | 'SYSTEM_ALERT'; // Log automático do sistema (ex: "Mudou de fase")
+export enum TimelineEventType {
+    
+    // =========================================================================
+    // 🗣️ CATEGORIA 1: INTERAÇÕES HUMANAS E COMUNICAÇÃO
+    // Fatos manuais. A IA lê estes eventos para deduzir o tom da negociação.
+    // =========================================================================
+    NOTE = 'NOTE',                 // Anotação manual de um usuário
+    CALL = 'CALL',                 // Registro de ligação (pode conter transcrição no content)
+    MEETING = 'MEETING',           // Reunião (presencial ou vídeo)
+    EMAIL = 'EMAIL',               // E-mail enviado/recebido
+    WHATSAPP = 'WHATSAPP',         // Mensagem ou thread de WhatsApp
+    AUDIO = 'AUDIO',               // Áudio enviado/recebido
+    FILE = 'FILE',                 // Documento ou anexo genérico
+
+    // =========================================================================
+    // ⚙️ CATEGORIA 2: EVENTOS DE SISTEMA E MUTAÇÕES
+    // O sistema narra sozinho o que mudou (Ex: Vendedor arrastou um card).
+    // =========================================================================
+    SYSTEM_ALERT = 'SYSTEM_ALERT',           // Alertas e bloqueios (Ex: "Cliente negativado")
+    SYSTEM_CHANGE = 'SYSTEM_CHANGE',         // Mudança de status (Ex: "Deal movido para Ganho")
+    DOCUMENT_GENERATED = 'DOCUMENT_GENERATED', // Ex: "Contrato em PDF gerado"
+
+    // =========================================================================
+    // 🧠 CATEGORIA 3: INTELIGÊNCIA CONTÍNUA (AI WORKERS)
+    // Recibos de que os Operários de Background trabalharam.
+    // =========================================================================
+    AI_INSIGHT = 'AI_INSIGHT',                   // Dica rápida proativa (Ex: "Alerta de Churn detectado")
+    
+    // [Micro/Meso] Atualização de dossiês de Entidades ou Módulos (Ex: Cliente, Estoque)
+    AI_ANALYSIS = 'AI_ANALYSIS',                 
+    
+    // [Macro] Relatório exclusivo do CEO Virtual cruzando dados de toda a empresa
+    AI_STRATEGIC_REPORT = 'AI_STRATEGIC_REPORT'  
+}
+
+// A Mágica da Retrocompatibilidade e Single Source of Truth
+export type TimelineEntryType = TimelineEventType;
+// Exporta também o valor (runtime) para o DTO e o TypeORM usarem
+export const TimelineEntryType = TimelineEventType;
 
 /**
  * Estrutura de um anexo (Arquivo/Mídia).
@@ -21500,7 +21520,7 @@ export interface TimelineEvent {
     
     // Polimorfismo (A quem pertence isso?)
     entityId: string;
-    entityType: TimelineEntityType;
+    entityType: AppModule;
 
     // Conteúdo
     type: TimelineEntryType;
@@ -21530,7 +21550,7 @@ export interface TimelineEvent {
  */
 export interface CreateTimelineEntryPayload {
     entityId: string;
-    entityType: TimelineEntityType;
+    entityType: AppModule;
     type: TimelineEntryType;
     content?: string;
     

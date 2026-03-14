@@ -9,14 +9,14 @@ import { AIMessage, AIMessageType } from '../types/state/AIState';
  */
 export const fetchAIHistory = async (routineKey: string): Promise<AIMessage[]> => {
     
-    console.log('FRONT [1]: Disparando fetchAIHistory (Serviço Puro) para a rotina:', routineKey);
+    // console.log('FRONT [1]: Disparando fetchAIHistory (Serviço Puro) para a rotina:', routineKey);
     
     if (!routineKey) return [];
 
     try {
         const response = await api.get<any[]>(`/ai/history/${routineKey}`);
         
-        console.log('FRONT [2]: Resposta da API recebida. Mapeando crachás...');
+        // console.log('FRONT [2]: Resposta da API recebida. Mapeando crachás...');
 
         const formattedHistory: AIMessage[] = response.data.map((msg: any) => {
             const role = msg.role as 'user' | 'assistant' | 'system';

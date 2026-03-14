@@ -7,7 +7,7 @@ import {
     FaMicrophone, 
     FaSpinner 
 } from 'react-icons/fa';
-import { TimelineEntryType } from '../types/TimelineTypes';
+import { TimelineEntryType, TimelineEventType } from '../types/TimelineTypes';
 
 interface TimelineInputProps {
     /**
@@ -47,7 +47,7 @@ export const TimelineInput: React.FC<TimelineInputProps> = ({
     
     // Por padrão, toda entrada rápida é uma NOTA. 
     // Futuramente podemos adicionar um dropdown aqui para mudar para CALL/MEETING.
-    const [entryType] = useState<TimelineEntryType>('NOTE'); 
+    const [entryType] = useState<TimelineEntryType>(TimelineEventType.NOTE); 
     
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 

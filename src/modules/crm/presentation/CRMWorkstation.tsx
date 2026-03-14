@@ -5,7 +5,6 @@ import { FaWhatsapp, FaTelegram, FaPaperPlane, FaCalendarAlt } from 'react-icons
 
 // --- COMPONENTES ---
 import { ClientListWidget } from '@/modules/crm/components/client-widget/ClientListWidget';
-import { AnalysisActionCard } from '@/modules/crm/components/AnalysisActionCard';
 import { ClientDashboard, DashboardMode } from '@/modules/crm/components/client-dashboard/ClientDashboard';
 import { WhatsAppWidget } from '@/modules/crm/components/communication/WhatsAppWidget';
 import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget';
@@ -23,21 +22,9 @@ interface CRMWorkstationProps {
     dashboardMode: DashboardMode;
     refreshListTrigger: number;
     
-    // Estados de IA
-    aiInputText: string;
-    isAnalyzing: boolean;
-    analysisResult: InteractionAnalysis | null;
-    aiError: string | null;
-    originalText: string;
 
     // Estados de UI de Abas
     activeChatTab: 'WA' | 'TG' | 'AGENDA'; 
-
-    // Handlers (Ações)
-    onAiInputChange: (text: string) => void;
-    onAnalyzeRequest: (text: string) => void;
-    onClearAnalysis: () => void;
-    onAnalysisSuccess: () => void;
     
     onSelectClient: (client: Client | null) => void;
     onOpenNewClient: () => void;
@@ -51,9 +38,7 @@ interface CRMWorkstationProps {
 export const CRMWorkstation: React.FC<CRMWorkstationProps> = ({
     // Desestruturação das props para uso no JSX
     contextClient, dashboardMode, refreshListTrigger,
-    aiInputText, isAnalyzing, analysisResult, aiError, originalText,
     activeChatTab,
-    onAiInputChange, onAnalyzeRequest, onClearAnalysis, onAnalysisSuccess,
     onSelectClient, onOpenNewClient, onOpenEditClient, onModeChange, onUpdateSuccess,
     onTabChange
 }) => {
@@ -84,37 +69,14 @@ export const CRMWorkstation: React.FC<CRMWorkstationProps> = ({
                   Span: 6
                   ================================================================*/}
                 <div className="col-span-6 h-full flex flex-col gap-4">
-
-                    {/* ÁREA DE ERRO (GLOBAL DA IA) */}
-                    {aiError && (
-                        <div className="bg-red-900/40 border border-red-500/50 p-3 rounded-lg text-sm text-red-200 flex items-center justify-between animate-fade-in">
-                            <span><strong>Erro na IA:</strong> {aiError}</span>
-                            <button onClick={onClearAnalysis} className="text-xs underline hover:text-white">Fechar</button>
-                        </div>
-                    )}
-
-                    {/* CONTEÚDO DINÂMICO */}
-                    {analysisResult ? (
-                        // MODO AÇÃO IA
-                        <div className="flex-1 overflow-y-auto pr-1">
-                            <AnalysisActionCard 
-                                analysis={analysisResult}
-                                content={originalText}
-                                contextClient={contextClient}
-                                onSuccess={onAnalysisSuccess}
-                            />
-                        </div>
-                    ) : (
-                        // MODO DASHBOARD
-                        <div className="flex-1 h-full">
-                            <ClientDashboard 
-                                client={contextClient}
-                                mode={dashboardMode} 
-                                onModeChange={onModeChange} 
-                                onUpdateSuccess={onUpdateSuccess} 
-                            />
-                        </div>
-                    )}
+                    <div className="flex-1 h-full">
+                        <ClientDashboard 
+                            client={contextClient}
+                            mode={dashboardMode} 
+                            onModeChange={onModeChange} 
+                            onUpdateSuccess={onUpdateSuccess} 
+                        />
+                    </div>
                 </div>
 
                 {/* ================================================================

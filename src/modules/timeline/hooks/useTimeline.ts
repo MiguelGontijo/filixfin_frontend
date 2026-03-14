@@ -1,13 +1,11 @@
-// ===== FILE: src/modules/timeline/hooks/useTimeline.ts =====
-
 import { useState, useEffect, useCallback } from 'react';
 import { TimelineService } from '../services/TimelineService';
 import { 
-    TimelineEvent, 
-    TimelineEntityType, 
-    TimelineEntryType, 
-    TimelineAttachment 
+    TimelineEvent,
+    TimelineEntryType,
+    TimelineAttachment
 } from '../types/TimelineTypes';
+import { AppModule } from '@/core/ai/types/enums/AIEnums';
 
 // Interface para feedback visual de operações
 interface UseTimelineState {
@@ -21,10 +19,10 @@ interface UseTimelineState {
  * @hook useTimeline
  * @description Hook inteligente para gerenciamento completo da Timeline.
  * Abstrai o fetch de dados, atualizações otimistas e lógica de envio.
- * * @param entityType O contexto (ex: 'CLIENT')
+ * * @param module O contexto (ex: 'CLIENT')
  * @param entityId O ID da entidade (ex: UUID do Cliente)
  */
-export const useTimeline = (entityType: TimelineEntityType, entityId?: string) => {
+export const useTimeline = (entityType: AppModule, entityId?: string) => {
     
     // --- ESTADO LOCAL ---
     const [items, setItems] = useState<TimelineEvent[]>([]);
@@ -53,7 +51,7 @@ export const useTimeline = (entityType: TimelineEntityType, entityId?: string) =
         } finally {
             setIsLoading(false);
         }
-    }, [entityId, entityType]);
+    }, [entityId, module]);
 
     // Efeito: Carrega automaticamente ao montar ou mudar o ID
     useEffect(() => {

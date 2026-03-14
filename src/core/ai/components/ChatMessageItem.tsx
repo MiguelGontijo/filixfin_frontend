@@ -1,5 +1,3 @@
-// ===== FILE: src/core/ai/components/ChatMessageItem.tsx =====
-
 import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -17,8 +15,7 @@ interface ChatMessageItemProps {
 /**
  * @component ChatMessageItem
  * @description Renderiza individualmente um balão de conversa.
- * [ATUALIZADO] Implementa o "Smart Chunking" (Fatiador Inteligente) para evitar blocos 
- * gigantes de texto, quebrando os parágrafos em balões independentes (Efeito WhatsApp).
+ * Implementa o "Smart Chunking" (Fatiador Inteligente) e instancia os Cards de Proposta.
  */
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     message,
@@ -31,16 +28,10 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 
     // =========================================================================
     // 🧠 SMART CHUNKER (O Fatiador de Pensamentos)
-    // Se a IA mandar um texto com parágrafos (\n\n), nós dividimos em um Array
-    // para renderizar múltiplos balõezinhos ao invés de um blocão gigante.
     // =========================================================================
     const textChunks = useMemo(() => {
         if (!message.content) return [];
-        
-        // O usuário e o sistema mantém um balão só. Apenas a IA (assistant) é fatiada.
         if (isUser || isSystem) return [message.content];
-
-        // Separa por quebra de linha dupla, filtrando pedaços vazios
         return message.content.split(/\n\s*\n/).filter(chunk => chunk.trim() !== '');
     }, [message.content, isUser, isSystem]);
 
@@ -50,16 +41,15 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             {/* Renderiza um balão individual para CADA pensamento (chunk) da IA */}
             {textChunks.map((chunk, index) => {
                 
-                // Lógica estética: se houver vários balões, arredonda as bordas de forma fluida
                 const isFirst = index === 0;
                 const isLast = index === textChunks.length - 1;
                 
                 let borderRadiusClass = '';
                 if (!isUser && !isSystem) {
-                    if (textChunks.length === 1) borderRadiusClass = 'rounded-tl-none'; // Único
-                    else if (isFirst) borderRadiusClass = 'rounded-bl-none rounded-tl-2xl'; // Primeiro
-                    else if (isLast) borderRadiusClass = 'rounded-tl-none rounded-bl-2xl'; // Último
-                    else borderRadiusClass = 'rounded-l-none'; // Meio
+                    if (textChunks.length === 1) borderRadiusClass = 'rounded-tl-none'; 
+                    else if (isFirst) borderRadiusClass = 'rounded-bl-none rounded-tl-2xl'; 
+                    else if (isLast) borderRadiusClass = 'rounded-tl-none rounded-bl-2xl'; 
+                    else borderRadiusClass = 'rounded-l-none'; 
                 } else if (isUser) {
                     borderRadiusClass = 'rounded-tr-none';
                 }
@@ -95,7 +85,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                             )}
                         </div>
 
-                        {/* A Hora só aparece no último balão do agrupamento para ficar mais limpo */}
+                        {/* A Hora só aparece no último balão do agrupamento */}
                         {isLast && (
                             <span className={`text-[9px] block mt-1.5 opacity-40 font-mono ${isUser ? 'text-right' : 'text-left'}`}>
                                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -113,7 +103,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                         status={message.proposalStatus}
                         onConfirm={() => onConfirmProposal(message.proposal!, message.id)}
                         onReject={() => onRejectProposal(message.id)}
-                        isExecuting={isExecuting && message.proposalStatus === 'EXECUTED'}
+                        // [CORREÇÃO]: O botão gira (isExecuting) se o chat estiver carregando E o status for APPROVED
+                        isExecuting={isExecuting && message.proposalStatus === 'APPROVED'}
                     />
                 </div>
             )}

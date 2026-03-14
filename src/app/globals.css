@@ -36,11 +36,11 @@
   ESTILOS DO BODY (CORPO DA PÁGINA)
   ===========================================
 */
-body {
+html, body {
   background: var(--background); /* Aplica o #111827 */
   color: var(--foreground);      /* Aplica o #F3F4F6 */
-  font-family: Arial, Helvetica, sans-serif;
-  
+  /* font-family: Arial, Helvetica, sans-serif; */
+  font-family: var(--font-sans), sans-serif;
   /* CORREÇÃO CRÍTICA (RODAPÉ BRANCO):
      Garante que o body ocupe no mínimo 100% da altura da viewport.
      Isso impede que sobre um espaço branco no final de páginas curtas.

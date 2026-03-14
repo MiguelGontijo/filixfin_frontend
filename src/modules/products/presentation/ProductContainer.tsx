@@ -20,6 +20,7 @@ import { CategoriesTab } from '../components/tabs/CategoriesTab'; // Novo Compon
 // --- Imports Cross-Module (Reutilização de Componentes Existentes) ---
 import { FiscalList } from '../../fiscal/components/FiscalList';
 import { useAIContextInjector } from '@/core/ai/hooks/useAIContextInjector';
+import { FeatureKeys } from '@/core/ai/types/enums/AIEnums';
 
 export type ProductViewType = 
     | 'OVERVIEW'
@@ -42,7 +43,7 @@ export const ProductContainer: React.FC<ProductContainerProps> = ({
     initialView = 'CATALOG' 
 }) => {
     
-    useAIContextInjector('AI_INVENTORY_AGENT');
+    useAIContextInjector(FeatureKeys.AI_INVENTORY_MICRO);
     
     const [activeView, setActiveView] = useState<ProductViewType>(initialView);
 
