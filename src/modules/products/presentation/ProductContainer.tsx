@@ -15,12 +15,12 @@ import { OverviewTab } from '../components/tabs/OverviewTab';
 import { CatalogTab } from '../components/tabs/CatalogTab';
 import { MovementsTab } from '../components/tabs/MovementsTab';
 import { WarehousesTab } from '../components/tabs/WarehousesTab';
-import { CategoriesTab } from '../components/tabs/CategoriesTab'; // Novo Componente
 
 // --- Imports Cross-Module (Reutilização de Componentes Existentes) ---
 import { FiscalList } from '../../fiscal/components/FiscalList';
 import { useAIContextInjector } from '@/core/ai/hooks/useAIContextInjector';
 import { FeatureKeys } from '@/core/ai/types/enums/AIEnums';
+import { CategoryRegistry } from '../registries/CategoryRegistry';
 
 export type ProductViewType = 
     | 'OVERVIEW'
@@ -74,7 +74,7 @@ export const ProductContainer: React.FC<ProductContainerProps> = ({
                 return <WarehousesTab />;
             case 'CATEGORIES':
                 // Nova implementação: Componente nativo do módulo Products
-                return <CategoriesTab />;
+                return <CategoryRegistry />;
             case 'FISCAL':
                 return (
                     // Wrapper estilizado com tema Metálico para listas externas (Fiscal ainda é legado)

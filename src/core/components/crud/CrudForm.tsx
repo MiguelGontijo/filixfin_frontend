@@ -188,18 +188,19 @@ export function CrudForm<TData, TForm extends FieldValues>({
     // =========================================================================
     // 🖼️ A ESTRUTURA VISUAL DO DRAWER
     // =========================================================================
+    // Se o Drawer estiver fechado, evitamos que ele bloqueie os cliques
+    // Mantemos ele no DOM para a animação de saída funcionar suavemente
     return (
-        <div className="fixed inset-0 z-50 flex justify-end">
-            
-            {/* Backdrop com Blur suave */}
-            <div 
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
-                onClick={!isSubmitting ? onClose : undefined} // Previne fechar enquanto salva
-            ></div>
-
-            {/* Painel Lateral Metálico */}
-            <div className="relative w-full max-w-md h-full bg-base-metallic border-l border-gray-700 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col">
+        <div 
+            className={`
+                absolute inset-0 z-20 bg-base-dark flex flex-col
+                transform transition-all duration-300 ease-in-out
+                ${isOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-12 opacity-0 pointer-events-none'}
+            `}
+        >
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                 
+                {/* O SEU CABEÇALHO, FORMULÁRIO E BOTÕES CONTINUAM EXATAMENTE AQUI DENTRO, SEM MUDAR NADA */} 
                 {/* Header Dinâmico */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-700 bg-gray-900/50 flex-shrink-0">
                     <div>

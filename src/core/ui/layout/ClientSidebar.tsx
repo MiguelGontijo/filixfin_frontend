@@ -83,7 +83,12 @@ export const ClientSidebar: React.FC = () => {
             name: 'Gestão de Produtos', // Rota Distinta: Hub de Supply Chain
             href: `/dashboard/supply-chain`, 
             icon: FaBoxOpen 
-        }
+        },
+        { 
+            name: 'Cadastros',
+            href: `/dashboard/cadastros`, 
+            icon: FaBox 
+        },
     ];
 
     /**
@@ -91,26 +96,28 @@ export const ClientSidebar: React.FC = () => {
      * Estas rotas levam para listagens simples ou CRUDs.
      */
     const registerItems: NavItem[] = [
-        { 
-            name: 'Clientes', 
-            href: `/dashboard/clients`, 
-            icon: FaUsers 
-        },
-        { 
-            name: 'Produtos', // Rota Distinta: Lista de Produtos
-            href: `/dashboard/products`, 
-            icon: FaBox 
-        },
-        { 
-            name: 'Categorias', 
-            href: `/dashboard/categories`, 
-            icon: FaTags 
-        },
-        { 
-            name: 'Fiscal', 
-            href: `/dashboard/fiscal`, 
-            icon: FaFileInvoice 
-        }
+
+
+        // { 
+        //     name: 'Clientes', 
+        //     href: `/dashboard/clients`, 
+        //     icon: FaUsers 
+        // },
+        // { 
+        //     name: 'Produtos', // Rota Distinta: Lista de Produtos
+        //     href: `/dashboard/products`, 
+        //     icon: FaBox 
+        // },
+        // { 
+        //     name: 'Categorias', 
+        //     href: `/dashboard/categories`, 
+        //     icon: FaTags 
+        // },
+        // { 
+        //     name: 'Fiscal', 
+        //     href: `/dashboard/fiscal`, 
+        //     icon: FaFileInvoice 
+        // }
     ];
 
     // --- Helpers de Lógica e Estilo ---

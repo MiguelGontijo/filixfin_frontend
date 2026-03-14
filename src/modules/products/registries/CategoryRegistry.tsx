@@ -63,7 +63,7 @@ const categoryConfig: CrudConfig<Category, CategoryFormData> = {
 // =========================================================================
 // 3. O COMPONENTE MESTRE
 // =========================================================================
-export const CategoriesTab: React.FC = () => {
+export const CategoryRegistry: React.FC = () => {
     const { categories, isLoading, refreshCategories } = useCategories();
     const { createCategory, updateCategory, deleteCategory, error: mutationError } = useCategoryMutation();
 

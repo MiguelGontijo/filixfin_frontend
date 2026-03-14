@@ -17,7 +17,7 @@ export function useCategories() {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await api.get<ICategory[]>('/categories');
+            const response = await api.get<ICategory[]>('/categories/select');
             setCategories(response.data);
         } catch (err: any) {
             console.error('❌ Erro ao buscar categorias:', err);

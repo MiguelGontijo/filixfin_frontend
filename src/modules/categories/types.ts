@@ -36,23 +36,24 @@ export interface IUpdateCategoryDTO extends Partial<ICreateCategoryDTO> {}
  * Definição de Tipos para o Módulo de Categorias.
  * * Espelha as entidades do Backend para garantir integridade na comunicação.
  */
-
 export interface Category {
     id: string;
-    name: string;
-    parentId?: string | null;
     tenantId: string;
+    name: string;
+    isActive: boolean;
+    parentId?: string | null; // Categoria Pai
     createdAt: string;
     updatedAt: string;
-    isActive: boolean;
-    // Opcional: Se o backend retornar a árvore montada
-    children?: Category[]; 
 }
 
+/**
+ * O DTO de Criação/Edição (Write Model)
+ * É exatamente o que o Zod gera no TForm.
+ */
 export interface CreateCategoryDto {
     name: string;
-    parentId?: string;
     isActive: boolean;
+    categoryId?: string | null;
 }
 
 export interface UpdateCategoryDto extends Partial<CreateCategoryDto> {}
