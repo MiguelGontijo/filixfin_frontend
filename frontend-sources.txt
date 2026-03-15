@@ -11,34 +11,22 @@
 │   ├── app
 │   │   ├── [tenantId]
 │   │   │   ├── dashboard
-│   │   │   │   ├── categories
-│   │   │   │   │   ├── create
-│   │   │   │   │   │   └── page.tsx
+│   │   │   │   ├── cadastros
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── clients
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── crm
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── fiscal
-│   │   │   │   │   ├── create
-│   │   │   │   │   │   └── page.tsx
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── inventory
 │   │   │   │   │   ├── movements
-│   │   │   │   │   │   ├── create
-│   │   │   │   │   │   │   └── page.tsx
 │   │   │   │   │   │   └── page.tsx
 │   │   │   │   │   └── warehouses
 │   │   │   │   │       ├── [id]
 │   │   │   │   │       │   └── page.tsx
-│   │   │   │   │       ├── create
-│   │   │   │   │       │   └── page.tsx
 │   │   │   │   │       └── page.tsx
 │   │   │   │   ├── products
-│   │   │   │   │   ├── [id]
-│   │   │   │   │   │   └── page.tsx
-│   │   │   │   │   ├── create
-│   │   │   │   │   │   └── page.tsx
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── schedule
 │   │   │   │   │   └── page.tsx
@@ -113,6 +101,7 @@
 │   │   │   │   ├── ClientTable.tsx
 │   │   │   │   └── ClientTablePage.tsx
 │   │   │   ├── crud
+│   │   │   │   ├── CadastrosContainer.tsx
 │   │   │   │   ├── CrudForm.tsx
 │   │   │   │   ├── CrudLayout.tsx
 │   │   │   │   ├── CrudTable.tsx
@@ -166,10 +155,6 @@
 │   │   │       ├── TenantModal.tsx
 │   │   │       └── TenantTable.tsx
 │   │   ├── categories
-│   │   │   ├── components
-│   │   │   │   ├── CategoryForm.tsx
-│   │   │   │   ├── CategoryList.tsx
-│   │   │   │   └── CategoryListGrid.tsx
 │   │   │   ├── hooks
 │   │   │   │   ├── useCategories.ts
 │   │   │   │   └── useCategoryMutation.ts
@@ -225,6 +210,8 @@
 │   │   │   ├── hooks
 │   │   │   │   ├── useFiscal.ts
 │   │   │   │   └── useFiscalMutation.ts
+│   │   │   ├── schemas
+│   │   │   │   └── fiscalSchema.ts
 │   │   │   └── types.ts
 │   │   ├── inventory
 │   │   │   ├── components
@@ -253,7 +240,6 @@
 │   │   │   │   │   └── VehicleFields.tsx
 │   │   │   │   ├── tabs
 │   │   │   │   │   ├── CatalogTab.tsx
-│   │   │   │   │   ├── CategoriesTab.tsx
 │   │   │   │   │   ├── MovementsTab.tsx
 │   │   │   │   │   ├── OverviewTab.tsx
 │   │   │   │   │   └── WarehousesTab.tsx
@@ -268,6 +254,16 @@
 │   │   │   ├── presentation
 │   │   │   │   ├── ProductCatalogue.tsx
 │   │   │   │   └── ProductContainer.tsx
+│   │   │   ├── registries
+│   │   │   │   ├── CategoryRegistry.tsx
+│   │   │   │   └── ProductRegistry.tsx
+│   │   │   ├── schemas
+│   │   │   │   └── productSchema.ts
+│   │   │   ├── types
+│   │   │   │   ├── enums.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── product.ts
+│   │   │   │   └── variant.ts
 │   │   │   └── types.ts
 │   │   ├── scheduler
 │   │   │   ├── components
@@ -560,31 +556,19 @@ export default config;
 
 
 
-// ===== FILE: src/app/[tenantId]/dashboard/categories/create/page.tsx =====
+// ===== FILE: src/app/[tenantId]/dashboard/cadastros/page.tsx =====
 
-import { CategoryForm } from '@/modules/categories/components/CategoryForm';
+'use client';
 
-/**
- * Rota de Criação de Categoria.
- * Caminho: /[tenantId]/dashboard/categories/create
- */
-export default function CategoryCreatePage() {
-    return <CategoryForm />;
-}
+import React from 'react';
+import { CadastrosContainer } from '@/core/components/crud/CadastrosContainer';
 
-
-// ===== FILE: src/app/[tenantId]/dashboard/categories/page.tsx =====
-
-import { CategoryList } from '@/modules/categories/components/CategoryList';
-
-/**
- * Rota de Categorias.
- * * Apenas renderiza o Container do Módulo.
- * * O 'use client' não é necessário aqui se o CategoryList já tiver.
- * * Mas se o CategoryList for default export, ajuste o import.
- */
-export default function CategoriesPage() {
-    return <CategoryList />;
+export default function CadastrosContainerPage() {
+    return (
+        <main className="h-full w-full overflow-hidden p-6">
+            <CadastrosContainer />
+        </main>
+    );
 }
 
 
@@ -631,20 +615,6 @@ export default function CRMPage() {
 }
 
 
-// ===== FILE: src/app/[tenantId]/dashboard/fiscal/create/page.tsx =====
-
-import { FiscalForm } from '@/modules/fiscal/components/FiscalForm';
-
-/**
- * Rota de Criação de Grupo Fiscal.
- * * URL: /[tenantId]/dashboard/fiscal/create
- * * Responsabilidade: Renderizar o Formulário de Cadastro (Smart Component).
- */
-export default function FiscalCreatePage() {
-    return <FiscalForm />;
-}
-
-
 // ===== FILE: src/app/[tenantId]/dashboard/fiscal/page.tsx =====
 
 import { FiscalList } from '@/modules/fiscal/components/FiscalList';
@@ -657,52 +627,6 @@ import { FiscalList } from '@/modules/fiscal/components/FiscalList';
  */
 export default function FiscalPage() {
     return <FiscalList />;
-}
-
-
-// ===== FILE: src/app/[tenantId]/dashboard/inventory/movements/create/page.tsx =====
-
-import React from 'react';
-// Importação relativa subindo até 'src' para acessar 'modules'
-import { MovementForm } from '@/modules/inventory/components/forms/MovementForm';
-
-interface Props {
-    params: {
-        tenantId: string;
-    };
-    searchParams: {
-        variantId?: string; // Captura ?variantId=... da URL opcionalmente
-    };
-}
-
-/**
- * Rota: /dashboard/inventory/movements/create
- * Responsabilidade: Página dedicada para registro manual de movimentações de estoque.
- * Funcionalidade Extra: Aceita 'variantId' via URL para pré-preencher o produto.
- */
-export default function CreateMovementPage({ params, searchParams }: Props) {
-    return (
-        <main className="flex-1 w-full h-full p-6 overflow-y-auto">
-            <div className="max-w-4xl mx-auto">
-                {/* Breadcrumb de Navegação */}
-                <div className="mb-6 flex items-center text-sm text-gray-500">
-                    <span>Inventário</span>
-                    <span className="mx-2">/</span>
-                    <span>Movimentações</span>
-                    <span className="mx-2">/</span>
-                    <span className="font-medium text-gray-900">Nova Transação</span>
-                </div>
-
-                {/* Renderiza o Formulário Inteligente.
-                  Repassa o tenantId e o variantId (se existir na URL) para o componente.
-                */}
-                <MovementForm 
-                    tenantId={params.tenantId} 
-                    preSelectedVariantId={searchParams.variantId}
-                />
-            </div>
-        </main>
-    );
 }
 
 
@@ -800,45 +724,6 @@ export default function EditWarehousePage({ params }: Props) {
                     tenantId={params.tenantId} 
                     initialData={warehouse} 
                 />
-            </div>
-        </main>
-    );
-}
-
-
-// ===== FILE: src/app/[tenantId]/dashboard/inventory/warehouses/create/page.tsx =====
-
-import React from 'react';
-import { WarehouseForm } from '@/modules/inventory/components/forms/WarehouseForm';
-
-interface Props {
-    params: {
-        tenantId: string;
-    };
-}
-
-/**
- * Rota: /dashboard/inventory/warehouses/create
- * Responsabilidade: Página dedicada para cadastro de novos depósitos.
- * Comportamento: "Dumb Component" - Apenas renderiza o formulário do módulo.
- */
-export default function CreateWarehousePage({ params }: Props) {
-    return (
-        <main className="flex-1 w-full h-full p-6 overflow-y-auto">
-            <div className="max-w-4xl mx-auto">
-                {/* Breadcrumb simplificado visualmente (opcional) 
-                  Pode ser substituído pelo seu componente de Breadcrumb oficial se houver.
-                */}
-                <div className="mb-6 flex items-center text-sm text-gray-500">
-                    <span>Inventário</span>
-                    <span className="mx-2">/</span>
-                    <span>Depósitos</span>
-                    <span className="mx-2">/</span>
-                    <span className="font-medium text-gray-900">Novo</span>
-                </div>
-
-                {/* Renderiza o Formulário Inteligente */}
-                <WarehouseForm tenantId={params.tenantId} />
             </div>
         </main>
     );
@@ -1007,135 +892,6 @@ export default function DashboardPage() {
 
             </div>
         </AuthGuard>
-    );
-}
-
-
-// ===== FILE: src/app/[tenantId]/dashboard/products/[id]/page.tsx =====
-
-'use client';
-
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { FaBoxOpen } from 'react-icons/fa';
-
-import { api } from '@/core/services/api';
-import { Product } from '@/modules/products/types';
-import { ProductForm } from '@/modules/products/components/ProductForm';
-
-/**
- * Rota de Edição de Produto.
- * * URL: /[tenantId]/dashboard/products/[id]
- * * Responsabilidade:
- * - Buscar o produto pelo ID.
- * - Gerenciar Loading/Erro da busca.
- * - Renderizar o ProductForm preenchido (Modo Edição).
- */
-export default function ProductEditPage() {
-    const router = useRouter();
-    const params = useParams();
-    const tenantId = params.tenantId as string;
-    const productId = params.id as string;
-
-    const [product, setProduct] = useState<Product | undefined>(undefined);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    // Função de busca do produto individual
-    const fetchProduct = useCallback(async () => {
-        try {
-            setIsLoading(true);
-            const response = await api.get<Product>(`/products/${productId}`);
-            setProduct(response.data);
-        } catch (err: any) {
-            console.error('❌ Erro ao buscar produto:', err);
-            setError('Não foi possível carregar os dados do produto.');
-        } finally {
-            setIsLoading(false);
-        }
-    }, [productId]);
-
-    useEffect(() => {
-        if (productId) {
-            fetchProduct();
-        }
-    }, [fetchProduct, productId]);
-
-    // Handler de Navegação
-    const handleNavigateBack = () => {
-        router.push(`/${tenantId}/dashboard/products`);
-    };
-
-    // Renderização de Estado de Carregamento
-    if (isLoading) {
-        return (
-            <div className="h-[calc(100vh-6rem)] flex flex-col items-center justify-center text-gray-500 animate-pulse">
-                <FaBoxOpen className="text-4xl mb-4 opacity-50" />
-                <p>Carregando dados do produto...</p>
-            </div>
-        );
-    }
-
-    // Renderização de Erro (ex: Produto não encontrado)
-    if (error || !product) {
-        return (
-            <div className="h-[calc(100vh-6rem)] flex flex-col items-center justify-center text-red-400">
-                <p className="text-lg font-bold mb-2">Erro</p>
-                <p>{error || 'Produto não encontrado.'}</p>
-                <button 
-                    onClick={handleNavigateBack}
-                    className="mt-4 text-sm underline hover:text-white"
-                >
-                    Voltar para listagem
-                </button>
-            </div>
-        );
-    }
-
-    // Renderização do Formulário em Modo de Edição
-    return (
-        <div className="h-[calc(100vh-6rem)]">
-            <ProductForm 
-                product={product} // A presença desta prop ativa o modo edição
-                onSuccess={handleNavigateBack}
-                onCancel={handleNavigateBack}
-            />
-        </div>
-    );
-}
-
-
-// ===== FILE: src/app/[tenantId]/dashboard/products/create/page.tsx =====
-
-'use client';
-
-import { useRouter, useParams } from 'next/navigation';
-import { ProductForm } from '@/modules/products/components/ProductForm';
-
-/**
- * Rota de Criação de Produto.
- * * URL: /[tenantId]/dashboard/products/create
- * * Responsabilidade:
- * - Renderizar o formulário em modo de CRIAÇÃO (sem prop 'product').
- * - Fornecer a lógica de navegação (voltar para lista) após sucesso ou cancelamento.
- */
-export default function ProductCreatePage() {
-    const router = useRouter();
-    const params = useParams();
-    const tenantId = params.tenantId as string;
-
-    // Função de redirecionamento padrão para a listagem
-    const handleNavigateBack = () => {
-        router.push(`/${tenantId}/dashboard/products`);
-    };
-
-    return (
-        <div className="h-[calc(100vh-6rem)]"> {/* Container para ocupar altura disponível */}
-            <ProductForm 
-                onSuccess={handleNavigateBack}
-                onCancel={handleNavigateBack}
-            />
-        </div>
     );
 }
 
@@ -5210,6 +4966,197 @@ export const ClientTablePage: React.FC = () => {
 }
 
 
+// ===== FILE: src/core/components/crud/CadastrosContainer.tsx =====
+
+// ===== FILE: src/modules/core/presentation/CadastrosContainer.tsx =====
+
+'use client';
+
+import { CategoryRegistry } from '@/modules/products/registries/CategoryRegistry';
+import { ProductRegistry } from '@/modules/products/registries/ProductRegistry';
+import React, { useState, useMemo } from 'react';
+import { 
+    FaBoxOpen, 
+    FaChartLine, 
+    FaFileInvoiceDollar, 
+    FaTags, 
+    FaCogs, 
+    FaDatabase,
+    FaBalanceScale
+} from 'react-icons/fa';
+
+// =========================================================================
+// 📥 IMPORTS DOS REGISTROS (A Figueira Estranguladora crescendo)
+// Conforme você for criando as telas novas com o CrudLayout, importe-as aqui.
+// =========================================================================
+// Exemplo: import { CategoryRegistry } from '@/modules/products/registries/CategoryRegistry';
+
+// --- COMPONENTE PLACEHOLDER (Para as telas que ainda não existem) ---
+const RegistryPlaceholder: React.FC<{ title: string, icon: React.ReactNode }> = ({ title, icon }) => (
+    <div className="h-full border-2 border-dashed border-gray-800 bg-base-metallic/10 rounded-2xl flex flex-col items-center justify-center text-gray-500 animate-fade-in">
+        <div className="text-4xl mb-4 opacity-20">{icon}</div>
+        <h3 className="text-xl font-bold text-gray-400 tracking-tight">{title}</h3>
+        <p className="text-sm mt-2 max-w-md text-center opacity-60">
+            Este cadastro está na fila de migração para o novo Motor V3. Em breve estará disponível aqui.
+        </p>
+    </div>
+);
+
+// =========================================================================
+// ⚙️ O COMPONENTE MESTRE
+// =========================================================================
+export const CadastrosContainer: React.FC = () => {
+    
+    // O Estado que guarda o ID do cadastro atualmente visível na tela
+    const [activeRegistryId, setActiveRegistryId] = useState<string>('CATEGORIES');
+
+    // =========================================================================
+    // 🗺️ O MAPA DE NAVEGAÇÃO (Menu Lateral)
+    // Agrupamento lógico por Módulos (Bounded Contexts do DDD).
+    // =========================================================================
+    const menuGroups = useMemo(() => [
+        {
+            module: 'Produtos & Estoque',
+            icon: <FaBoxOpen />,
+            items: [
+                { id: 'PRODUCTS', label: 'Produtos' },
+                { id: 'CATEGORIES', label: 'Categorias de Produto' },
+                { id: 'BRANDS', label: 'Marcas / Fabricantes' },
+                { id: 'UNITS', label: 'Unidades de Medida' },
+            ]
+        },
+        {
+            module: 'CRM & Vendas',
+            icon: <FaChartLine />,
+            items: [
+                { id: 'LOSS_REASONS', label: 'Motivos de Perda' },
+                { id: 'LEAD_SOURCES', label: 'Origens de Lead' },
+            ]
+        },
+        {
+            module: 'Fiscal & Tributário',
+            icon: <FaFileInvoiceDollar />,
+            items: [
+                { id: 'FISCAL_GROUPS', label: 'Grupos Fiscais' },
+                { id: 'CFOPS', label: 'Naturezas de Operação' },
+                { id: 'TAX_RULES', label: 'Regras de Imposto' },
+            ]
+        },
+        {
+            module: 'Sistema',
+            icon: <FaCogs />,
+            items: [
+                { id: 'USERS', label: 'Usuários & Permissões' },
+            ]
+        }
+    ], []);
+
+    // =========================================================================
+    // 🔀 O ROTEADOR INTERNO (Dicionário de Componentes)
+    // Complexidade O(1). Renderiza o componente exato baseado no ID selecionado.
+    // =========================================================================
+    const registryComponents: Record<string, React.ReactNode> = {
+        // MÓDULO: PRODUTOS
+        // 'CATEGORIES': <CategoryRegistry />, // <- Descomente isso quando o CategoryRegistry estiver pronto!
+        'PRODUCTS': < ProductRegistry/>,
+        'CATEGORIES': <CategoryRegistry />,
+
+        // 'CATEGORIES': <RegistryPlaceholder title="Categorias de Produto" icon={<FaTags />} />,
+        'BRANDS': <RegistryPlaceholder title="Marcas / Fabricantes" icon={<FaBoxOpen />} />,
+        'UNITS': <RegistryPlaceholder title="Unidades de Medida" icon={<FaBalanceScale />} />,
+        
+        // MÓDULO: CRM
+        'LOSS_REASONS': <RegistryPlaceholder title="Motivos de Perda" icon={<FaChartLine />} />,
+        'LEAD_SOURCES': <RegistryPlaceholder title="Origens de Lead" icon={<FaDatabase />} />,
+
+        // MÓDULO: FISCAL
+        'FISCAL_GROUPS': <RegistryPlaceholder title="Grupos Fiscais" icon={<FaFileInvoiceDollar />} />,
+        'CFOPS': <RegistryPlaceholder title="Naturezas de Operação" icon={<FaFileInvoiceDollar />} />,
+        'TAX_RULES': <RegistryPlaceholder title="Regras de Imposto" icon={<FaFileInvoiceDollar />} />,
+
+        // MÓDULO: SISTEMA
+        'USERS': <RegistryPlaceholder title="Usuários & Permissões" icon={<FaCogs />} />,
+    };
+
+    // =========================================================================
+    // 🎨 RENDERIZAÇÃO
+    // =========================================================================
+    return (
+        <div className="flex h-full w-full bg-base-dark text-base-text overflow-hidden">
+            
+            {/* --- BARRA LATERAL (MENU DE CADASTROS) --- */}
+            <aside className="w-72 flex-shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col h-full z-10">
+                
+                {/* Header da Sidebar */}
+                <div className="p-6 border-b border-gray-800/50 shrink-0">
+                    <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-3">
+                        <FaDatabase className="text-accent-primary" />
+                        Master Data
+                    </h1>
+                    <p className="text-[11px] text-gray-500 uppercase tracking-widest mt-2 font-bold">
+                        Central de Cadastros
+                    </p>
+                </div>
+
+                {/* Lista de Navegação Scrollável */}
+                <nav className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
+                    {menuGroups.map((group, groupIdx) => (
+                        <div key={groupIdx} className="animate-fade-in" style={{ animationDelay: `${groupIdx * 50}ms` }}>
+                            
+                            {/* Título do Grupo */}
+                            <h3 className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 px-2 select-none">
+                                <span className="opacity-70">{group.icon}</span>
+                                {group.module}
+                            </h3>
+                            
+                            {/* Botões (Tabelas) */}
+                            <ul className="space-y-1">
+                                {group.items.map((item) => {
+                                    const isActive = activeRegistryId === item.id;
+                                    return (
+                                        <li key={item.id}>
+                                            <button
+                                                onClick={() => setActiveRegistryId(item.id)}
+                                                className={`
+                                                    w-full flex items-center justify-between px-3 py-2 rounded-lg 
+                                                    text-sm font-medium transition-all duration-200 focus:outline-none
+                                                    ${isActive 
+                                                        ? 'bg-accent-primary/10 text-accent-primary shadow-sm ring-1 ring-accent-primary/20' 
+                                                        : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
+                                                    }
+                                                `}
+                                            >
+                                                <span className="truncate">{item.label}</span>
+                                                
+                                                {/* Indicador de seleção ativo sutil à direita */}
+                                                {isActive && (
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-accent-primary shadow-[0_0_8px_rgba(255,94,26,0.8)]"></span>
+                                                )}
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    ))}
+                </nav>
+            </aside>
+
+            {/* --- ÁREA PRINCIPAL (O PALCO DOS CRUDS) --- */}
+            <main className="flex-1 h-full min-w-0 bg-base-dark relative">
+                {/* O padding aqui é estratégico: 
+                    Dá espaço para o CrudLayout respirar e preencher a tela com elegância.
+                */}
+                <div className="absolute inset-0 p-8 overflow-hidden">
+                    {registryComponents[activeRegistryId]}
+                </div>
+            </main>
+
+        </div>
+    );
+};
+
+
 // ===== FILE: src/core/components/crud/CrudForm.tsx =====
 
 'use client';
@@ -5217,7 +5164,7 @@ export const ClientTablePage: React.FC = () => {
 import React, { useEffect, useState } from 'react';
 import { useForm, Controller, FieldValues, SubmitHandler, DefaultValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FaTimes, FaSave } from 'react-icons/fa';
+import { FaTimes, FaSave, FaChevronDown, FaChevronUp, FaShieldAlt } from 'react-icons/fa';
 import { CrudConfig, CrudFieldConfig } from './types';
 
 interface CrudFormProps<TData, TForm extends FieldValues> {
@@ -5242,6 +5189,7 @@ export function CrudForm<TData, TForm extends FieldValues>({
 }: CrudFormProps<TData, TForm>) {
     
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSystemInfo, setShowSystemInfo] = useState(false);
 
     // =========================================================================
     // 🧠 O CÉREBRO DO FORMULÁRIO (React Hook Form + Zod)
@@ -5383,8 +5331,11 @@ export function CrudForm<TData, TForm extends FieldValues>({
                                         `}
                                     />
                                 </button>
-                                <span className="ml-3 text-sm text-gray-300">
-                                    {value ? 'Ativo' : 'Inativo'}
+                                <span className="ml-3 text-sm font-medium text-gray-300">
+                                    {value 
+                                        ? (field.trueLabel || 'Ativo') 
+                                        : (field.falseLabel || 'Inativo')
+                                    }
                                 </span>
                             </div>
                         )}
@@ -5402,18 +5353,19 @@ export function CrudForm<TData, TForm extends FieldValues>({
     // =========================================================================
     // 🖼️ A ESTRUTURA VISUAL DO DRAWER
     // =========================================================================
+    // Se o Drawer estiver fechado, evitamos que ele bloqueie os cliques
+    // Mantemos ele no DOM para a animação de saída funcionar suavemente
     return (
-        <div className="fixed inset-0 z-50 flex justify-end">
-            
-            {/* Backdrop com Blur suave */}
-            <div 
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
-                onClick={!isSubmitting ? onClose : undefined} // Previne fechar enquanto salva
-            ></div>
-
-            {/* Painel Lateral Metálico */}
-            <div className="relative w-full max-w-md h-full bg-base-metallic border-l border-gray-700 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col">
+        <div 
+            className={`
+                absolute inset-0 z-20 bg-base-dark flex flex-col
+                transform transition-all duration-300 ease-in-out
+                ${isOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-12 opacity-0 pointer-events-none'}
+            `}
+        >
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                 
+                {/* O SEU CABEÇALHO, FORMULÁRIO E BOTÕES CONTINUAM EXATAMENTE AQUI DENTRO, SEM MUDAR NADA */} 
                 {/* Header Dinâmico */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-700 bg-gray-900/50 flex-shrink-0">
                     <div>
@@ -5459,6 +5411,45 @@ export function CrudForm<TData, TForm extends FieldValues>({
                             </div>
                         );
                     })}
+
+                    {/* ========================================================================= */}
+                    {/* 🛡️ SANFONA DE AUDITORIA E SISTEMA (Visível apenas em Modo Edição) */}
+                    {/* ========================================================================= */}
+                    {initialData && config.systemFields && config.systemFields.length > 0 && (
+                        <div className="pt-4 mt-6 border-t border-gray-800/50 animate-fade-in flex-shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setShowSystemInfo(!showSystemInfo)}
+                                className="flex items-center justify-between w-full p-3.5 bg-gray-800/30 hover:bg-gray-800/60 border border-gray-700/50 rounded-lg transition-colors focus:outline-none"
+                            >
+                                <div className="flex items-center gap-2 text-gray-400">
+                                    <FaShieldAlt className="w-4 h-4 text-gray-500" />
+                                    <span className="text-xs font-bold uppercase tracking-wider">Informações do Sistema</span>
+                                </div>
+                                {showSystemInfo ? <FaChevronUp className="w-3 h-3 text-gray-500" /> : <FaChevronDown className="w-3 h-3 text-gray-500" />}
+                            </button>
+
+                            {/* O Corpo da Sanfona */}
+                            {showSystemInfo && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-3 p-5 bg-gray-900/50 border border-gray-800/50 rounded-lg shadow-inner animate-fade-in">
+                                    {config.systemFields.map((field) => {
+                                        const fieldName = String(field.name);
+                                        return (
+                                            <div key={fieldName} className="space-y-1.5">
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                                    {field.label}
+                                                </label>
+                                                {/* Forçamos os campos de sistema a serem Read-Only visualmente */}
+                                                <div className="opacity-60 pointer-events-none grayscale">
+                                                    {renderField({ ...field, disabled: true })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                 </form>
 
@@ -5516,8 +5507,9 @@ interface CrudLayoutProps<TData extends FieldValues & { id: string }, TForm exte
 
 /**
  * @component CrudLayout (O Maestro)
- * @description O Layout Universal para Cadastros de Apoio e Master Data simples.
- * Acopla a Tabela, o Formulário e os Hooks de mutação em uma única interface padronizada.
+ * @description O Layout Universal para Cadastros de Apoio e Master Data.
+ * Agora equipado com a Máquina de Estados 'View-Swap' (Lista <-> Formulário)
+ * garantindo transições suaves (In-Place) sem uso de modais intrusivos.
  */
 export function CrudLayout<TData extends FieldValues & { id: string }, TForm extends FieldValues>({
     config,
@@ -5525,11 +5517,13 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
 }: CrudLayoutProps<TData, TForm>) {
 
     // =========================================================================
-    // 🧠 ESTADOS DO ORQUESTRADOR
+    // 🧠 MÁQUINA DE ESTADOS DO ORQUESTRADOR
     // =========================================================================
     const [searchTerm, setSearchTerm] = useState('');
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<TData | null>(null);
+    
+    // O coração da transição suave: Define quem está no palco principal
+    const [viewMode, setViewMode] = useState<'LIST' | 'FORM'>('LIST');
 
     // =========================================================================
     // 🔍 MOTOR DE BUSCA UNIVERSAL (Client-side)
@@ -5539,7 +5533,6 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
         
         const lowerTerm = searchTerm.toLowerCase();
         return hooks.data.filter((item) => {
-            // Percorre todos os valores do objeto procurando o termo digitado
             return Object.values(item).some(val => 
                 String(val).toLowerCase().includes(lowerTerm)
             );
@@ -5547,118 +5540,132 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
     }, [hooks.data, searchTerm]);
 
     // =========================================================================
-    // ⚙️ HANDLERS DE AÇÃO
+    // ⚙️ HANDLERS DE AÇÃO (Coreografia de Tela)
     // =========================================================================
     const handleOpenCreate = () => {
         setEditingItem(null);
-        setIsDrawerOpen(true);
+        setViewMode('FORM'); // Aciona a transição para o formulário
     };
 
     const handleOpenEdit = (item: TData) => {
         setEditingItem(item);
-        setIsDrawerOpen(true);
+        setViewMode('FORM'); // Aciona a transição para o formulário
     };
 
-    const handleCloseDrawer = () => {
-        setIsDrawerOpen(false);
-        setEditingItem(null);
+    const handleCloseForm = () => {
+        setViewMode('LIST'); // Retorna a tabela suavemente para a tela
+        // Aguardamos a animação terminar (300ms) antes de limpar o item para evitar "pulos" visuais
+        setTimeout(() => setEditingItem(null), 300);
     };
 
     const handleSubmit = async (formData: TForm) => {
         if (editingItem) {
-            // Se tem item em edição, chama o PUT/PATCH
             await hooks.onUpdate(editingItem.id, formData);
         } else {
-            // Se não tem, chama o POST
             await hooks.onCreate(formData);
         }
+        hooks.onRefresh();
     };
 
     const handleDelete = async (id: string) => {
         if (window.confirm(`Tem certeza que deseja excluir este registro de ${config.title}?`)) {
-            await hooks.onDelete(id);
+            try {
+                await hooks.onDelete(id);
+                hooks.onRefresh();
+            } catch (error) {
+                console.error("Erro ao deletar:", error);
+            }
         }
     };
 
     // =========================================================================
-    // 🖼️ RENDERIZAÇÃO MONUMENTAL
+    // 🖼️ RENDERIZAÇÃO MONUMENTAL (O Palco)
     // =========================================================================
     return (
-        <div className="space-y-6 animate-fade-in h-full flex flex-col min-h-0">
+        // O Palco: relative e overflow-hidden garantem que o form deslize apenas aqui dentro
+        <div className="h-full flex flex-col min-h-0 relative overflow-hidden bg-base-dark rounded-xl">
             
-            {/* --- HEADER E TOOLBAR --- */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center flex-shrink-0">
-                
-                {/* Título e Botão de Refresh Opcional */}
-                <div className="flex items-center gap-3">
-                    <div>
-                        <h2 className="text-xl font-bold text-base-text tracking-tight">
-                            {config.title}
-                        </h2>
-                        {config.description && (
-                            <p className="text-sm text-gray-400">{config.description}</p>
-                        )}
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    {/* Barra de Busca Universal */}
-                    <div className="relative w-full md:w-72 group">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <FaSearch className="text-gray-500 group-focus-within:text-accent-primary transition-colors" />
+            {/* --- MODO VISUALIZAÇÃO (A TABELA E A BUSCA) --- 
+                Quando o form abre, esta div reduz 5% (scale-95) e fica transparente (opacity-0).
+                Isso cria a ilusão de profundidade perfeitamente suave.
+            */}
+            <div 
+                className={`
+                    flex flex-col h-full space-y-6 transition-all duration-300 ease-in-out
+                    ${viewMode === 'FORM' ? 'opacity-0 scale-95 pointer-events-none absolute inset-0' : 'opacity-100 scale-100 relative'}
+                `}
+            >
+                {/* --- HEADER E TOOLBAR --- */}
+                <div className="flex flex-col md:flex-row gap-4 justify-between items-center flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div>
+                            <h2 className="text-xl font-bold text-base-text tracking-tight">
+                                {config.title}
+                            </h2>
+                            {config.description && (
+                                <p className="text-sm text-gray-400">{config.description}</p>
+                            )}
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Buscar..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-700 rounded-lg leading-5 bg-gray-900 text-base-text placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-accent-primary focus:border-accent-primary sm:text-sm transition-colors shadow-inner"
-                        />
                     </div>
 
-                    {/* Botão Novo Registro */}
-                    <button
-                        onClick={handleOpenCreate}
-                        className="flex items-center justify-center gap-2 bg-accent-primary hover:bg-accent-primary-hover text-base-dark px-5 py-2.5 rounded-lg font-bold transition-all shadow-lg shadow-accent-primary/20 active:scale-95 flex-shrink-0"
-                    >
-                        <FaPlus className="w-3 h-3" />
-                        <span className="hidden sm:inline">Novo</span>
-                    </button>
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <div className="relative w-full md:w-72 group">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <FaSearch className="text-gray-500 group-focus-within:text-accent-primary transition-colors" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Buscar..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="block w-full pl-10 pr-3 py-2.5 border border-gray-700 rounded-lg leading-5 bg-gray-900 text-base-text placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-accent-primary focus:border-accent-primary sm:text-sm transition-colors shadow-inner"
+                            />
+                        </div>
 
-                    {/* Botão de Refresh Silencioso */}
-                    <button
-                        onClick={() => hooks.onRefresh()}
-                        disabled={hooks.isLoading}
-                        className="p-2.5 text-gray-400 hover:text-white bg-gray-800 border border-gray-700 rounded-lg transition-colors disabled:opacity-50"
-                        title="Atualizar dados"
-                    >
-                        <FaSync className={hooks.isLoading ? 'animate-spin' : ''} />
-                    </button>
+                        <button
+                            onClick={handleOpenCreate}
+                            className="flex items-center justify-center gap-2 bg-accent-primary hover:bg-accent-primary-hover text-base-dark px-5 py-2.5 rounded-lg font-bold transition-all shadow-lg shadow-accent-primary/20 active:scale-95 flex-shrink-0"
+                        >
+                            <FaPlus className="w-3 h-3" />
+                            <span className="hidden sm:inline">Novo</span>
+                        </button>
+
+                        <button
+                            onClick={() => hooks.onRefresh()}
+                            disabled={hooks.isLoading}
+                            className="p-2.5 text-gray-400 hover:text-white bg-gray-800 border border-gray-700 rounded-lg transition-colors disabled:opacity-50"
+                            title="Atualizar dados"
+                        >
+                            <FaSync className={hooks.isLoading ? 'animate-spin' : ''} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* --- VITRINE (A Tabela) --- */}
+                <div className="flex-1 min-h-0 overflow-hidden pb-2">
+                    {hooks.error && (
+                        <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 text-red-400 rounded-lg text-sm text-center">
+                            {hooks.error}
+                        </div>
+                    )}
+                    
+                    <CrudTable<TData>
+                        data={filteredData}
+                        columns={config.columns}
+                        isLoading={hooks.isLoading}
+                        onEdit={handleOpenEdit}
+                        onDelete={handleDelete}
+                    />
                 </div>
             </div>
 
-            {/* --- VITRINE (A Tabela) --- */}
-            <div className="flex-1 min-h-0 overflow-hidden pb-2">
-                {/* Se der erro na API Global (ex: servidor caiu) */}
-                {hooks.error && (
-                    <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 text-red-400 rounded-lg text-sm text-center">
-                        {hooks.error}
-                    </div>
-                )}
-                
-                <CrudTable<TData>
-                    data={filteredData}
-                    columns={config.columns}
-                    isLoading={hooks.isLoading}
-                    onEdit={handleOpenEdit}
-                    onDelete={handleDelete}
-                />
-            </div>
-
-            {/* --- FÁBRICA (O Formulário Modal) --- */}
+            {/* --- MODO FORMULÁRIO (A IMPRESSORA 3D) --- 
+                Ele mora aqui o tempo todo. Quando viewMode === 'FORM', a prop isOpen vira true
+                e ele desliza para dentro do palco cobrindo a tabela desbotada.
+            */}
             <CrudForm<TData, TForm>
-                isOpen={isDrawerOpen}
-                onClose={handleCloseDrawer}
+                isOpen={viewMode === 'FORM'}
+                onClose={handleCloseForm}
                 config={config}
                 initialData={editingItem}
                 onSubmit={handleSubmit}
@@ -5673,6 +5680,8 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
 
 // ===== FILE: src/core/components/crud/CrudTable.tsx =====
 
+'use client';
+
 import React from 'react';
 import { FaEdit, FaTrash, FaInbox } from 'react-icons/fa';
 import { CrudColumnConfig } from './types';
@@ -5680,18 +5689,18 @@ import { CrudColumnConfig } from './types';
 interface CrudTableProps<T> {
     data: T[];
     columns: CrudColumnConfig<T>[];
-    isLoading: boolean;
+    isLoading?: boolean;
     onEdit: (item: T) => void;
     onDelete: (id: string) => void;
 }
 
 /**
  * @component CrudTable
- * @description O Motor de Exibição (Grid). 
- * Renderiza os dados dinamicamente com base nas colunas configuradas.
- * Possui estados nativos de Loading e Empty (Vazio) aderentes ao Design System.
+ * @description Um Grid de dados universal de alta performance.
+ * Implementa a tecnologia de 'Dynamic Accessors' para permitir renderizações
+ * complexas via configuração, mantendo o componente agnóstico e puro.
  */
-export function CrudTable<T extends { id: string } & Record<string, any>>({
+export function CrudTable<T extends { id: string }>({
     data,
     columns,
     isLoading,
@@ -5699,171 +5708,103 @@ export function CrudTable<T extends { id: string } & Record<string, any>>({
     onDelete
 }: CrudTableProps<T>) {
 
-    // =========================================================================
-    // 🎨 FORMATADOR POLIMÓRFICO DE CÉLULAS (Cell Renderer)
-    // =========================================================================
-    const renderCell = (item: T, col: CrudColumnConfig<T>) => {
-        const value = item[col.key];
+    /**
+     * @function renderCell
+     * @description O motor de renderização da célula. 
+     * Decide entre exibir um valor primitivo ou executar um componente funcional.
+     */
+    const renderCell = (item: T, column: CrudColumnConfig<T>) => {
+        const { accessor } = column;
 
-        // Proteção contra dados nulos
-        if (value === null || value === undefined) {
-            return <span className="text-gray-600">-</span>;
+        // Se o accessor for uma função, delegamos a renderização para ela (Classe Ouro)
+        if (typeof accessor === 'function') {
+            return accessor(item);
         }
 
-        switch (col.type) {
-            case 'boolean':
-                // Desenha a Badge Enterprise (Verde/Vermelha) para booleanos
-                const isTruthy = Boolean(value);
-                return (
-                    <span className={`
-                        inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border
-                        ${isTruthy 
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                            : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                        }
-                    `}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${isTruthy ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                        {isTruthy ? 'Ativo' : 'Inativo'}
-                    </span>
-                );
-
-            case 'currency':
-                // Formatação Monetária BR
-                const numValue = Number(value);
-                return (
-                    <span className="font-mono text-green-400 font-medium">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(isNaN(numValue) ? 0 : numValue)}
-                    </span>
-                );
-
-            case 'date':
-                // Formatação de Data
-                const dateValue = new Date(String(value));
-                return (
-                    <span className="text-gray-300">
-                        {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(dateValue)}
-                    </span>
-                );
-
-            case 'text':
-            default:
-                // Texto padrão com suporte a truncate se for muito longo
-                return (
-                    <span className="text-sm font-medium text-base-text transition-colors group-hover:text-accent-primary">
-                        {String(value)}
-                    </span>
-                );
+        // Se for uma string (chave), garantimos a renderização segura do valor
+        const value = item[accessor as keyof T];
+        
+        if (typeof value === 'boolean') {
+            return value ? 'Sim' : 'Não';
         }
+
+        return String(value ?? '-');
     };
 
-    // =========================================================================
-    // 🖼️ RENDERIZAÇÃO DA TABELA
-    // =========================================================================
-    return (
-        <div className="bg-base-metallic rounded-xl border border-gray-700 shadow-xl overflow-hidden animate-fade-in">
-            <div className="overflow-x-auto custom-scrollbar">
-                <table className="min-w-full divide-y divide-gray-700">
-                    
-                    {/* CABEÇALHO (Thead) */}
-                    <thead className="bg-gray-900/50">
-                        <tr>
-                            {columns.map((col) => (
-                                <th 
-                                    key={String(col.key)} 
-                                    scope="col" 
-                                    className={`px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-${col.align || 'left'}`}
-                                >
-                                    {col.label}
-                                </th>
-                            ))}
-                            {/* Coluna fixa de Ações à direita */}
-                            <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                Ações
-                            </th>
-                        </tr>
-                    </thead>
-
-                    {/* CORPO DA TABELA (Tbody) */}
-                    <tbody className="divide-y divide-gray-700/50">
-                        
-                        {/* ESTADO 1: CARREGANDO */}
-                        {isLoading && data.length === 0 && (
-                            <tr>
-                                <td colSpan={columns.length + 1} className="px-6 py-12">
-                                    <div className="flex flex-col items-center justify-center space-y-3 animate-pulse">
-                                        <div className="h-8 w-8 rounded-full border-2 border-t-accent-primary border-r-transparent border-b-accent-primary/30 border-l-transparent animate-spin"></div>
-                                        <span className="text-gray-500 text-sm font-medium tracking-wide">Carregando registros...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        )}
-
-                        {/* ESTADO 2: VAZIO (Nenhum registro) */}
-                        {!isLoading && data.length === 0 && (
-                            <tr>
-                                <td colSpan={columns.length + 1} className="px-6 py-16">
-                                    <div className="flex flex-col items-center justify-center text-center">
-                                        <div className="p-4 bg-gray-900 rounded-full mb-4 border border-gray-700 shadow-inner">
-                                            <FaInbox className="w-8 h-8 text-gray-600" />
-                                        </div>
-                                        <h3 className="text-lg font-medium text-base-text mb-1">Nenhum registro encontrado</h3>
-                                        <p className="text-gray-500 text-sm max-w-sm">
-                                            Ainda não há dados cadastrados para esta entidade ou a sua busca não retornou resultados.
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
-                        )}
-
-                        {/* ESTADO 3: LISTAGEM DE DADOS */}
-                        {!isLoading && data.map((item) => (
-                            <tr key={item.id} className="hover:bg-gray-700/30 transition-colors duration-200 group">
-                                
-                                {/* Células Dinâmicas */}
-                                {columns.map((col) => (
-                                    <td 
-                                        key={String(col.key)} 
-                                        className={`px-6 py-4 whitespace-nowrap text-${col.align || 'left'}`}
-                                    >
-                                        {renderCell(item, col)}
-                                    </td>
-                                ))}
-
-                                {/* Célula Fixa de Ações */}
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    {/* Botões ficam opacos até a linha receber hover (UX Clean) */}
-                                    <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                        <button 
-                                            onClick={() => onEdit(item)}
-                                            className="text-gray-400 hover:text-accent-primary p-1.5 hover:bg-gray-800 rounded transition-all" 
-                                            title="Editar registro"
-                                        >
-                                            <FaEdit className="w-4 h-4" />
-                                        </button>
-                                        <button 
-                                            onClick={() => onDelete(item.id)}
-                                            className="text-gray-400 hover:text-rose-500 p-1.5 hover:bg-rose-500/10 rounded transition-all" 
-                                            title="Excluir registro"
-                                        >
-                                            <FaTrash className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-
-                    </tbody>
-                </table>
+    // --- ESTADO DE CARREGAMENTO (Skeleton/Spinner) ---
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 space-y-4 bg-gray-900/20 rounded-xl border border-gray-800 border-dashed">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-accent-primary"></div>
+                <p className="text-gray-500 text-sm font-medium animate-pulse">Sincronizando dados...</p>
             </div>
-            
-            {/* RODAPÉ DO GRID (Contador) */}
-            {!isLoading && data.length > 0 && (
-                <div className="p-3 border-t border-gray-700 bg-gray-900/30 text-right">
-                    <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">
-                        {data.length} registro(s) listado(s)
-                    </span>
-                </div>
-            )}
+        );
+    }
+
+    // --- ESTADO VAZIO ---
+    if (!data || data.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 bg-gray-900/20 rounded-xl border border-gray-800 border-dashed">
+                <FaInbox className="text-gray-700 w-12 h-12 mb-3 opacity-20" />
+                <p className="text-gray-500 text-sm">Nenhum registro encontrado.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="overflow-x-auto custom-scrollbar border border-gray-800 rounded-xl bg-gray-900/10 shadow-inner h-full">
+            <table className="min-w-full divide-y divide-gray-800">
+                <thead className="bg-gray-800/50 sticky top-0 z-10 backdrop-blur-md">
+                    <tr>
+                        {columns.map((column, index) => (
+                            <th
+                                key={index}
+                                scope="col"
+                                className="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest"
+                            >
+                                {column.header} {/* 👈 Uso do novo padrão 'header' */}
+                            </th>
+                        ))}
+                        <th scope="col" className="px-6 py-4 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                            Ações
+                        </th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800 bg-transparent">
+                    {data.map((item) => (
+                        <tr 
+                            key={item.id} 
+                            className="group hover:bg-accent-primary/5 transition-colors duration-150"
+                        >
+                            {columns.map((column, index) => (
+                                <td key={index} className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                    {renderCell(item, column)} {/* 👈 Motor dinâmico em ação */}
+                                </td>
+                            ))}
+                            
+                            {/* --- COLUNA DE AÇÕES --- */}
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={() => onEdit(item)}
+                                        className="p-2 text-gray-400 hover:text-accent-primary hover:bg-gray-800 rounded-lg transition-all"
+                                        title="Editar registro"
+                                    >
+                                        <FaEdit className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => onDelete(item.id)}
+                                        className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-all"
+                                        title="Excluir registro"
+                                    >
+                                        <FaTrash className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
         </div>
     );
 }
@@ -5872,12 +5813,13 @@ export function CrudTable<T extends { id: string } & Record<string, any>>({
 // ===== FILE: src/core/components/crud/types.ts =====
 
 import { z } from 'zod';
+import { FieldValues } from 'react-hook-form';
 
 /**
- * @type FieldType
- * @description Os tipos de inputs visuais que a nossa "Fábrica" consegue desenhar.
+ * @type CrudFieldType
+ * @description Os tipos de inputs que a nossa "Impressora 3D" (CrudForm) sabe desenhar.
  */
-export type FieldType = 
+export type CrudFieldType = 
     | 'text' 
     | 'number' 
     | 'boolean' // Renderiza um Toggle/Switch
@@ -5890,56 +5832,72 @@ export type FieldType =
     | 'time'
     | 'file';
 
+export interface CrudFieldOption {
+    label: string;
+    value: string | number;
+}
+
 /**
  * @interface CrudFieldConfig
- * @description Configuração visual de um campo do formulário.
- * O <T> garante que o 'name' pertença estritamente ao Schema Zod fornecido.
+ * @description Configuração individual de cada campo do formulário.
  */
 export interface CrudFieldConfig<TForm> {
-    name: keyof TForm;          // A chave exata do banco/zod (ex: 'name', 'isActive')
-    label: string;          // O rótulo humano (ex: 'Nome da Categoria')
-    type: FieldType;        // Como deve ser desenhado na tela
+    name: keyof TForm;
+    label: string;
+    type: CrudFieldType;
     placeholder?: string;
-    options?: { label: string; value: string | number | boolean }[]; // Necessário se for 'select'
     disabled?: boolean;
+    options?: CrudFieldOption[]; // Exclusivo para type === 'select'
+    
+    // =========================================================================
+    // 🎚️ CUSTOMIZAÇÃO DO SWITCH (Feature V3)
+    // Permite transformar o toggle padrão (Ativo/Inativo) em opções de negócios.
+    // Ex: trueLabel: 'Produto', falseLabel: 'Serviço'
+    // =========================================================================
+    trueLabel?: string;  
+    falseLabel?: string; 
 }
 
 /**
  * @interface CrudColumnConfig
- * @description Configuração de como uma coluna deve aparecer no Grid (Tabela).
+ * @description Configuração de como os dados serão renderizados na Tabela (Grid).
  */
 export interface CrudColumnConfig<TData> {
-    key: keyof TData;
-    label: string;
-    type?: 'text' | 'boolean' | 'currency' | 'date'; // Formatação automática na tabela
-    align?: 'left' | 'center' | 'right';
+    header: string;
+    // O accessor pode ser a chave direta do objeto ou uma função que retorna um JSX customizado (ex: Badges coloridas)
+    accessor: keyof TData | ((item: TData) => React.ReactNode);
 }
 
 /**
  * @interface CrudConfig
- * @description O Blueprint (A Planta) completa de uma tela de Cadastro.
- * É isso que o desenvolvedor vai preencher para criar uma tela nova.
+ * @description O "Manual de Instruções" central que dita como o CrudLayout e o CrudForm vão se comportar.
  */
-export interface CrudConfig<TData, TForm> {
+export interface CrudConfig<TData, TForm extends FieldValues> {
     title: string;
     description?: string;
-    schema: z.ZodSchema<TForm>;            // A validação matemática
-    fields: CrudFieldConfig<TForm>[];      // O desenho do Formulário
-    columns: CrudColumnConfig<TData>[];    // O desenho da Tabela
+    schema: z.ZodType<TForm>; // Acordo de Paz: O Zod que validará as entradas
+    columns: CrudColumnConfig<TData>[]; // Colunas da Tabela
+    fields: CrudFieldConfig<TForm>[];   // Campos do Formulário
+    
+    // =========================================================================
+    // 🛡️ DADOS DE SISTEMA / AUDITORIA (Feature V3)
+    // Se preenchido, o CrudForm renderizará um Accordion no final da tela 
+    // com campos de somente-leitura (Data de Criação, IDs, Slugs, etc).
+    // =========================================================================
+    systemFields?: CrudFieldConfig<TForm>[]; 
 }
 
 /**
  * @interface CrudHooks
- * @description O contrato de comunicação com o Backend.
- * O Motor não faz fetch direto; ele pede para os seus Hooks de Domínio fazerem.
+ * @description O contrato de comunicação entre a UI (Motor) e as APIs (NestJS).
  */
 export interface CrudHooks<TData, TForm> {
     data: TData[];
     isLoading: boolean;
     error: string | null;
     onCreate: (data: TForm) => Promise<any>;
-    onUpdate: (id: string, data: Partial<TForm>) => Promise<any>;
-    onDelete: (id: string) => Promise<any>;
+    onUpdate: (id: string, data: TForm) => Promise<any>;
+    onDelete: (id: string) => Promise<boolean | void>;
     onRefresh: () => void;
 }
 
@@ -7635,7 +7593,12 @@ export const ClientSidebar: React.FC = () => {
             name: 'Gestão de Produtos', // Rota Distinta: Hub de Supply Chain
             href: `/dashboard/supply-chain`, 
             icon: FaBoxOpen 
-        }
+        },
+        { 
+            name: 'Cadastros',
+            href: `/dashboard/cadastros`, 
+            icon: FaBox 
+        },
     ];
 
     /**
@@ -7643,26 +7606,28 @@ export const ClientSidebar: React.FC = () => {
      * Estas rotas levam para listagens simples ou CRUDs.
      */
     const registerItems: NavItem[] = [
-        { 
-            name: 'Clientes', 
-            href: `/dashboard/clients`, 
-            icon: FaUsers 
-        },
-        { 
-            name: 'Produtos', // Rota Distinta: Lista de Produtos
-            href: `/dashboard/products`, 
-            icon: FaBox 
-        },
-        { 
-            name: 'Categorias', 
-            href: `/dashboard/categories`, 
-            icon: FaTags 
-        },
-        { 
-            name: 'Fiscal', 
-            href: `/dashboard/fiscal`, 
-            icon: FaFileInvoice 
-        }
+
+
+        // { 
+        //     name: 'Clientes', 
+        //     href: `/dashboard/clients`, 
+        //     icon: FaUsers 
+        // },
+        // { 
+        //     name: 'Produtos', // Rota Distinta: Lista de Produtos
+        //     href: `/dashboard/products`, 
+        //     icon: FaBox 
+        // },
+        // { 
+        //     name: 'Categorias', 
+        //     href: `/dashboard/categories`, 
+        //     icon: FaTags 
+        // },
+        // { 
+        //     name: 'Fiscal', 
+        //     href: `/dashboard/fiscal`, 
+        //     icon: FaFileInvoice 
+        // }
     ];
 
     // --- Helpers de Lógica e Estilo ---
@@ -9502,381 +9467,11 @@ export const TenantTable: React.FC = () => {
 };
 
 
-// ===== FILE: src/modules/categories/components/CategoryForm.tsx =====
-
-'use client';
-
-import { useState, useEffect, FormEvent } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
-import { FaSave, FaArrowLeft } from 'react-icons/fa';
-
-// Imports do Módulo
-import { useCategories } from '../hooks/useCategories';
-import { useCategoryMutation } from '../hooks/useCategoryMutation';
-import { ICreateCategoryDTO } from '../types';
-
-/**
- * Formulário de Criação/Edição de Categorias.
- * * Responsabilidade:
- * - Gerenciar o estado local dos campos (Nome, Pai).
- * - Carregar a lista de categorias para o Select de "Pai".
- * - Executar a validação básica e submissão via Mutation.
- */
-export function CategoryForm() {
-    // 1. Contexto de Navegação
-    const router = useRouter();
-    const params = useParams();
-    const tenantId = params.tenantId as string;
-
-    // 2. Hooks de Dados
-    // Precisamos das categorias existentes para preencher o Select de "Categoria Pai"
-    const { categories, isLoading: isLoadingList, refreshCategories } = useCategories();
-    const { createCategory, isLoading: isSaving, error: mutationError } = useCategoryMutation();
-
-    // 3. Estado Local do Formulário
-    const [formData, setFormData] = useState<ICreateCategoryDTO>({
-        name: '',
-        parentId: '' // String vazia indica "Sem Pai" (Raiz)
-    });
-
-    // Carrega a lista ao montar para garantir que o select de pais esteja atualizado
-    useEffect(() => {
-        refreshCategories();
-    }, [refreshCategories]);
-
-    // 4. Handlers
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-
-        if (!formData.name.trim()) {
-            alert('O nome da categoria é obrigatório.');
-            return;
-        }
-
-        // Prepara o payload (converte string vazia de parentId para undefined)
-        const payload: ICreateCategoryDTO = {
-            name: formData.name,
-            parentId: formData.parentId === '' ? undefined : formData.parentId
-        };
-
-        const result = await createCategory(payload);
-
-        // Se sucesso (retornou objeto), redireciona
-        if (result) {
-            router.push(`/${tenantId}/dashboard/categories`);
-        }
-    };
-
-    return (
-        <div className="max-w-4xl mx-auto space-y-6 p-6 animate-fade-in">
-            {/* Header com Navegação */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Link 
-                        href={`/${tenantId}/dashboard/categories`}
-                        className="p-2 rounded-lg bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-                    >
-                        <FaArrowLeft />
-                    </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold text-white">Nova Categoria</h1>
-                        <p className="text-sm text-gray-400">Preencha os dados para criar um novo departamento</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Tratamento de Erro (API) */}
-            {mutationError && (
-                <div className="p-4 bg-red-900/20 border border-red-500/50 text-red-200 rounded-lg text-sm">
-                    ⚠️ {mutationError}
-                </div>
-            )}
-
-            {/* Container do Formulário */}
-            <form onSubmit={handleSubmit} className="bg-base-metallic p-6 rounded-lg border border-gray-700 shadow-lg space-y-6">
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Campo: Nome */}
-                    <div className="space-y-2">
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-400">
-                            Nome da Categoria <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="name"
-                            value={formData.name}
-                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="Ex: Bebidas, Lanches..."
-                            className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white placeholder-gray-500 focus:ring-2 focus:ring-accent-primary focus:border-transparent outline-none transition-all"
-                            disabled={isSaving}
-                            autoFocus
-                        />
-                    </div>
-
-                    {/* Campo: Categoria Pai */}
-                    <div className="space-y-2">
-                        <label htmlFor="parentId" className="block text-sm font-medium text-gray-400">
-                            Categoria Pai (Opcional)
-                        </label>
-                        <select
-                            id="parentId"
-                            value={formData.parentId || ''}
-                            onChange={(e) => setFormData(prev => ({ ...prev, parentId: e.target.value }))}
-                            className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-accent-primary focus:border-transparent outline-none transition-all appearance-none"
-                            disabled={isSaving || isLoadingList}
-                        >
-                            <option value="">Nenhuma (Categoria Raiz)</option>
-                            {categories.map((cat) => (
-                                <option key={cat.id} value={cat.id}>
-                                    {cat.name}
-                                </option>
-                            ))}
-                        </select>
-                        <p className="text-xs text-gray-500">
-                            Selecione apenas se esta for uma subcategoria.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Footer com Ações */}
-                <div className="pt-4 border-t border-gray-700 flex justify-end gap-3">
-                    <Link href={`/${tenantId}/dashboard/categories`}>
-                        <button
-                            type="button"
-                            className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors font-medium"
-                            disabled={isSaving}
-                        >
-                            Cancelar
-                        </button>
-                    </Link>
-                    
-                    <button
-                        type="submit"
-                        disabled={isSaving}
-                        className="flex items-center gap-2 bg-accent-primary hover:bg-accent-primary/90 text-base-dark font-bold py-2 px-6 rounded-lg transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isSaving ? (
-                            <>
-                                <span className="animate-spin">⏳</span> Salvando...
-                            </>
-                        ) : (
-                            <>
-                                <FaSave /> Salvar Categoria
-                            </>
-                        )}
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
-}
-
-
-// ===== FILE: src/modules/categories/components/CategoryList.tsx =====
-
-'use client';
-
-import { useEffect } from 'react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { FaPlus, FaFolder } from 'react-icons/fa';
-
-// Hooks e Componentes Internos
-import { useCategories } from '../hooks/useCategories';
-import { useCategoryMutation } from '../hooks/useCategoryMutation';
-import { CategoryListGrid } from './CategoryListGrid';
-
-/**
- * Container Principal da Listagem de Categorias.
- * * Responsabilidade:
- * - Orquestrar a lógica da tela (Hooks, Estados).
- * - Renderizar o Cabeçalho e Botões de Ação.
- * - Alimentar o Grid com dados.
- */
-export function CategoryList() {
-    const params = useParams();
-    const tenantId = params.tenantId as string;
-
-    // Lógica de Negócio
-    const { categories, isLoading, error, refreshCategories } = useCategories();
-    const { deleteCategory } = useCategoryMutation();
-
-    useEffect(() => {
-        refreshCategories();
-    }, [refreshCategories]);
-
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('Tem certeza que deseja remover esta categoria?')) return;
-        const success = await deleteCategory(id);
-        if (success) {
-            await refreshCategories();
-        }
-    };
-
-    return (
-        <div className="w-full space-y-6 p-6 animate-fade-in">
-            {/* Header / Actions Area */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-base-metallic p-4 rounded-lg border border-gray-700 shadow-lg">
-                <div className="flex items-center gap-3">
-                    <div className="p-3 bg-gray-800 rounded-lg text-accent-primary border border-gray-700">
-                        <FaFolder className="text-xl" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-white tracking-tight">
-                            Categorias
-                        </h1>
-                        <p className="text-sm text-gray-400">
-                            Gestão de departamentos e hierarquia
-                        </p>
-                    </div>
-                </div>
-
-                <Link href={`/${tenantId}/dashboard/products/categories/new`}>
-                    <button className="flex items-center gap-2 bg-accent-primary hover:bg-accent-primary/90 text-base-dark font-bold py-2.5 px-5 rounded-md transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5">
-                        <FaPlus />
-                        <span>Nova Categoria</span>
-                    </button>
-                </Link>
-            </div>
-
-            {/* Tratamento de Erro */}
-            {error && (
-                <div className="p-4 bg-red-900/20 border border-red-500/50 text-red-200 rounded-lg text-sm">
-                    ⚠️ {error}
-                </div>
-            )}
-
-            {/* Grid de Dados (Componente Puro) */}
-            <CategoryListGrid
-                categories={categories}
-                isLoading={isLoading}
-                onDelete={handleDelete}
-                tenantId={tenantId}
-            />
-        </div>
-    );
-}
-
-
-// ===== FILE: src/modules/categories/components/CategoryListGrid.tsx =====
-
-import Link from 'next/link';
-import { FaEdit, FaTrash } from 'react-icons/fa';
-import { ICategory } from '../types';
-
-/**
- * Interface de Props do Componente.
- * Segue o padrão "Presentational Component": recebe dados e funções do pai.
- * Não faz chamadas de API diretamente.
- */
-interface CategoryListGridProps {
-    categories: ICategory[];
-    isLoading: boolean;
-    onDelete: (id: string) => void;
-    tenantId: string;
-}
-
-/**
- * Componente de Grid de Listagem de Categorias.
- * * Padrão Visual:
- * - Tabela com background bg-gray-800/50
- * - Bordas sutis border-gray-700
- * - Hover nas linhas para feedback visual
- * - Ícones via react-icons/fa
- */
-export function CategoryListGrid({ 
-    categories, 
-    isLoading, 
-    onDelete, 
-    tenantId 
-}: CategoryListGridProps) {
-    
-    return (
-        <div className="overflow-x-auto rounded-lg border border-gray-700 bg-gray-800/50 shadow-sm">
-            <table className="w-full text-left text-sm text-gray-400">
-                {/* Cabeçalho Padronizado */}
-                <thead className="bg-gray-900/50 text-xs uppercase text-gray-400 font-semibold">
-                    <tr>
-                        <th className="px-6 py-4">Nome da Categoria</th>
-                        <th className="px-6 py-4">Categoria Pai</th>
-                        <th className="px-6 py-4 text-right">Ações</th>
-                    </tr>
-                </thead>
-
-                {/* Corpo da Tabela */}
-                <tbody className="divide-y divide-gray-700/50">
-                    {/* Estado de Carregamento */}
-                    {isLoading && (
-                        <tr>
-                            <td colSpan={3} className="px-6 py-8 text-center text-gray-500 animate-pulse">
-                                Carregando dados...
-                            </td>
-                        </tr>
-                    )}
-
-                    {/* Estado Vazio */}
-                    {!isLoading && categories.length === 0 && (
-                        <tr>
-                            <td colSpan={3} className="px-6 py-8 text-center text-gray-500 italic">
-                                Nenhuma categoria encontrada.
-                            </td>
-                        </tr>
-                    )}
-
-                    {/* Listagem de Dados */}
-                    {!isLoading && categories.map((category) => (
-                        <tr 
-                            key={category.id} 
-                            className="hover:bg-gray-700/50 transition-colors duration-200"
-                        >
-                            <td className="px-6 py-4 font-medium text-gray-200">
-                                {category.name}
-                            </td>
-                            <td className="px-6 py-4">
-                                {category.parentId ? (
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-700 text-blue-400 border border-blue-900/30">
-                                        Subcategoria
-                                    </span>
-                                ) : (
-                                    <span className="text-gray-600">-</span>
-                                )}
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                                <div className="flex justify-end items-center gap-3">
-                                    {/* Botão Editar: Navega para a rota de edição */}
-                                    <Link 
-                                        href={`/${tenantId}/dashboard/products/categories/${category.id}`}
-                                        className="text-blue-400 hover:text-blue-300 transition-colors p-1"
-                                        title="Editar Categoria"
-                                    >
-                                        <FaEdit className="w-4 h-4" />
-                                    </Link>
-
-                                    {/* Botão Excluir: Dispara a prop onDelete */}
-                                    <button
-                                        onClick={() => onDelete(category.id)}
-                                        className="text-red-400 hover:text-red-300 transition-colors p-1 hover:bg-red-900/20 rounded"
-                                        title="Excluir Categoria"
-                                    >
-                                        <FaTrash className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
-}
-
-
 // ===== FILE: src/modules/categories/hooks/useCategories.ts =====
 
 import { useState, useCallback, useEffect } from 'react';
 import { api } from '@/core/services/api';
-import { ICategory } from '../types';
+import { Category } from '../types';
 
 /**
  * Hook de Leitura (Query) para o Módulo de Categorias.
@@ -9885,7 +9480,7 @@ import { ICategory } from '../types';
  * - Expor estado de carregamento e erro para a UI.
  */
 export function useCategories() {
-    const [categories, setCategories] = useState<ICategory[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -9893,7 +9488,7 @@ export function useCategories() {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await api.get<ICategory[]>('/categories');
+            const response = await api.get<Category[]>('/categories/select');
             setCategories(response.data);
         } catch (err: any) {
             console.error('❌ Erro ao buscar categorias:', err);
@@ -9921,55 +9516,76 @@ export function useCategories() {
 // ===== FILE: src/modules/categories/hooks/useCategoryMutation.ts =====
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { api } from '@/core/services/api';
-import { ICategory, ICreateCategoryDTO, IUpdateCategoryDTO } from '../types';
+import { Category } from '../types';
 
 /**
- * Hook de Mutação para o Módulo de Categorias.
- * * Responsabilidade:
- * - Gerenciar operações de escrita (C/U/D).
- * - Centralizar tratamento de erro via estado local (Padrão do Projeto).
+ * @hook useCategoryMutation
+ * @description Hook de Mutação (Write Operations) para Categorias.
+ * * PADRÃO DE QUALIDADE (Enterprise Grade):
+ * 1. Fail-Fast: Lança erros imediatamente para que o CrudForm saiba que não deve fechar o Modal.
+ * 2. Error Extraction: Captura mensagens padronizadas do NestJS (HttpException) e expõe para a UI.
+ * 3. Restful Alignment: Uso estrito de POST, PATCH e DELETE.
  */
 export function useCategoryMutation() {
     const [isLoading, setIsLoading] = useState(false);
+    
+    // Estado que o CrudLayout consome para exibir tarjas vermelhas de erro
     const [error, setError] = useState<string | null>(null);
-    const router = useRouter();
 
     /**
-     * Cria uma nova categoria.
+     * @helper extractError
+     * @description Extrai a mensagem real de erro enviada pelo NestJS, 
+     * lidando com as diferentes camadas do Axios.
      */
-    const createCategory = async (data: ICreateCategoryDTO): Promise<ICategory | null> => {
+    const extractError = (err: any, fallbackMessage: string): string => {
+        console.error(`❌ [useCategoryMutation] Erro:`, err);
+        // O NestJS envia erros no formato { message: '...', statusCode: 400 }
+        const backendMessage = err.response?.data?.message;
+        
+        // Se a mensagem for um array (erros do class-validator), pegamos o primeiro
+        if (Array.isArray(backendMessage)) {
+            return backendMessage[0];
+        }
+        return backendMessage || fallbackMessage;
+    };
+
+    /**
+     * @method createCategory
+     * @description Envia o payload do Zod para criar uma nova Categoria Raiz ou Filha.
+     */
+    const createCategory = async (data: Partial<Category>): Promise<Category> => {
         setIsLoading(true);
         setError(null);
+        
         try {
-            const response = await api.post<ICategory>('/categories', data);
-            
-            // O sucesso é tratado pelo componente (ex: redirecionar ou fechar modal)
+            const response = await api.post<Category>('/categories', data);
             return response.data;
         } catch (err: any) {
-            console.error('❌ Erro ao criar categoria:', err);
-            const msg = err.response?.data?.message || 'Falha ao criar a categoria.';
+            const msg = extractError(err, 'Falha de conexão ao tentar criar a categoria.');
             setError(msg);
-            throw err; // Re-lança para que o form possa reagir se necessário
+            throw err; // Re-lançamos o erro para o CrudForm parar o "isSubmitting" e não fechar a tela
         } finally {
             setIsLoading(false);
         }
     };
 
     /**
-     * Atualiza uma categoria existente.
+     * @method updateCategory
+     * @description Atualiza parcialmente a entidade.
+     * Importante: Usamos PATCH pois o DTO no backend permite atualização parcial.
      */
-    const updateCategory = async (id: string, data: IUpdateCategoryDTO): Promise<ICategory | null> => {
+    const updateCategory = async (id: string, data: Partial<Category>): Promise<Category> => {
         setIsLoading(true);
         setError(null);
+        
         try {
-            const response = await api.put<ICategory>(`/categories/${id}`, data);
-            router.refresh();
+            // Nota: Se o seu backend estiver configurado com PUT em vez de PATCH, altere aqui.
+            // Mas o padrão Restful para atualizações parciais de formulário é PATCH.
+            const response = await api.patch<Category>(`/categories/${id}`, data);
             return response.data;
         } catch (err: any) {
-            console.error('❌ Erro ao atualizar categoria:', err);
-            const msg = err.response?.data?.message || 'Falha ao atualizar a categoria.';
+            const msg = extractError(err, 'Falha ao atualizar a categoria.');
             setError(msg);
             throw err;
         } finally {
@@ -9978,19 +9594,23 @@ export function useCategoryMutation() {
     };
 
     /**
-     * Remove uma categoria.
+     * @method deleteCategory
+     * @description Exclusão lógica (Soft Delete) da categoria.
+     * Caso a categoria tenha filhos, o backend retornará 400 e este hook repassará a string amigável.
      */
     const deleteCategory = async (id: string): Promise<boolean> => {
         setIsLoading(true);
         setError(null);
+        
         try {
             await api.delete(`/categories/${id}`);
             return true;
         } catch (err: any) {
-            console.error('❌ Erro ao remover categoria:', err);
-            const msg = err.response?.data?.message || 'Não foi possível remover a categoria. Verifique se há vínculos.';
+            const msg = extractError(err, 'Não foi possível remover a categoria. Verifique sua conexão.');
             setError(msg);
-            return false;
+            throw err; 
+            // Para deleção na tabela, podemos lançar o erro, ou retornar false.
+            // Retornando erro para o layout global poder capturar e pintar a tarja vermelha na tabela.
         } finally {
             setIsLoading(false);
         }
@@ -10001,70 +9621,81 @@ export function useCategoryMutation() {
         updateCategory,
         deleteCategory,
         isLoading,
-        error // Retornado para exibição no componente
+        error // O Motor CrudLayout escuta esta variável!
     };
 }
 
 
 // ===== FILE: src/modules/categories/types.ts =====
 
+/**
+ * @type AttributeType
+ * @description Tipos suportados pelo nosso construtor de campos dinâmicos (JSONB).
+ */
 export type AttributeType = 'text' | 'number' | 'select' | 'boolean';
 
+/**
+ * @interface IAttributeSchema
+ * @description Estrutura exata do JSONB 'attributesSchema' retornado/enviado para o backend.
+ */
+
+export enum CategoryTypeEnum {
+     PRODUCT = 'PRODUCT',
+     SERVICE = 'SERVICE'
+}
+
+export const CategoryType = CategoryTypeEnum;
+export type  CategoryType = CategoryTypeEnum;
+
 export interface IAttributeSchema {
-  key: string;       // Identificador único do campo (ex: "voltagem")
-  label: string;     // Nome visível (ex: "Voltagem")
-  type: AttributeType;
-  required: boolean;
-  options?: string[]; // Para selects (ex: ["110v", "220v"])
+    key: string;       // Identificador interno único (ex: "voltagem")
+    label: string;     // Nome visível na UI (ex: "Voltagem (V)")
+    type: AttributeType;
+    required: boolean;
+    options?: string[]; // Preenchido apenas quando type === 'select'
 }
 
 /**
- * Definição de Tipos para o Módulo de Categorias.
- * Espelha as entidades do Backend para garantir integridade na comunicação.
+ * @interface Category
+ * @description Tipagem principal espelhada com o CategoryResponseDto do Backend.
+ * Contém os campos operacionais e os campos de auditoria/sistema ocultos.
  */
-
-export interface ICategory {
-    id: string;
-    name: string;
-    parentId?: string | null;
-    tenantId: string;
-    createdAt: string;
-    updatedAt: string;
-    isActive: boolean;
-    // Opcional: Para visualização em árvore
-    children?: ICategory[];
-}
-
-export interface ICreateCategoryDTO {
-    name: string;
-    parentId?: string;
-}
-
-export interface IUpdateCategoryDTO extends Partial<ICreateCategoryDTO> {}
-
-/**
- * Definição de Tipos para o Módulo de Categorias.
- * * Espelha as entidades do Backend para garantir integridade na comunicação.
- */
-
 export interface Category {
+    // 🔑 Identificadores e Dados Principais
     id: string;
     name: string;
-    parentId?: string | null;
-    tenantId: string;
-    createdAt: string;
-    updatedAt: string;
+    slug: string;
+    type: CategoryTypeEnum;
     isActive: boolean;
-    // Opcional: Se o backend retornar a árvore montada
+
+    // 🧬 Metadados (O JSONB)
+    attributesSchema: IAttributeSchema[];
+
+    // 🌳 Hierarquia
+    parentId?: string | undefined;
     children?: Category[]; 
+
+    // 🛡️ Auditoria e Sistema
+    createdAt: string; // Datas trafegam como string ISO 8601 no JSON
+    updatedAt: string;
 }
 
+/**
+ * @interface CreateCategoryDto
+ * @description Payload exato exigido pelo NestJS no POST /categories
+ */
 export interface CreateCategoryDto {
     name: string;
-    parentId?: string;
-    isActive: boolean;
+    type?: CategoryTypeEnum;
+    parentId?: string | undefined;
+    isActive?: boolean;
+    attributesSchema?: IAttributeSchema[];
 }
 
+/**
+ * @interface UpdateCategoryDto
+ * @description Payload para atualização parcial no PATCH /categories/:id
+ */
 export interface UpdateCategoryDto extends Partial<CreateCategoryDto> {}
 
 
@@ -14211,176 +13842,338 @@ export function FiscalListGrid({
 
 import { useState, useCallback, useEffect } from 'react';
 import { api } from '@/core/services/api';
-import { IFiscalGroup } from '../types';
+import { ITaxGroup } from '../types';
 
 /**
- * Hook de Leitura para Grupos Fiscais.
- * * Responsabilidade:
- * - Buscar a lista de grupos tributários disponíveis.
- * - Gerenciar estado de loading e erro para a UI.
+ * @hook useFiscal
+ * @description Hook de Leitura (GET) para os Perfis Tributários e suas Regras.
+ * * PADRÃO CLASSE OURO (Enterprise Grade):
+ * 1. Nomenclatura estrita alinhada com o Backend (TaxGroup).
+ * 2. Fetcher memoizado com `useCallback` para evitar loops infinitos no useEffect.
+ * 3. O estado `isLoading` inicia como `true` para garantir uma UX fluida no primeiro render.
  */
 export function useFiscal() {
-    const [fiscalGroups, setFiscalGroups] = useState<IFiscalGroup[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    // 1. Estados
+    const [taxGroups, setTaxGroups] = useState<ITaxGroup[]>([]);
+    const [isLoading, setIsLoading] = useState(true); // Começa true para mostrar o Skeleton/Loading na UI de cara
     const [error, setError] = useState<string | null>(null);
 
-    const fetchFiscalGroups = useCallback(async () => {
+    // 2. Motor de Busca (Memoizado)
+    const fetchTaxGroups = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await api.get<IFiscalGroup[]>('/fiscal-groups');
-            setFiscalGroups(response.data);
+            // A API agora devolve o Perfil Pai + O Array de Regras Filhas (Motor Bimodal)
+            const response = await api.get<ITaxGroup[]>('/fiscal/tax-groups');
+            setTaxGroups(response.data);
         } catch (err: any) {
-            console.error('❌ Erro ao buscar grupos fiscais:', err);
-            const msg = err.response?.data?.message || 'Erro ao carregar grupos fiscais.';
+            console.error('❌ Erro ao buscar perfis tributários:', err);
+            // Captura amigável para o usuário final
+            const msg = err.response?.data?.message || 'Falha de conexão ao carregar as regras fiscais.';
             setError(msg);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    // Carregamento inicial automático
+    // 3. Gatilho Inicial (On Mount)
     useEffect(() => {
-        fetchFiscalGroups();
-    }, [fetchFiscalGroups]);
+        fetchTaxGroups();
+    }, [fetchTaxGroups]);
 
+    // 4. API Pública do Hook
     return {
-        fiscalGroups,
+        taxGroups, // Expondo a lista já com o nome correto
         isLoading,
         error,
-        refreshFiscalGroups: fetchFiscalGroups
+        refreshTaxGroups: fetchTaxGroups // Útil para recarregar o Grid após uma deleção, por exemplo
     };
 }
 
 
 // ===== FILE: src/modules/fiscal/hooks/useFiscalMutation.ts =====
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/core/services/api';
-import { IFiscalGroup, ICreateFiscalGroupDTO, IUpdateFiscalGroupDTO } from '../types';
+import { ITaxGroup, ICreateTaxGroupDTO, IUpdateTaxGroupDTO } from '../types';
 
 /**
- * Hook de Mutação para Grupos Fiscais.
- * * Responsabilidade: Centralizar operações de escrita (C/U/D).
+ * @hook useFiscalMutation
+ * @description Hook de Escrita para o Módulo Fiscal (Create, Update, Delete).
+ * * PADRÃO CLASSE OURO:
+ * 1. Usa `useCallback` para evitar re-renders desnecessários no React.
+ * 2. Faz o parse inteligente de erros (Pega os detalhes do class-validator do Backend).
+ * 3. Gerencia o estado de loading para bloquear botões de salvar (Prevenção de Double-Click).
  */
 export function useFiscalMutation() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
-    const createFiscalGroup = async (data: ICreateFiscalGroupDTO): Promise<IFiscalGroup | null> => {
+    /**
+     * @description Helper interno para extrair mensagens de erro da API.
+     */
+    const extractErrorMessage = (err: any, defaultMsg: string): string => {
+        const backendMessage = err.response?.data?.message;
+        if (Array.isArray(backendMessage)) {
+            return backendMessage.join(' | '); // Formata os erros do class-validator
+        }
+        return backendMessage || defaultMsg;
+    };
+
+    /**
+     * @method createTaxGroup
+     * @description Envia o Perfil e a Matriz de Regras para criação.
+     */
+    const createTaxGroup = useCallback(async (data: ICreateTaxGroupDTO): Promise<ITaxGroup | null> => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await api.post<IFiscalGroup>('/fiscal-groups', data);
+            const response = await api.post<ITaxGroup>('/fiscal/tax-groups', data);
             return response.data;
         } catch (err: any) {
             console.error('❌ Erro ao criar grupo fiscal:', err);
-            const msg = err.response?.data?.message || 'Falha ao criar grupo fiscal.';
+            const msg = extractErrorMessage(err, 'Falha ao criar o grupo fiscal.');
             setError(msg);
             throw err;
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const updateFiscalGroup = async (id: string, data: IUpdateFiscalGroupDTO): Promise<IFiscalGroup | null> => {
+    /**
+     * @method updateTaxGroup
+     * @description Atualiza o Perfil e dispara o Motor Delta Sync nas regras.
+     */
+    const updateTaxGroup = useCallback(async (id: string, data: IUpdateTaxGroupDTO): Promise<ITaxGroup | null> => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await api.put<IFiscalGroup>(`/fiscal-groups/${id}`, data);
-            router.refresh();
+            // Nota: Corrigimos o Backend para aceitar PUT, então o frontend usa .put com segurança.
+            const response = await api.put<ITaxGroup>(`/fiscal/tax-groups/${id}`, data);
+            router.refresh(); // Força o Next.js a revalidar o cache da página atual
             return response.data;
         } catch (err: any) {
             console.error('❌ Erro ao atualizar grupo fiscal:', err);
-            const msg = err.response?.data?.message || 'Falha ao atualizar grupo fiscal.';
+            const msg = extractErrorMessage(err, 'Falha ao atualizar o grupo fiscal.');
             setError(msg);
             throw err;
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [router]);
 
-    const deleteFiscalGroup = async (id: string): Promise<boolean> => {
+    /**
+     * @method deleteTaxGroup
+     * @description Remove o grupo fiscal (Se não estiver em uso).
+     */
+    const deleteTaxGroup = useCallback(async (id: string): Promise<boolean> => {
         setIsLoading(true);
         setError(null);
         try {
-            await api.delete(`/fiscal-groups/${id}`);
+            await api.delete(`/fiscal/tax-groups/${id}`);
             return true;
         } catch (err: any) {
             console.error('❌ Erro ao remover grupo fiscal:', err);
-            // Erro comum: Grupo vinculado a produtos existentes
-            const msg = err.response?.data?.message || 'Não é possível remover este grupo fiscal (provavelmente em uso).';
+            const msg = extractErrorMessage(err, 'Não é possível remover este grupo fiscal (provavelmente em uso por um produto).');
             setError(msg);
             return false;
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
     return {
-        createFiscalGroup,
-        updateFiscalGroup,
-        deleteFiscalGroup,
+        createTaxGroup,
+        updateTaxGroup,
+        deleteTaxGroup,
         isLoading,
         error
     };
 }
 
 
+// ===== FILE: src/modules/fiscal/schemas/fiscalSchema.ts =====
+
+import { z } from 'zod';
+
+/**
+ * @description Helpers Nível Ouro para React Hook Form.
+ * Formulários HTML sempre enviam strings vazias ("") quando um campo não é preenchido.
+ * Esses helpers transformam "" em `undefined`, protegendo o Backend de erros de @Length e @IsUUID.
+ */
+const OptionalUfField = z.string().trim().toUpperCase()
+    .transform(val => val === '' ? undefined : val)
+    .refine(val => val === undefined || val.length === 2, { message: 'A UF deve ter exatamente 2 letras (Ex: SP)' });
+
+const OptionalCfopField = z.string().trim()
+    .transform(val => val === '' ? undefined : val)
+    .refine(val => val === undefined || val.length === 4, { message: 'O CFOP deve ter exatamente 4 dígitos' });
+
+const OptionalStringField = z.string().trim()
+    .transform(val => val === '' ? undefined : val);
+
+/**
+ * =========================================================================
+ * 1. SCHEMA DA MATRIZ TRIBUTÁRIA (Filhos)
+ * =========================================================================
+ */
+export const TaxRuleSchema = z.object({
+    id: z.string().uuid('ID da regra inválido').optional(), // ID serve para o Delta Sync (Update)
+    
+    // Cenários de Estado
+    ufOrigem: OptionalUfField,
+    ufDestino: OptionalUfField,
+    
+    // Códigos NF-e
+    cfopState: OptionalCfopField,
+    cfopInterstate: OptionalCfopField,
+    cstCsosn: OptionalStringField,
+    
+    // Alíquotas (O z.coerce força a conversão de String do HTML para Number do Typescript)
+    icmsRate: z.coerce.number({ error: 'Digite um número válido' })
+        .min(0, 'Alíquota não pode ser negativa').max(100, 'Máximo de 100%').default(0),
+    pisRate: z.coerce.number({ error: 'Digite um número válido' })
+        .min(0, 'Alíquota não pode ser negativa').max(100, 'Máximo de 100%').default(0),
+    cofinsRate: z.coerce.number({ error: 'Digite um número válido' })
+        .min(0, 'Alíquota não pode ser negativa').max(100, 'Máximo de 100%').default(0),
+});
+
+/**
+ * =========================================================================
+ * 2. SCHEMA DO PERFIL TRIBUTÁRIO (Pai) - MODO CRIAÇÃO
+ * =========================================================================
+ */
+export const CreateFiscalGroupSchema = z.object({
+    name: z.string().trim().min(3, 'O nome do grupo fiscal deve ter no mínimo 3 caracteres'),
+    description: OptionalStringField,
+    isActive: z.boolean().default(true),
+    
+    // A trava arquitetural: Não existe Perfil sem Matriz.
+    rules: z.array(TaxRuleSchema)
+        .min(1, 'É obrigatório definir pelo menos uma regra fiscal (mesmo que seja a Padrão com zeros).')
+});
+
+/**
+ * =========================================================================
+ * 3. SCHEMA DO PERFIL TRIBUTÁRIO (Pai) - MODO ATUALIZAÇÃO
+ * =========================================================================
+ */
+export const UpdateFiscalGroupSchema = CreateFiscalGroupSchema.extend({
+    id: z.uuid('ID do grupo fiscal inválido').optional(),
+});
+
+// Extração automática dos tipos (Para uso direto nos formulários)
+export type FiscalFormInput = z.infer<typeof CreateFiscalGroupSchema>;
+
+
 // ===== FILE: src/modules/fiscal/types.ts =====
 
 /**
- * Definição de Tipos para o Módulo Fiscal (Grupos de Tributação).
- * * Entidade crítica para emissão de notas e cálculo de custos.
+ * @file types.ts
+ * @description CONTRATOS DE TIPAGEM: MÓDULO FISCAL E TRIBUTÁRIO.
+ * * DIRETRIZES (Enterprise Grade):
+ * 1. Arquitetura Bimodal: Separação clara entre o Perfil (TaxGroup) e a Matriz (TaxRule).
+ * 2. Espelhamento Exato: Estes tipos refletem milimetricamente os DTOs do Backend.
  */
 
-export interface IFiscalGroup {
+// ============================================================================
+// 📦 TIPOS DE LEITURA (O que vem do Backend - GET)
+// ============================================================================
+
+/**
+ * @interface ITaxRule
+ * @description Representa uma regra tributária (A linha da Matriz).
+ */
+export interface ITaxRule {
+    id: string;
+    
+    // Cenários de Estado (Se undefined/null, é a regra Padrão Nacional)
+    ufOrigem?: string;
+    ufDestino?: string;
+    
+    // Códigos NF-e
+    cfopState?: string;
+    cfopInterstate?: string;
+    cstCsosn?: string;
+    
+    // Alíquotas de Imposto
+    icmsRate: number;
+    pisRate: number;
+    cofinsRate: number;
+}
+
+/**
+ * @interface ITaxGroup
+ * @description Representa o Perfil Tributário (O Pai).
+ */
+export interface ITaxGroup {
     id: string;
     name: string;
     description?: string;
-    // NCM Padrão (Nomenclatura Comum do Mercosul) - Obrigatório para NF-e
-    ncmDefault: string;
-    // Alíquotas de Imposto (Percentual 0-100)
-    icms: number;
-    pis: number;
-    cofins: number;
+    isActive: boolean;
     
-    tenantId: string;
+    // A lista de regras aninhadas (O Motor)
+    rules: ITaxRule[];
+    
+    // Auditoria para a UI
     createdAt: string;
     updatedAt: string;
 }
 
-export interface ICreateFiscalGroupDTO {
-    name: string;
-    ncmDefault: string;
-    // O Frontend deve garantir que estes valores sejam números
-    icms: number;
-    pis: number;
-    cofins: number;
+// ============================================================================
+// ✍️ TIPOS DE ESCRITA (O que vai para o Backend - POST / PUT)
+// ============================================================================
+
+/**
+ * @interface ICreateTaxRuleDTO
+ * @description Payload para criar uma nova regra na matriz.
+ */
+export interface ICreateTaxRuleDTO {
+    ufOrigem?: string;
+    ufDestino?: string;
+    cfopState?: string;
+    cfopInterstate?: string;
+    cstCsosn?: string;
+    icmsRate: number;
+    pisRate: number;
+    cofinsRate: number;
 }
 
-export interface IUpdateFiscalGroupDTO extends Partial<ICreateFiscalGroupDTO> {}
-
-
-export interface ITaxGroup {
-  id: string;
-  name: string;
-  description?: string;
-  isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
+/**
+ * @interface ICreateTaxGroupDTO
+ * @description Payload para criar um novo Perfil Tributário.
+ */
 export interface ICreateTaxGroupDTO {
-  name: string;
-  description?: string;
-  isActive?: boolean;
+    name: string;
+    description?: string;
+    isActive?: boolean;
+    
+    // Obrigatório enviar pelo menos uma regra (mesmo que zerada/padrão)
+    rules: ICreateTaxRuleDTO[];
 }
 
-export interface IUpdateTaxGroupDTO extends Partial<ICreateTaxGroupDTO> {
-  id: string;
+/**
+ * @interface IUpdateTaxRuleDTO
+ * @description Payload para atualizar a matriz. 
+ * O 'id' opcional é a chave do Delta Sync no Backend (Se tem ID, atualiza; Se não tem, cria).
+ */
+export interface IUpdateTaxRuleDTO extends Partial<ICreateTaxRuleDTO> {
+    id?: string; 
+}
+
+/**
+ * @interface IUpdateTaxGroupDTO
+ * @description Payload de atualização parcial do Perfil.
+ */
+export interface IUpdateTaxGroupDTO {
+    name?: string;
+    description?: string;
+    isActive?: boolean;
+    
+    // Se enviado, o Backend substitui a matriz atual por esta
+    rules?: IUpdateTaxRuleDTO[];
 }
 
 
@@ -18027,91 +17820,6 @@ export function CatalogTab() {
 }
 
 
-// ===== FILE: src/modules/products/components/tabs/CategoriesTab.tsx =====
-
-'use client';
-
-import React from 'react';
-import { z } from 'zod';
-
-import { CrudLayout } from '@/core/components/crud/CrudLayout';
-import { CrudConfig, CrudHooks } from '@/core/components/crud/types';
-import { useCategories } from '@/modules/categories/hooks/useCategories';
-import { useCategoryMutation } from '@/modules/categories/hooks/useCategoryMutation';
-import { Category } from '@/modules/categories/types'; // Entidade do Banco (TData)
-
-// =========================================================================
-// 1. O DTO DE CRIAÇÃO/EDIÇÃO (TForm)
-// Somente o que o usuário interage. O Backend resolve tenantId e Datas.
-// =========================================================================
-const CategoryFormSchema = z.object({
-    name: z.string().min(3, 'O nome deve ter no mínimo 3 caracteres'),
-    isActive: z.boolean().default(true),
-    categoryId: z.string().optional().nullable(), // Sub-categoria (Pai) - Opcional
-});
-
-// Inferimos o tipo do formulário automaticamente a partir do Zod
-type CategoryFormData = z.infer<typeof CategoryFormSchema>;
-
-// =========================================================================
-// 2. A PLANTA (Configuração da Interface)
-// Passamos os dois mundos: <TData, TForm>
-// =========================================================================
-const categoryConfig: CrudConfig<Category, CategoryFormData> = {
-    title: 'Categorias de Produtos',
-    description: 'Organize seu catálogo e a vitrine do e-commerce.',
-    schema: CategoryFormSchema,
-    
-    // A Tabela enxerga o TData (Category)
-    columns: [
-        { key: 'name', label: 'Nome da Categoria', type: 'text' },
-        { key: 'isActive', label: 'Status', type: 'boolean', align: 'center' },
-    ],
-    
-    // O Formulário enxerga o TForm (CategoryFormData)
-    fields: [
-        { 
-            name: 'name', 
-            label: 'Nome da Categoria', 
-            type: 'text', 
-            placeholder: 'Ex: Eletrônicos, Vestuário...' 
-        },
-        { 
-            name: 'isActive', 
-            label: 'Status Ativo', 
-            type: 'boolean' 
-        },
-        // Se quisermos que o usuário escolha uma Categoria Pai, descomentamos abaixo:
-        // {
-        //     name: 'categoryId',
-        //     label: 'Categoria Principal (Pai)',
-        //     type: 'select',
-        //     options: [{ label: 'Nenhuma', value: '' }] // Aqui poderíamos injetar opções dinâmicas
-        // }
-    ]
-};
-
-// =========================================================================
-// 3. O COMPONENTE MESTRE
-// =========================================================================
-export const CategoriesTab: React.FC = () => {
-    const { categories, isLoading, refreshCategories } = useCategories();
-    const { createCategory, updateCategory, deleteCategory, error: mutationError } = useCategoryMutation();
-
-    const crudHooks: CrudHooks<Category, CategoryFormData> = {
-        data: categories || [],
-        isLoading: isLoading,
-        error: mutationError || null,
-        onCreate: createCategory,
-        onUpdate: updateCategory,
-        onDelete: deleteCategory,
-        onRefresh: refreshCategories || (() => window.location.reload())
-    };
-
-    return <CrudLayout<Category, CategoryFormData> config={categoryConfig} hooks={crudHooks} />;
-};
-
-
 // ===== FILE: src/modules/products/components/tabs/MovementsTab.tsx =====
 
 import React, { useEffect } from 'react';
@@ -18542,9 +18250,9 @@ export function WarehousesTab() {
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/core/services/api';
+import { Product, ProductFormData } from '../types/product';
 
 // Import corrigido para modules conforme sua instrução
-import { Product, ProductFormData } from '@/modules/products/types';
 
 /**
  * Hook de Mutação para Produtos.
@@ -18567,7 +18275,7 @@ export function useProductMutation() {
         setError(null);
         try {
             // O backend espera exatamente essa estrutura agora (com categoryId, fiscalGroupId, etc)
-            const response = await api.post<Product>('/products', data);
+            const response = await api.post<Product>('/product', data);
             return response.data;
         } catch (err: any) {
             console.error('❌ Erro ao criar produto:', err);
@@ -18586,7 +18294,7 @@ export function useProductMutation() {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await api.put<Product>(`/products/${id}`, data);
+            const response = await api.put<Product>(`/product/${id}`, data);
             
             // Opcional: Forçar refresh da rota para atualizar dados em cache do Next.js
             router.refresh();
@@ -18609,7 +18317,7 @@ export function useProductMutation() {
         setIsLoading(true);
         setError(null);
         try {
-            await api.delete(`/products/${id}`);
+            await api.delete(`/product/${id}`);
             return true;
         } catch (err: any) {
             console.error('❌ Erro ao excluir produto:', err);
@@ -18636,7 +18344,7 @@ export function useProductMutation() {
 import { useState, useEffect, useCallback } from 'react';
 // Ajuste o import da API conforme sua estrutura real (se for @/services/api ou @/core/services/api)
 import { api } from '@/core/services/api'; 
-import { Product } from '../types';
+import { Product } from '../types/product';
 
 /**
  * @hook useProducts
@@ -18893,12 +18601,12 @@ import { OverviewTab } from '../components/tabs/OverviewTab';
 import { CatalogTab } from '../components/tabs/CatalogTab';
 import { MovementsTab } from '../components/tabs/MovementsTab';
 import { WarehousesTab } from '../components/tabs/WarehousesTab';
-import { CategoriesTab } from '../components/tabs/CategoriesTab'; // Novo Componente
 
 // --- Imports Cross-Module (Reutilização de Componentes Existentes) ---
 import { FiscalList } from '../../fiscal/components/FiscalList';
 import { useAIContextInjector } from '@/core/ai/hooks/useAIContextInjector';
 import { FeatureKeys } from '@/core/ai/types/enums/AIEnums';
+import { CategoryRegistry } from '../registries/CategoryRegistry';
 
 export type ProductViewType = 
     | 'OVERVIEW'
@@ -18952,7 +18660,7 @@ export const ProductContainer: React.FC<ProductContainerProps> = ({
                 return <WarehousesTab />;
             case 'CATEGORIES':
                 // Nova implementação: Componente nativo do módulo Products
-                return <CategoriesTab />;
+                return <CategoryRegistry />;
             case 'FISCAL':
                 return (
                     // Wrapper estilizado com tema Metálico para listas externas (Fiscal ainda é legado)
@@ -19020,6 +18728,629 @@ export const ProductContainer: React.FC<ProductContainerProps> = ({
         </div>
     );
 };
+
+
+// ===== FILE: src/modules/products/registries/CategoryRegistry.tsx =====
+
+// ===== FILE: src/modules/categories/registries/CategoryRegistry.tsx =====
+
+'use client';
+
+import React, { useMemo } from 'react';
+import { z } from 'zod';
+
+import { CrudLayout } from '@/core/components/crud/CrudLayout';
+import { CrudConfig, CrudHooks } from '@/core/components/crud/types';
+import { useCategories } from '@/modules/categories/hooks/useCategories';
+import { useCategoryMutation } from '@/modules/categories/hooks/useCategoryMutation';
+import { Category, CategoryType } from '@/modules/categories/types';
+
+// =========================================================================
+// 1. A PONTE DE TRADUÇÃO (Zod Schema)
+// =========================================================================
+const CategoryFormSchema = z.object({
+    name: z.string().min(2, 'O nome deve ter no mínimo 2 caracteres'),
+    
+    // O select HTML envia string vazia (''). Nós a aceitamos pacientemente.
+    parentId: z.uuid('UUID inválido').optional().or(z.literal('')), 
+    
+    // 🎚️ Usando um Select limpo e direto como você sugeriu!
+    // 🎚️ Zod v4: z.enum agora lê Enums nativos sozinho e usa a propriedade unificada 'error'
+    type: z.enum(CategoryType, { 
+        error: 'Selecione um tipo de categoria válido' 
+    }),
+    
+    isActive: z.boolean().default(true),
+
+    // 🛡️ Campos de Auditoria
+    id: z.string().optional(),
+    slug: z.string().optional(),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+
+}).transform((data) => ({
+    ...data,
+    // TRADUÇÃO DE SAÍDA: O backend não aceita string vazia, ele quer 'undefined'.
+    parentId: data.parentId === '' ? undefined : data.parentId,
+    attributesSchema: [] // Garante o JSONB pro Backend
+}));
+
+type CategoryFormData = z.input<typeof CategoryFormSchema>;
+
+// =========================================================================
+// 2. O COMPONENTE MESTRE
+// =========================================================================
+export const CategoryRegistry: React.FC = () => {
+    
+    const { categories, isLoading, error: queryError, refreshCategories } = useCategories();
+    const { createCategory, updateCategory, deleteCategory, error: mutationError } = useCategoryMutation();
+
+    // =========================================================================
+    // 🔄 FILTRO DE HIDRATAÇÃO (O Fim do Erro Null)
+    // O Banco manda 'null', mas a UI só entende string vazia ('').
+    // Interceptamos aqui para limpar os dados antes de chegarem na tela.
+    // =========================================================================
+    const safeCategories = useMemo(() => {
+        return (categories || []).map(cat => ({
+            ...cat,
+            // Substitui null por string vazia de forma segura
+            parentId: cat.parentId === null ? '' : cat.parentId
+        }));
+    }, [categories]);
+
+    // Usamos as categorias seguras para montar o Dropdown
+    const parentOptions = useMemo(() => {
+        return safeCategories.map(cat => ({
+            label: cat.name,
+            value: cat.id
+        }));
+    }, [safeCategories]);
+
+    // =========================================================================
+    // 3. A PLANTA DA TELA (Configuração)
+    // =========================================================================
+    const categoryConfig: CrudConfig<Category, CategoryFormData> = useMemo(() => ({
+        title: 'Categorias',
+        description: 'Organize o catálogo de produtos e serviços do sistema.',
+        schema: CategoryFormSchema as any,
+        
+        columns: [
+            { header: 'Nome da Categoria', accessor: 'name' },
+            { 
+                header: 'Tipo', 
+                accessor: (item) => (
+                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${
+                        item.type === CategoryType.PRODUCT ? 'border-blue-500/30 text-blue-400 bg-blue-500/10' : 'border-purple-500/30 text-purple-400 bg-purple-500/10'
+                    }`}>
+                        {item.type === CategoryType.PRODUCT ? 'Produto' : 'Serviço'}
+                    </span>
+                )
+            },
+            { 
+                header: 'Status', 
+                accessor: (item) => (
+                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${
+                        item.isActive ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-gray-500/30 text-gray-400 bg-gray-500/10'
+                    }`}>
+                        {item.isActive ? 'Ativo' : 'Inativo'}
+                    </span>
+                )
+            },
+        ],
+        
+        fields: [
+            { 
+                name: 'name', 
+                label: 'Nome da Categoria', 
+                type: 'text', 
+                placeholder: 'Ex: Eletrônicos, Consultoria...' 
+            },
+            { 
+                name: 'type', 
+                label: 'Tipo de Categoria', 
+                type: 'select', // 👈 Solução limpa e nativa!
+                options: [
+                    { label: 'Produto Físico/Digital', value: CategoryType.PRODUCT },
+                    { label: 'Serviço Prestado', value: CategoryType.SERVICE }
+                ]
+            },
+            {
+                name: 'parentId',
+                label: 'Categoria Principal (Pai)',
+                type: 'select',
+                options: parentOptions, 
+                disabled: isLoading
+            },
+            { 
+                name: 'isActive', 
+                label: 'Status no Sistema', 
+                type: 'boolean' // Voltou a ser o padrão (Ativo/Inativo)
+            }
+        ],
+
+        systemFields: [
+            { name: 'id', label: 'ID do Registro (UUID)', type: 'text' },
+            { name: 'slug', label: 'Slug (URL Amigável)', type: 'text' },
+            { name: 'createdAt', label: 'Data de Criação', type: 'text' },
+            { name: 'updatedAt', label: 'Última Modificação', type: 'text' }
+        ]
+
+    }), [parentOptions, isLoading]);
+
+    const crudHooks: CrudHooks<Category, CategoryFormData> = {
+        data: safeCategories, // 👈 O Motor agora consome os dados blindados
+        isLoading: isLoading,
+        error: queryError || mutationError || null,
+        onCreate: createCategory as any,
+        onUpdate: updateCategory as any,
+        onDelete: deleteCategory,
+        onRefresh: refreshCategories
+    };
+
+    return <CrudLayout<Category, CategoryFormData> config={categoryConfig} hooks={crudHooks} />;
+};
+
+
+// ===== FILE: src/modules/products/registries/ProductRegistry.tsx =====
+
+'use client';
+
+import React, { useMemo } from 'react';
+
+// Motor CRUD V3
+import { CrudLayout } from '@/core/components/crud/CrudLayout';
+import { CrudConfig, CrudHooks } from '@/core/components/crud/types';
+
+// Tipagens e Contratos do Módulo
+import { ProductFormSchema, ProductFormInput } from '../schemas/productSchema';
+
+// Hooks de Integração
+import { useProducts } from '../hooks/useProducts';
+import { useProductMutation } from '../hooks/useProductMutation';
+import { useCategories } from '@/modules/categories/hooks/useCategories';
+import { useFiscal } from '@/modules/fiscal/hooks/useFiscal'; // Import herdado do seu legado
+import { BaseUOM, ProductType } from '../types/enums';
+
+export const ProductRegistry: React.FC = () => {
+    // 🔌 1. Conectando os Cabos (Data Fetching)
+    const { products, isLoading: loadingProducts, error: queryError, refreshProducts } = useProducts();
+    const { createProduct, updateProduct, deleteProduct, isLoading: mutating, error: mutationError } = useProductMutation();
+    
+    // Dependências (Dropdowns)
+    const { categories, isLoading: loadingCats } = useCategories();
+    const { fiscalGroups, isLoading: loadingFiscal } = useFiscal();
+
+    // =========================================================================
+    // 🔄 2. FILTRO DE HIDRATAÇÃO (O Caminho Inverso do Zod)
+    // A API devolve { name: "Mouse", variants: [{ salePrice: 50, sku: "M01" }] }
+    // O Formulário precisa de { name: "Mouse", salePrice: 50, sku: "M01" }
+    // =========================================================================
+    const flatProducts = useMemo(() => {
+        return (products || []).map(product => {
+            // Pegamos sempre a primeira variante (SKU Principal) para a visão "Plana"
+            const mainVariant = (product.variants && product.variants.length > 0) ? product.variants[0] : {} as any;
+            
+            return {
+                ...product,
+                // Tratamento de nulos e extração de IDs de objetos aninhados (DTO Response)
+                categoryId: product.category?.id || product.categoryId || '',
+                taxGroupId: product.taxGroupId ,
+                
+                // Achata os dados do Filho para a raiz do objeto
+                variantId: mainVariant.id || '',
+                sku: mainVariant.sku || '',
+                barcode: mainVariant.barcode || '',
+                salePrice: mainVariant.salePrice || 0,
+                costPrice: mainVariant.costPrice || 0,
+            };
+        });
+    }, [products]);
+
+    // =========================================================================
+    // 🗂️ 3. OPÇÕES DOS DROPDOWNS (Selects)
+    // =========================================================================
+    const categoryOptions = useMemo(() => categories.map(cat => ({ label: cat.name, value: cat.id })), [categories]);
+    const fiscalOptions = useMemo(() => fiscalGroups.map(fg => ({ label: `${fg.name} (NCM: ${fg.ncmDefault || 'N/A'})`, value: fg.id })), [fiscalGroups]);
+    
+    // Enums mapeados para o Select
+    const typeOptions = [
+        { label: 'Produto Físico/Simples', value: ProductType.SIMPLE },
+        { label: 'Serviço Prestado', value: ProductType.SERVICE },
+        { label: 'Kit / Combo', value: ProductType.KIT }
+    ];
+    
+    const uomOptions = Object.values(BaseUOM).map(uom => ({ label: uom, value: uom }));
+
+    // =========================================================================
+    // 📐 4. A PLANTA DA TELA (Configuração V3)
+    // =========================================================================
+    const productConfig: CrudConfig<any, ProductFormInput> = useMemo(() => ({
+        title: 'Catálogo de Produtos',
+        description: 'Gerencie itens, preços e regras fiscais.',
+        schema: ProductFormSchema as any,
+        
+        // 📊 O Grid (O que aparece na listagem)
+        columns: [
+            { header: 'Nome / Item', accessor: 'name' },
+            { header: 'SKU', accessor: 'sku' },
+            { 
+                header: 'Tipo', 
+                accessor: (item) => (
+                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${
+                        item.type === ProductType.SERVICE ? 'border-purple-500/30 text-purple-400 bg-purple-500/10' : 'border-blue-500/30 text-blue-400 bg-blue-500/10'
+                    }`}>
+                        {item.type === ProductType.SERVICE ? 'Serviço' : 'Produto'}
+                    </span>
+                )
+            },
+            { 
+                header: 'Preço (R$)', 
+                accessor: (item) => `R$ ${Number(item.salePrice || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+            },
+            { 
+                header: 'Status', 
+                accessor: (item) => (
+                    <span className={item.isActive ? 'text-emerald-400 font-bold' : 'text-gray-500'}>
+                        {item.isActive ? 'Ativo' : 'Inativo'}
+                    </span>
+                )
+            },
+        ],
+        
+        // 📝 O Formulário Central (Desenhado na ordem perfeita para o UX)
+        fields: [
+            { name: 'name', label: 'Nome do Produto/Serviço', type: 'text', placeholder: 'Ex: Mouse Sem Fio Logitech' },
+            
+            // Agrupamento Visual de Classificação
+            { name: 'categoryId', label: 'Categoria', type: 'select', options: categoryOptions, disabled: loadingCats },
+            { name: 'type', label: 'Tipo de Item', type: 'select', options: typeOptions },
+            { name: 'baseUOM', label: 'Unid. Medida', type: 'select', options: uomOptions },
+            
+            // Agrupamento Visual de Preços e Códigos
+            { name: 'salePrice', label: 'Preço de Venda (R$)', type: 'number', placeholder: '0.00' },
+            { name: 'costPrice', label: 'Custo de Aquisição (R$)', type: 'number', placeholder: '0.00' },
+            { name: 'sku', label: 'SKU (Cód. Interno)', type: 'text', placeholder: 'Gerado auto se vazio' },
+            { name: 'barcode', label: 'Código de Barras (EAN)', type: 'text' },
+            
+            // Agrupamento Fiscal
+            { name: 'taxGroupId', label: 'Regra Fiscal (Tributação)', type: 'select', options: fiscalOptions, disabled: loadingFiscal },
+
+            
+            
+            // Status
+            { name: 'isActive', label: 'Visível no Catálogo', type: 'boolean', trueLabel: 'Ativo', falseLabel: 'Inativo' }
+        ],
+
+        // 🛡️ A Sanfona de Auditoria (Esconde a sujeira do sistema)
+        systemFields: [
+            { name: 'id', label: 'ID do Produto Pai', type: 'text' },
+            { name: 'variantId', label: 'ID do SKU Principal', type: 'text' }, // Escondemos o ID da Variante aqui!
+            { name: 'createdAt', label: 'Data de Criação', type: 'text' },
+            { name: 'updatedAt', label: 'Última Modificação', type: 'text' }
+        ]
+
+    }), [categoryOptions, fiscalOptions, loadingCats, loadingFiscal]);
+
+    // 🔌 5. Os Ganchos do Motor
+    const crudHooks: CrudHooks<any, ProductFormInput> = {
+        data: flatProducts, // Passamos a lista achatada e limpa!
+        isLoading: loadingProducts,
+        error: queryError || mutationError || null,
+        onCreate: createProduct as any,
+        onUpdate: updateProduct as any,
+        onDelete: deleteProduct,
+        onRefresh: refreshProducts
+    };
+
+    return <CrudLayout config={productConfig} hooks={crudHooks} />;
+};
+
+
+// ===== FILE: src/modules/products/schemas/productSchema.ts =====
+
+import { z } from 'zod';
+import { BaseUOM, ProductType } from '../types/enums';
+
+/**
+ * 📦 Schema Auxiliar para os itens da Grade (Variáveis)
+ * Dita as regras de cada linha da tabela de variações que vamos criar na tela.
+ */
+const VariantItemSchema = z.object({
+    id: z.string().optional(),
+    sku: z.string().trim().min(1, 'O SKU é obrigatório na variação'),
+    name: z.string().optional(),
+    barcode: z.string().optional(),
+    salePrice: z.coerce.number({ error: 'Preço inválido' }).min(0, 'Preço negativo'),
+    costPrice: z.coerce.number({ error: 'Custo inválido' }).min(0).default(0),
+    attributes: z.record(z.any()).optional().default({}) // O JSONB (Cor, Tamanho, etc)
+});
+
+/**
+ * @schema ProductFormSchema
+ * @description O Tradutor Bimodal (Simples vs Variável).
+ */
+export const ProductFormSchema = z.object({
+    // =========================================================================
+    // 📦 DADOS DO PAI (Produto)
+    // =========================================================================
+    id: z.string().optional(),
+    name: z.string().min(3, 'O nome do produto deve ter no mínimo 3 caracteres'),
+    
+    // Forçamos que seja uma string válida. Se for vazio (""), o .min(1) barra com a mensagem correta.
+    // Se tiver conteúdo, o .uuid() garante que é um ID válido do banco de dados.
+    categoryId: z.string({ error: 'Selecione uma categoria' })
+        .min(1, 'A categoria é obrigatória')
+        .uuid('ID de categoria inválido'),
+        
+    taxGroupId: z.string({ error: 'Selecione uma regra fiscal' })
+        .min(1, 'A regra fiscal (imposto) é obrigatória')
+        .uuid('ID de regra fiscal inválido'),
+    
+    type: z.enum(ProductType, { error: 'Tipo de produto inválido' }).default(ProductType.SIMPLE),
+    baseUOM: z.enum(BaseUOM, { error: 'Unidade inválida' }).default(BaseUOM.UN),
+    
+    isActive: z.boolean().default(true),
+
+    // =========================================================================
+    // 🏷️ MODO SIMPLES: Dados do Filho Único
+    // (Tornamos os preços opcionais aqui na raiz, pois no modo variável eles não serão usados)
+    // =========================================================================
+    variantId: z.string().optional(),
+    sku: z.string().trim().optional(),
+    barcode: z.string().optional(),
+    salePrice: z.coerce.number({ error: 'Digite um preço válido' }).min(0).optional(),
+    costPrice: z.coerce.number({ error: 'Digite um custo válido' }).min(0).optional(),
+
+    // =========================================================================
+    // 📊 MODO SHOPIFY: O Array da Grade de Variações
+    // =========================================================================
+    variantsList: z.array(VariantItemSchema).optional().default([]),
+
+    // =========================================================================
+    // 🛡️ AUDITORIA
+    // =========================================================================
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+
+}).transform((data) => {
+    // 🪄 A MÁGICA DO ROTEAMENTO DE DADOS (O que vai para a API)
+    let finalVariants = [];
+
+    // ROTEADOR: O produto tem grade ou é simples?
+    if (data.type === ProductType.VARIABLE) {
+        // MODO SHOPIFY: Mapeia a grade preenchida na tela
+        finalVariants = data.variantsList.map(v => ({
+            id: v.id,
+            // Nome Inteligente: Se não tiver nome próprio, herda o nome do Pai + SKU (Ex: "Camiseta - Azul-M")
+            name: v.name || `${data.name} - ${v.sku}`, 
+            sku: v.sku,
+            barcode: v.barcode === '' ? undefined : v.barcode,
+            salePrice: v.salePrice,
+            costPrice: v.costPrice,
+            attributes: v.attributes
+        }));
+    } else {
+        // MODO CLÁSSICO: Produto Simples ou Serviço (Empacota os dados da raiz)
+        finalVariants = [
+            {
+                id: data.variantId, 
+                name: data.name, 
+                salePrice: data.salePrice || 0,
+                costPrice: data.costPrice || 0,
+                sku: data.sku === '' ? undefined : data.sku,
+                barcode: data.barcode === '' ? undefined : data.barcode,
+                attributes: {}
+            }
+        ];
+    }
+
+    return {
+        // Envia o payload final limpo e blindado para o Backend
+        id: data.id,
+        name: data.name,
+        type: data.type,
+        baseUOM: data.baseUOM,
+        isActive: data.isActive,
+        categoryId: data.categoryId === '' ? undefined : data.categoryId,
+        taxGroupId: data.taxGroupId === '' ? undefined : data.taxGroupId,
+        
+        // A matriz de Variantes perfeitamente formatada, independentemente do tipo escolhido
+        variants: finalVariants
+    };
+});
+
+export type ProductFormInput = z.input<typeof ProductFormSchema>;
+
+
+// ===== FILE: src/modules/products/types/enums.ts =====
+
+/**
+ * @enum ProductType
+ * @description Espelho exato do Enum definido no Backend (CreateProductDto).
+ * Dita o comportamento do produto no sistema (se tem estoque, se tem variações, etc).
+ */
+export enum ProductType {
+    SIMPLE = 'SIMPLE',     // Produto de venda direta, sem variações (Ex: Mouse sem fio)
+    VARIABLE = 'VARIABLE', // Produto pai com SKUs filhos (Ex: Camiseta nas cores Azul e Preta)
+    SERVICE = 'SERVICE',   // Prestação de serviço, usa agendamento/horas (Ex: Formatação de PC)
+    KIT = 'KIT'            // Agrupamento de produtos simples vendidos juntos (Combo)
+}
+
+/**
+ * @enum BaseUOM
+ * @description Unidades de Medida Básicas (Unit of Measure).
+ * No backend é salvo como um texto livre (string), mas no frontend
+ * nós "travamos" as opções em um Enum para gerar um Dropdown (Select)
+ * padronizado e evitar que o usuário digite lixo no banco de dados.
+ */
+export enum BaseUOM {
+    UN = 'UN', // Unidade (Padrão absoluto do sistema)
+    KG = 'KG', // Quilograma
+    LT = 'LT', // Litro
+    MT = 'MT', // Metro
+    CX = 'CX', // Caixa
+    HR = 'HR', // Hora (Utilizado majoritariamente para o tipo SERVICE)
+    PR = 'PR'  // Par (Calçados, luvas, etc)
+}
+
+
+// ===== FILE: src/modules/products/types/index.ts =====
+
+export * from './enums';
+export * from './variant';
+export * from './product';
+
+
+// ===== FILE: src/modules/products/types/product.ts =====
+
+import { ProductType, BaseUOM } from './enums';
+import { ProductVariant, ProductVariantFormData } from './variant';
+
+/**
+ * @interface CategorySummary
+ * @description O backend devolve um resumo da categoria aninhado no Produto.
+ * Isso evita que o frontend precise fazer uma segunda requisição só para descobrir o nome da categoria.
+ */
+export interface CategorySummary {
+    id: string;
+    name: string;
+    slug: string;
+}
+
+/**
+ * @interface Product
+ * @description O Contrato de Leitura (GET).
+ * Representa o estado consolidado do Produto no Banco de Dados.
+ * É esta interface que vai popular a nossa Tabela (Grid) de listagem.
+ */
+export interface Product {
+    // 🔑 Identificadores e Dados Básicos
+    id: string;
+    name: string;
+    description?: string;
+    brand?: string;
+    model?: string;
+    type: ProductType | string; // Aceita string pura por segurança caso a API mande algo fora do Enum
+    baseUOM: BaseUOM | string;
+    images: string[];
+
+    // ⚖️ Fiscal, Logística e Serviços
+    ncm?: string;
+    cest?: string;
+    origin?: number;
+    weight?: number;
+    serviceCode?: string;
+    durationMinutes?: number;
+    bufferMinutes?: number;
+
+    // 🔗 Relacionamentos e Árvore
+    category?: CategorySummary; 
+    categoryId?: string; // Usado internamente para facilitar a edição
+    taxGroupId?: string;
+    
+    // 🧬 Os Filhos (Variantes)
+    variants: ProductVariant[];
+
+    // 🛡️ Auditoria e Status
+    isActive: boolean;
+    createdAt: string;
+    updatedAt?: string;
+}
+
+/**
+ * @interface ProductFormData
+ * @description O Contrato de Escrita (POST / PUT).
+ * O DTO exato que o NestJS espera receber na hora de Salvar.
+ * Note que ele obriga o envio do array de Variantes (mesmo que seja só 1).
+ */
+export interface ProductFormData {
+    // Dados Básicos
+    name: string;
+    description?: string;
+    brand?: string;
+    model?: string;
+    type?: ProductType;
+    baseUOM?: BaseUOM;
+    images?: string[];
+
+    // Relacionamentos Estratégicos
+    categoryId?: string;
+    taxGroupId?: string;
+
+    // Fiscal e Logística
+    ncm?: string;
+    cest?: string;
+    origin?: number;
+    weight?: number;
+
+    // Serviços (Agenda)
+    serviceCode?: string;
+    durationMinutes?: number;
+    bufferMinutes?: number;
+
+    // 🧬 Sincronismo de Variantes (Delta Sync)
+    // O Zod vai cuidar de montar esse array nos bastidores para o usuário
+    variants: ProductVariantFormData[];
+
+    isActive?: boolean;
+}
+
+
+// ===== FILE: src/modules/products/types/variant.ts =====
+
+/**
+ * @interface ProductVariant
+ * @description O Espelho da Resposta (GET).
+ * Representa a Variação Física (SKU) exatamente como o backend a devolve.
+ * Contém dados injetados por outros módulos (ex: stockQuantity do Inventário).
+ */
+export interface ProductVariant {
+    // 🔑 Identificadores
+    id: string;
+    sku: string;
+    name: string; // Nome autogerado pelo backend (Ex: "Camiseta - Azul - P")
+    barcode?: string; // EAN / GTIN
+
+    // 💰 Precificação
+    salePrice: number;
+    promotionalPrice?: number;
+    costPrice: number;
+
+    // 🧬 Metadados
+    attributes: Record<string, any>; // O JSONB de atributos (Cor, Tamanho, etc)
+
+    // 📦 Estoque (Injetado pelo InventoryService via Response DTO)
+    stockQuantity?: number; 
+    
+    // 🛡️ Auditoria
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+/**
+ * @interface ProductVariantFormData
+ * @description O Contrato de Envio (POST / PUT).
+ * Preparado para a arquitetura "Delta Sync" do seu NestJS.
+ */
+export interface ProductVariantFormData {
+    // O "Pulo do Gato": Se tiver ID, o backend faz UPDATE. Se não tiver, faz CREATE.
+    id?: string; 
+
+    // Opcionais: Se não enviarmos, o backend gera automaticamente usando o prefixo do Produto Pai
+    sku?: string;
+    name?: string;
+    barcode?: string;
+
+    // Obrigatórios para a operação de venda
+    salePrice: number;
+    costPrice: number;
+    
+    // Opcionais de Precificação
+    promotionalPrice?: number;
+
+    // JSONB
+    attributes?: Record<string, any>;
+}
 
 
 // ===== FILE: src/modules/products/types.ts =====

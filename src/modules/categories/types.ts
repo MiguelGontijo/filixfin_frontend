@@ -1,59 +1,69 @@
+/**
+ * @type AttributeType
+ * @description Tipos suportados pelo nosso construtor de campos dinâmicos (JSONB).
+ */
 export type AttributeType = 'text' | 'number' | 'select' | 'boolean';
 
-export interface IAttributeSchema {
-  key: string;       // Identificador único do campo (ex: "voltagem")
-  label: string;     // Nome visível (ex: "Voltagem")
-  type: AttributeType;
-  required: boolean;
-  options?: string[]; // Para selects (ex: ["110v", "220v"])
-}
-
 /**
- * Definição de Tipos para o Módulo de Categorias.
- * Espelha as entidades do Backend para garantir integridade na comunicação.
+ * @interface IAttributeSchema
+ * @description Estrutura exata do JSONB 'attributesSchema' retornado/enviado para o backend.
  */
 
-export interface ICategory {
-    id: string;
-    name: string;
-    parentId?: string | null;
-    tenantId: string;
-    createdAt: string;
-    updatedAt: string;
-    isActive: boolean;
-    // Opcional: Para visualização em árvore
-    children?: ICategory[];
+export enum CategoryTypeEnum {
+     PRODUCT = 'PRODUCT',
+     SERVICE = 'SERVICE'
 }
 
-export interface ICreateCategoryDTO {
-    name: string;
-    parentId?: string;
-}
+export const CategoryType = CategoryTypeEnum;
+export type  CategoryType = CategoryTypeEnum;
 
-export interface IUpdateCategoryDTO extends Partial<ICreateCategoryDTO> {}
+export interface IAttributeSchema {
+    key: string;       // Identificador interno único (ex: "voltagem")
+    label: string;     // Nome visível na UI (ex: "Voltagem (V)")
+    type: AttributeType;
+    required: boolean;
+    options?: string[]; // Preenchido apenas quando type === 'select'
+}
 
 /**
- * Definição de Tipos para o Módulo de Categorias.
- * * Espelha as entidades do Backend para garantir integridade na comunicação.
+ * @interface Category
+ * @description Tipagem principal espelhada com o CategoryResponseDto do Backend.
+ * Contém os campos operacionais e os campos de auditoria/sistema ocultos.
  */
 export interface Category {
+    // 🔑 Identificadores e Dados Principais
     id: string;
-    tenantId: string;
     name: string;
+    slug: string;
+    type: CategoryTypeEnum;
     isActive: boolean;
-    parentId?: string | null; // Categoria Pai
-    createdAt: string;
+
+    // 🧬 Metadados (O JSONB)
+    attributesSchema: IAttributeSchema[];
+
+    // 🌳 Hierarquia
+    parentId?: string | undefined;
+    children?: Category[]; 
+
+    // 🛡️ Auditoria e Sistema
+    createdAt: string; // Datas trafegam como string ISO 8601 no JSON
     updatedAt: string;
 }
 
 /**
- * O DTO de Criação/Edição (Write Model)
- * É exatamente o que o Zod gera no TForm.
+ * @interface CreateCategoryDto
+ * @description Payload exato exigido pelo NestJS no POST /categories
  */
 export interface CreateCategoryDto {
     name: string;
-    isActive: boolean;
-    categoryId?: string | null;
+    type?: CategoryTypeEnum;
+    parentId?: string | undefined;
+    isActive?: boolean;
+    attributesSchema?: IAttributeSchema[];
 }
 
+/**
+ * @interface UpdateCategoryDto
+ * @description Payload para atualização parcial no PATCH /categories/:id
+ */
 export interface UpdateCategoryDto extends Partial<CreateCategoryDto> {}

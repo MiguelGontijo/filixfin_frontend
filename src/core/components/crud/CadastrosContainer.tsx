@@ -2,7 +2,9 @@
 
 'use client';
 
+import { FiscalRegistry } from '@/modules/fiscal/registries/FiscalRegistry';
 import { CategoryRegistry } from '@/modules/products/registries/CategoryRegistry';
+import { ProductRegistry } from '@/modules/products/registries/ProductRegistry';
 import React, { useState, useMemo } from 'react';
 import { 
     FaBoxOpen, 
@@ -48,6 +50,7 @@ export const CadastrosContainer: React.FC = () => {
             module: 'Produtos & Estoque',
             icon: <FaBoxOpen />,
             items: [
+                { id: 'PRODUCTS', label: 'Produtos' },
                 { id: 'CATEGORIES', label: 'Categorias de Produto' },
                 { id: 'BRANDS', label: 'Marcas / Fabricantes' },
                 { id: 'UNITS', label: 'Unidades de Medida' },
@@ -66,7 +69,6 @@ export const CadastrosContainer: React.FC = () => {
             icon: <FaFileInvoiceDollar />,
             items: [
                 { id: 'FISCAL_GROUPS', label: 'Grupos Fiscais' },
-                { id: 'CFOPS', label: 'Naturezas de Operação' },
                 { id: 'TAX_RULES', label: 'Regras de Imposto' },
             ]
         },
@@ -86,6 +88,7 @@ export const CadastrosContainer: React.FC = () => {
     const registryComponents: Record<string, React.ReactNode> = {
         // MÓDULO: PRODUTOS
         // 'CATEGORIES': <CategoryRegistry />, // <- Descomente isso quando o CategoryRegistry estiver pronto!
+        'PRODUCTS': < ProductRegistry/>,
         'CATEGORIES': <CategoryRegistry />,
 
         // 'CATEGORIES': <RegistryPlaceholder title="Categorias de Produto" icon={<FaTags />} />,
@@ -97,8 +100,7 @@ export const CadastrosContainer: React.FC = () => {
         'LEAD_SOURCES': <RegistryPlaceholder title="Origens de Lead" icon={<FaDatabase />} />,
 
         // MÓDULO: FISCAL
-        'FISCAL_GROUPS': <RegistryPlaceholder title="Grupos Fiscais" icon={<FaFileInvoiceDollar />} />,
-        'CFOPS': <RegistryPlaceholder title="Naturezas de Operação" icon={<FaFileInvoiceDollar />} />,
+        'FISCAL_GROUPS': <FiscalRegistry />,
         'TAX_RULES': <RegistryPlaceholder title="Regras de Imposto" icon={<FaFileInvoiceDollar />} />,
 
         // MÓDULO: SISTEMA

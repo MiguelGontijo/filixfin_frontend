@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/core/services/api';
+import { Product, ProductFormData } from '../types/product';
 
 // Import corrigido para modules conforme sua instrução
-import { Product, ProductFormData } from '@/modules/products/types';
 
 /**
  * Hook de Mutação para Produtos.
@@ -26,7 +26,7 @@ export function useProductMutation() {
         setError(null);
         try {
             // O backend espera exatamente essa estrutura agora (com categoryId, fiscalGroupId, etc)
-            const response = await api.post<Product>('/products', data);
+            const response = await api.post<Product>('/product', data);
             return response.data;
         } catch (err: any) {
             console.error('❌ Erro ao criar produto:', err);
@@ -45,7 +45,7 @@ export function useProductMutation() {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await api.put<Product>(`/products/${id}`, data);
+            const response = await api.put<Product>(`/product/${id}`, data);
             
             // Opcional: Forçar refresh da rota para atualizar dados em cache do Next.js
             router.refresh();
@@ -68,7 +68,7 @@ export function useProductMutation() {
         setIsLoading(true);
         setError(null);
         try {
-            await api.delete(`/products/${id}`);
+            await api.delete(`/product/${id}`);
             return true;
         } catch (err: any) {
             console.error('❌ Erro ao excluir produto:', err);

@@ -1,42 +1,49 @@
 import { useState, useCallback, useEffect } from 'react';
 import { api } from '@/core/services/api';
-import { IFiscalGroup } from '../types';
+import { ITaxGroup } from '../types';
 
 /**
- * Hook de Leitura para Grupos Fiscais.
- * * Responsabilidade:
- * - Buscar a lista de grupos tributários disponíveis.
- * - Gerenciar estado de loading e erro para a UI.
+ * @hook useFiscal
+ * @description Hook de Leitura (GET) para os Perfis Tributários e suas Regras.
+ * * PADRÃO CLASSE OURO (Enterprise Grade):
+ * 1. Nomenclatura estrita alinhada com o Backend (TaxGroup).
+ * 2. Fetcher memoizado com `useCallback` para evitar loops infinitos no useEffect.
+ * 3. O estado `isLoading` inicia como `true` para garantir uma UX fluida no primeiro render.
  */
 export function useFiscal() {
-    const [fiscalGroups, setFiscalGroups] = useState<IFiscalGroup[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    // 1. Estados
+    const [taxGroups, setTaxGroups] = useState<ITaxGroup[]>([]);
+    const [isLoading, setIsLoading] = useState(true); // Começa true para mostrar o Skeleton/Loading na UI de cara
     const [error, setError] = useState<string | null>(null);
 
-    const fetchFiscalGroups = useCallback(async () => {
+    // 2. Motor de Busca (Memoizado)
+    const fetchTaxGroups = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await api.get<IFiscalGroup[]>('/fiscal-groups');
-            setFiscalGroups(response.data);
+            // A API agora devolve o Perfil Pai + O Array de Regras Filhas (Motor Bimodal)
+            const response = await api.get<ITaxGroup[]>('/fiscal/tax-groups');
+            setTaxGroups(response.data);
         } catch (err: any) {
-            console.error('❌ Erro ao buscar grupos fiscais:', err);
-            const msg = err.response?.data?.message || 'Erro ao carregar grupos fiscais.';
+            console.error('❌ Erro ao buscar perfis tributários:', err);
+            // Captura amigável para o usuário final
+            const msg = err.response?.data?.message || 'Falha de conexão ao carregar as regras fiscais.';
             setError(msg);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    // Carregamento inicial automático
+    // 3. Gatilho Inicial (On Mount)
     useEffect(() => {
-        fetchFiscalGroups();
-    }, [fetchFiscalGroups]);
+        fetchTaxGroups();
+    }, [fetchTaxGroups]);
 
+    // 4. API Pública do Hook
     return {
-        fiscalGroups,
+        taxGroups, // Expondo a lista já com o nome correto
         isLoading,
         error,
-        refreshFiscalGroups: fetchFiscalGroups
+        refreshTaxGroups: fetchTaxGroups // Útil para recarregar o Grid após uma deleção, por exemplo
     };
 }

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { api } from '@/core/services/api';
-import { ICategory } from '../types';
+import { Category } from '../types';
 
 /**
  * Hook de Leitura (Query) para o Módulo de Categorias.
@@ -9,7 +9,7 @@ import { ICategory } from '../types';
  * - Expor estado de carregamento e erro para a UI.
  */
 export function useCategories() {
-    const [categories, setCategories] = useState<ICategory[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +17,7 @@ export function useCategories() {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await api.get<ICategory[]>('/categories/select');
+            const response = await api.get<Category[]>('/categories/select');
             setCategories(response.data);
         } catch (err: any) {
             console.error('❌ Erro ao buscar categorias:', err);

@@ -1,9 +1,11 @@
+// ===== FILE: src/core/components/crud/CrudForm.tsx =====
+
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useForm, Controller, FieldValues, SubmitHandler, DefaultValues } from 'react-hook-form';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useForm, Controller, FieldValues, SubmitHandler, DefaultValues, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FaTimes, FaSave } from 'react-icons/fa';
+import { FaTimes, FaSave, FaChevronDown, FaChevronUp, FaShieldAlt } from 'react-icons/fa';
 import { CrudConfig, CrudFieldConfig } from './types';
 
 interface CrudFormProps<TData, TForm extends FieldValues> {
@@ -15,9 +17,10 @@ interface CrudFormProps<TData, TForm extends FieldValues> {
 }
 
 /**
- * @component CrudForm (A Impressora 3D)
- * @description Drawer universal que desenha inputs automaticamente baseado na config.
- * Utiliza Generics <T> para garantir que a tipagem do formulário seja idêntica à do Zod.
+ * @component CrudForm (A Impressora 3D - Motor V4.1)
+ * @description Drawer universal que desenha inputs automaticamente.
+ * CLASSE OURO: Implementa o "Absolute Reset" para evitar vazamento de memória
+ * em arrays complexos (Master-Detail) na transição de Edição para Criação.
  */
 export function CrudForm<TData, TForm extends FieldValues>({
     isOpen,
@@ -28,34 +31,62 @@ export function CrudForm<TData, TForm extends FieldValues>({
 }: CrudFormProps<TData, TForm>) {
     
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSystemInfo, setShowSystemInfo] = useState(false);
 
     // =========================================================================
-    // 🧠 O CÉREBRO DO FORMULÁRIO (React Hook Form + Zod)
+    // 🧹 GHOST-BUSTER (O Gerador de Estado Vazio)
+    // O RHF não limpa arrays (useFieldArray) automaticamente com um `reset({})`.
+    // Nós mapeamos a configuração para forçar a limpeza estrutural de tudo.
     // =========================================================================
+    const defaultFormValues = useMemo(() => {
+        const defaults: any = {};
+        config.fields.forEach(field => {
+            if (field.type === 'custom') {
+                // 💡 A MÁGICA: Se for um array/grid customizado, cravamos [] (Vazio).
+                // Isso diz ao RHF: "Destrua as regras da memória agora!"
+                defaults[field.name] = []; 
+            } else if (field.type === 'boolean') {
+                defaults[field.name] = true;
+            } else {
+                defaults[field.name] = '';
+            }
+        });
+        return defaults as DefaultValues<TForm>;
+    }, [config.fields]);
+
+    // =========================================================================
+    // 🧠 O CÉREBRO DO FORMULÁRIO
+    // =========================================================================
+    const formContext = useForm<TForm>({
+        resolver: zodResolver(config.schema as any),
+        mode: 'onChange',
+        defaultValues: defaultFormValues // Injeta o estado vazio como base
+    });
+
     const {
         register,
         handleSubmit,
         reset,
         control,
         formState: { errors }
-    } = useForm<TForm>({
-        resolver: zodResolver(config.schema as any), // Conecta a validação Zod!
-        mode: 'onChange', // Valida em tempo real enquanto o usuário digita
-    });
+    } = formContext;
 
-    // Hidratação: Preenche ou limpa o formulário sempre que abrir/fechar
+    // =========================================================================
+    // 💧 HIDRATAÇÃO E DELTA SYNC
+    // =========================================================================
     useEffect(() => {
         if (isOpen) {
             if (initialData) {
-                // MODO EDIÇÃO: Preenche com os dados existentes
+                // MODO EDIÇÃO: Preenche com os dados do banco (trazendo as regras com IDs)
                 reset(initialData as DefaultValues<TForm>);
             } else {
-                // MODO CRIAÇÃO: Reseta para vazio (pega defaults do Zod)
-                // O cast vazio {} as T é seguro pois o Zod resolverá os campos obrigatórios
-                reset({} as DefaultValues<TForm>); 
+                // 💡 MODO CRIAÇÃO (O Bloqueio do Roubo Relacional):
+                // Injetamos o `defaultFormValues` explícito. O array `rules` será cravado
+                // como `[]`, e o formulário abrirá 100% virgem e seguro.
+                reset(defaultFormValues); 
             }
         }
-    }, [isOpen, initialData, reset]);
+    }, [isOpen, initialData, reset, defaultFormValues]);
 
     // =========================================================================
     // ⚙️ HANDLERS
@@ -64,10 +95,9 @@ export function CrudForm<TData, TForm extends FieldValues>({
         setIsSubmitting(true);
         try {
             await onSubmit(data);
-            onClose(); // Só fecha se a mutação na API der sucesso
+            onClose(); 
         } catch (error) {
             console.error('❌ [CrudForm] Erro ao salvar:', error);
-            // Os erros de API (como "Nome já existe") podem ser tratados pelo Toast global
         } finally {
             setIsSubmitting(false);
         }
@@ -79,9 +109,7 @@ export function CrudForm<TData, TForm extends FieldValues>({
     const renderField = (field: CrudFieldConfig<TForm>) => {
         const fieldName = String(field.name);
         const hasError = !!errors[fieldName];
-        const errorMessage = errors[fieldName]?.message as string;
 
-        // Classes base compartilhadas para manter o Design System (Dark/Metallic)
         const baseInputClasses = `
             w-full bg-gray-900 border rounded-lg px-3 py-2.5 text-sm text-white 
             focus:outline-none transition-all placeholder-gray-600
@@ -101,7 +129,6 @@ export function CrudForm<TData, TForm extends FieldValues>({
                         type={field.type === 'number' || field.type === 'currency' ? 'number' : 'text'}
                         step={field.type === 'currency' ? '0.01' : undefined}
                         {...register(field.name as any, { 
-                            // Garante que números não virem strings "10" na hora de enviar pro Zod
                             setValueAs: v => (field.type === 'number' || field.type === 'currency') ? (v === '' ? undefined : Number(v)) : v 
                         })}
                         placeholder={field.placeholder}
@@ -143,8 +170,6 @@ export function CrudForm<TData, TForm extends FieldValues>({
                 );
 
             case 'boolean':
-                // Para booleanos (Toggle), usamos o Controller do React Hook Form
-                // pois elementos customizados precisam de gerenciamento de estado controlado
                 return (
                     <Controller
                         name={field.name as any}
@@ -169,12 +194,25 @@ export function CrudForm<TData, TForm extends FieldValues>({
                                         `}
                                     />
                                 </button>
-                                <span className="ml-3 text-sm text-gray-300">
-                                    {value ? 'Ativo' : 'Inativo'}
+                                <span className="ml-3 text-sm font-medium text-gray-300">
+                                    {value 
+                                        ? (field.trueLabel || 'Ativo') 
+                                        : (field.falseLabel || 'Inativo')
+                                    }
                                 </span>
                             </div>
                         )}
                     />
+                );
+
+            case 'custom':
+                if (field.customRender) {
+                    return field.customRender(formContext);
+                }
+                return (
+                    <div className="p-3 bg-red-900/20 text-red-400 text-xs rounded border border-red-500/50">
+                        ⚠️ Desenvolvedor: Forneça a propriedade `customRender` para o campo '{fieldName}'.
+                    </div>
                 );
 
             default:
@@ -182,14 +220,8 @@ export function CrudForm<TData, TForm extends FieldValues>({
         }
     };
 
-    // Se o Drawer estiver fechado, não carrega a árvore no DOM
     if (!isOpen) return null;
 
-    // =========================================================================
-    // 🖼️ A ESTRUTURA VISUAL DO DRAWER
-    // =========================================================================
-    // Se o Drawer estiver fechado, evitamos que ele bloqueie os cliques
-    // Mantemos ele no DOM para a animação de saída funcionar suavemente
     return (
         <div 
             className={`
@@ -200,8 +232,6 @@ export function CrudForm<TData, TForm extends FieldValues>({
         >
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                 
-                {/* O SEU CABEÇALHO, FORMULÁRIO E BOTÕES CONTINUAM EXATAMENTE AQUI DENTRO, SEM MUDAR NADA */} 
-                {/* Header Dinâmico */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-700 bg-gray-900/50 flex-shrink-0">
                     <div>
                         <h3 className="text-lg font-semibold text-base-text leading-tight">
@@ -220,36 +250,68 @@ export function CrudForm<TData, TForm extends FieldValues>({
                     </button>
                 </div>
 
-                {/* Corpo Form: O Loop Mágico */}
                 <form id="crud-form" onSubmit={handleSubmit(handleFormSubmit)} className="flex-1 p-6 space-y-5 overflow-y-auto custom-scrollbar">
                     
                     {config.fields.map((field) => {
                         const fieldName = String(field.name);
                         const hasError = !!errors[fieldName];
+                        const errorMessage = errors[fieldName]?.message as string;
+                        const displayError = typeof errorMessage === 'string' ? errorMessage : undefined;
 
                         return (
                             <div key={fieldName} className="space-y-1.5 animate-fade-in">
                                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                                     {field.label}
-                                    {/* Asterisco se o Zod exigir o campo (Não é opcional) */}
                                     {!config.schema.isOptional() && <span className="text-accent-primary ml-1">*</span>}
                                 </label>
                                 
                                 {renderField(field)}
                                 
-                                {/* Mensagem de Erro Injetada Automaticamente pelo Zod */}
-                                {hasError && (
+                                {hasError && displayError && (
                                     <p className="text-[10px] text-red-400 mt-1 font-medium">
-                                        {errors[fieldName]?.message as string}
+                                        {displayError}
                                     </p>
                                 )}
                             </div>
                         );
                     })}
 
+                    {initialData && config.systemFields && config.systemFields.length > 0 && (
+                        <div className="pt-4 mt-6 border-t border-gray-800/50 animate-fade-in flex-shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setShowSystemInfo(!showSystemInfo)}
+                                className="flex items-center justify-between w-full p-3.5 bg-gray-800/30 hover:bg-gray-800/60 border border-gray-700/50 rounded-lg transition-colors focus:outline-none"
+                            >
+                                <div className="flex items-center gap-2 text-gray-400">
+                                    <FaShieldAlt className="w-4 h-4 text-gray-500" />
+                                    <span className="text-xs font-bold uppercase tracking-wider">Informações do Sistema</span>
+                                </div>
+                                {showSystemInfo ? <FaChevronUp className="w-3 h-3 text-gray-500" /> : <FaChevronDown className="w-3 h-3 text-gray-500" />}
+                            </button>
+
+                           {showSystemInfo && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-3 p-5 bg-gray-900/50 border border-gray-800/50 rounded-lg shadow-inner animate-fade-in">
+                                    {config.systemFields.map((field) => {
+                                        const fieldName = String(field.name);
+                                        return (
+                                            <div key={fieldName} className="space-y-1.5">
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                                    {field.label}
+                                                </label>
+                                                <div className="opacity-60 pointer-events-none grayscale">
+                                                    {/* 💡 FIX TS 2345: Assinatura de contrato garantida para o motor de renderização */}
+                                                    {renderField({ ...field, disabled: true } as unknown as CrudFieldConfig<TForm>)}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </form>
 
-                {/* Footer (Ações) */}
                 <div className="p-6 border-t border-gray-700 bg-gray-900/30 flex justify-end gap-3 flex-shrink-0">
                     <button
                         type="button"
@@ -278,7 +340,6 @@ export function CrudForm<TData, TForm extends FieldValues>({
                         )}
                     </button>
                 </div>
-
             </div>
         </div>
     );

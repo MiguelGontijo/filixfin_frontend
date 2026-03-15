@@ -1,5 +1,3 @@
-// ===== FILE: src/modules/categories/hooks/useCategoryMutation.ts =====
-
 import { useState } from 'react';
 import { api } from '@/core/services/api';
 import { Category } from '../types';

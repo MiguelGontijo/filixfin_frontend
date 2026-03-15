@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 // Ajuste o import da API conforme sua estrutura real (se for @/services/api ou @/core/services/api)
 import { api } from '@/core/services/api'; 
-import { Product } from '../types';
+import { Product } from '../types/product';
 
 /**
  * @hook useProducts

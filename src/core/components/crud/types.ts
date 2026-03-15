@@ -1,13 +1,17 @@
+// ===== FILE: src/core/components/crud/types.ts =====
+
 import { z } from 'zod';
+import { FieldValues, UseFormReturn } from 'react-hook-form';
 
 /**
- * @type FieldType
- * @description Os tipos de inputs visuais que a nossa "Fábrica" consegue desenhar.
+ * @type CrudFieldType
+ * @description Os tipos de inputs que a nossa "Impressora 3D" (CrudForm) sabe desenhar.
+ * CLASSE OURO: Adicionado o tipo 'custom' para suportar Master-Detail (Arrays, Grids).
  */
-export type FieldType = 
+export type CrudFieldType = 
     | 'text' 
     | 'number' 
-    | 'boolean' // Renderiza um Toggle/Switch
+    | 'boolean' 
     | 'textarea' 
     | 'select' 
     | 'currency'
@@ -15,57 +19,71 @@ export type FieldType =
     | 'date'
     | 'datetime'
     | 'time'
-    | 'file';
+    | 'file'
+    | 'custom'; // 👈 NOVO: O portal para componentes complexos (Ex: Grade de Variantes, Regras Fiscais)
+
+export interface CrudFieldOption {
+    label: string;
+    value: string | number;
+}
 
 /**
  * @interface CrudFieldConfig
- * @description Configuração visual de um campo do formulário.
- * O <T> garante que o 'name' pertença estritamente ao Schema Zod fornecido.
+ * @description Configuração individual de cada campo do formulário.
  */
-export interface CrudFieldConfig<TForm> {
-    name: keyof TForm;          // A chave exata do banco/zod (ex: 'name', 'isActive')
-    label: string;          // O rótulo humano (ex: 'Nome da Categoria')
-    type: FieldType;        // Como deve ser desenhado na tela
+export interface CrudFieldConfig<TForm extends FieldValues> {
+    name: keyof TForm;
+    label: string;
+    type: CrudFieldType;
     placeholder?: string;
-    options?: { label: string; value: string | number | boolean }[]; // Necessário se for 'select'
     disabled?: boolean;
+    options?: CrudFieldOption[]; 
+    
+    // Customização do Switch
+    trueLabel?: string;  
+    falseLabel?: string; 
+
+    // =========================================================================
+    // 🧩 RENDERIZADOR CUSTOMIZADO (Feature V4)
+    // Permite injetar um componente React inteiro dentro do formulário.
+    // Ele recebe o contexto completo do 'useForm' para poder manipular arrays (useFieldArray).
+    // =========================================================================
+    customRender?: (formContext: UseFormReturn<TForm>) => React.ReactNode;
 }
 
 /**
  * @interface CrudColumnConfig
- * @description Configuração de como uma coluna deve aparecer no Grid (Tabela).
+ * @description Configuração de como os dados serão renderizados na Tabela (Grid).
  */
 export interface CrudColumnConfig<TData> {
-    key: keyof TData;
-    label: string;
-    type?: 'text' | 'boolean' | 'currency' | 'date'; // Formatação automática na tabela
-    align?: 'left' | 'center' | 'right';
+    header: string;
+    accessor: keyof TData | ((item: TData) => React.ReactNode);
 }
 
 /**
  * @interface CrudConfig
- * @description O Blueprint (A Planta) completa de uma tela de Cadastro.
- * É isso que o desenvolvedor vai preencher para criar uma tela nova.
+ * @description O "Manual de Instruções" central do Motor V3.
  */
-export interface CrudConfig<TData, TForm> {
+export interface CrudConfig<TData, TForm extends FieldValues> {
     title: string;
     description?: string;
-    schema: z.ZodSchema<TForm>;            // A validação matemática
-    fields: CrudFieldConfig<TForm>[];      // O desenho do Formulário
-    columns: CrudColumnConfig<TData>[];    // O desenho da Tabela
+    schema: z.ZodType<TForm>; 
+    columns: CrudColumnConfig<TData>[]; 
+    fields: CrudFieldConfig<TForm>[];   
+    
+    systemFields?: CrudFieldConfig<any>[]; 
 }
 
 /**
  * @interface CrudHooks
- * @description O contrato de comunicação com o Backend.
- * O Motor não faz fetch direto; ele pede para os seus Hooks de Domínio fazerem.
+ * @description O contrato de comunicação entre a UI (Motor) e as APIs (NestJS).
  */
 export interface CrudHooks<TData, TForm> {
     data: TData[];
     isLoading: boolean;
     error: string | null;
     onCreate: (data: TForm) => Promise<any>;
-    onUpdate: (id: string, data: Partial<TForm>) => Promise<any>;
-    onDelete: (id: string) => Promise<any>;
+    onUpdate: (id: string, data: TForm) => Promise<any>;
+    onDelete: (id: string) => Promise<boolean | void>;
     onRefresh: () => void;
 }

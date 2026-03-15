@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CadastrosContainer } from '@/core/ui/layout/CadastrosContainer';
+import { CadastrosContainer } from '@/core/components/crud/CadastrosContainer';
 
 export default function CadastrosContainerPage() {
     return (
