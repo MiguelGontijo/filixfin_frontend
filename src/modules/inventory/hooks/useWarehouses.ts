@@ -1,89 +1,53 @@
-'use strict';
+// ===== FILE: src/modules/inventory/hooks/useWarehouses.ts =====
 
-import { useState, useCallback } from 'react';
-import { api } from '@/core/services/api'; // Caminho relativo para o Core
-import { Warehouse, CreateWarehouseInput } from '../types/InventoryTypes';
+'use client';
+
+import { useState, useCallback, useEffect } from 'react';
+import { api } from '@/core/services/api';
+import { Warehouse } from '../types/InventoryTypes';
 
 /**
- * Hook para gerenciamento de Depósitos (Warehouses).
- * Responsável por conectar com a API e gerenciar o estado local da lista.
+ * @hook useWarehouses
+ * @description Hook de Leitura (Query Operations) para Depósitos.
+ * CLASSE OURO: Responsabilidade Única (CQRS - Query). Focado em buscar 
+ * a lista de depósitos, expor o estado de carregamento e tratar erros de GET.
  */
 export function useWarehouses() {
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true); // Começa true para skeleton loading
+    const [error, setError] = useState<string | null>(null);
 
     /**
-     * Busca todos os depósitos do tenant (GET /inventory/warehouses)
+     * @method fetchWarehouses
+     * @description Busca a lista completa de depósitos do tenant atual.
+     * Memoizado para estabilidade do useEffect.
      */
     const fetchWarehouses = useCallback(async () => {
         setIsLoading(true);
+        setError(null);
         try {
             const response = await api.get<Warehouse[]>('/inventory/warehouses');
             setWarehouses(response.data);
-        } catch (error) {
-            console.error('Erro ao buscar depósitos:', error);
-            // Aqui poderíamos integrar com um Toast Notification global se houver
+        } catch (err: any) {
+            console.error('❌ [useWarehouses] Erro ao buscar depósitos:', err);
+            const msg = err.response?.data?.message || 'Falha ao carregar a lista de depósitos.';
+            setError(msg);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    /**
-     * Cria um novo depósito (POST /inventory/warehouses)
-     */
-    const createWarehouse = async (input: CreateWarehouseInput) => {
-        setIsLoading(true);
-        try {
-            const response = await api.post<Warehouse>('/inventory/warehouses', input);
-            // Atualiza a lista localmente para evitar refetch desnecessário
-            setWarehouses((prev) => [...prev, response.data]);
-            return response.data;
-        } catch (error) {
-            console.error('Erro ao criar depósito:', error);
-            throw error; // Repassa o erro para o componente tratar (ex: fechar modal ou mostrar erro)
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    /**
-     * Atualiza um depósito existente (PATCH /inventory/warehouses/:id)
-     */
-    const updateWarehouse = async (id: string, input: Partial<CreateWarehouseInput>) => {
-        setIsLoading(true);
-        try {
-            const response = await api.patch<Warehouse>(`/inventory/warehouses/${id}`, input);
-            
-            // Atualiza o item específico na lista local
-            setWarehouses((prev) => 
-                prev.map((item) => (item.id === id ? response.data : item))
-            );
-
-            // Se o depósito atualizado virou padrão (isDefault), precisamos atualizar a flag dos outros
-            if (input.isDefault) {
-                setWarehouses((prev) => 
-                    prev.map((item) => 
-                        item.id === id 
-                            ? { ...item, isDefault: true } 
-                            : { ...item, isDefault: false }
-                    )
-                );
-            }
-
-            return response.data;
-        } catch (error) {
-            console.error('Erro ao atualizar depósito:', error);
-            throw error;
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    // =========================================================================
+    // 🚀 O GATILHO DE IGNIÇÃO AUTOMÁTICO
+    // =========================================================================
+    useEffect(() => {
+        fetchWarehouses();
+    }, [fetchWarehouses]);
 
     return {
         warehouses,
         isLoading,
-        fetchWarehouses,
-        createWarehouse,
-        updateWarehouse
+        error,
+        refreshWarehouses: fetchWarehouses // Alias semântico para recarregar a tela
     };
 }

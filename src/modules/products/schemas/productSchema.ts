@@ -12,7 +12,7 @@ const VariantItemSchema = z.object({
     barcode: z.string().optional(),
     salePrice: z.coerce.number({ error: 'Preço inválido' }).min(0, 'Preço negativo'),
     costPrice: z.coerce.number({ error: 'Custo inválido' }).min(0).default(0),
-    attributes: z.record(z.any()).optional().default({}) // O JSONB (Cor, Tamanho, etc)
+    attributes: z.record(z.string(),z.any()).optional().default({}) // O JSONB (Cor, Tamanho, etc)
 });
 
 /**

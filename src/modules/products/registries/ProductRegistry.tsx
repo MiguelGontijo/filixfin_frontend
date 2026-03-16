@@ -15,6 +15,7 @@ import { useProductMutation } from '../hooks/useProductMutation';
 import { useCategories } from '@/modules/categories/hooks/useCategories';
 import { useFiscal } from '@/modules/fiscal/hooks/useFiscal'; // Import herdado do seu legado
 import { BaseUOM, ProductType } from '../types/enums';
+import { ITaxGroup } from '@/modules/fiscal/types';
 
 export const ProductRegistry: React.FC = () => {
     // 🔌 1. Conectando os Cabos (Data Fetching)
@@ -23,7 +24,7 @@ export const ProductRegistry: React.FC = () => {
     
     // Dependências (Dropdowns)
     const { categories, isLoading: loadingCats } = useCategories();
-    const { fiscalGroups, isLoading: loadingFiscal } = useFiscal();
+    const { taxGroups, isLoading: loadingFiscal } = useFiscal();
 
     // =========================================================================
     // 🔄 2. FILTRO DE HIDRATAÇÃO (O Caminho Inverso do Zod)
@@ -54,8 +55,16 @@ export const ProductRegistry: React.FC = () => {
     // =========================================================================
     // 🗂️ 3. OPÇÕES DOS DROPDOWNS (Selects)
     // =========================================================================
-    const categoryOptions = useMemo(() => categories.map(cat => ({ label: cat.name, value: cat.id })), [categories]);
-    const fiscalOptions = useMemo(() => fiscalGroups.map(fg => ({ label: `${fg.name} (NCM: ${fg.ncmDefault || 'N/A'})`, value: fg.id })), [fiscalGroups]);
+    const categoryOptions = useMemo(() => 
+        categories?.map(cat => ({ label: cat.name, value: cat.id })) || [], 
+    [categories]);
+
+    const fiscalOptions = useMemo(() => 
+        taxGroups?.map((fg: ITaxGroup) => ({ 
+            label: fg.name, 
+            value: fg.id 
+        })) || [], 
+    [taxGroups]);
     
     // Enums mapeados para o Select
     const typeOptions = [

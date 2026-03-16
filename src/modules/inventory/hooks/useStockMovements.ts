@@ -1,77 +1,67 @@
-// src/modules/inventory/hooks/useStockMovements.ts
-
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { api } from '@/core/services/api';
-import { 
-    InventoryTransaction, 
-    RegisterMovementInput,
-    MovementFilter // Importando o filtro que definimos no InventoryTypes.ts
-} from '../types/InventoryTypes';
+import { InventoryTransaction } from '../types/InventoryTypes';
+import { KardexFilters } from '../types/InventoryFilters'; // 👈 Importação da nova "Casa dos Filtros"
 
 /**
- * Hook para gerenciamento de Movimentações de Estoque.
- * Responsável por registrar entradas/saídas e consultar o histórico (Kardex).
+ * @hook useStockMovements
+ * @description Motor Analítico de Leitura (Query Operations) para o Kardex.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
+ * 1. Arquitetura CQRS (Query): Focado estritamente em buscar o histórico imutável 
+ * de movimentações (global ou por produto) e expor o estado para a UI.
+ * 2. Master-Detail Ready: Na nova arquitetura, este hook atuará como a "Visão Detail",
+ * sendo invocado dinamicamente quando o usuário clicar em um saldo específico.
  */
 export function useStockMovements() {
     const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    
+    // Inicia com 'true' para garantir que a UI mostre o Skeleton Loading na montagem,
+    // oferecendo uma transição suave e eliminando "piscadas" de listas vazias.
+    const [isLoading, setIsLoading] = useState(true); 
+    const [error, setError] = useState<string | null>(null);
 
     /**
-     * Registra uma nova movimentação (Entrada ou Saída).
-     * POST /inventory/movements
+     * @method fetchMovements
+     * @description O núcleo de busca do histórico (Extrato do Kardex) no backend.
+     * Agora fortemente tipado com `KardexFilters`, aceitando paginação, 
+     * range de datas, tipos de transação e IDs específicos (Produto/Depósito).
+     * @param filters Objeto flexível de filtros para a query do TypeORM.
      */
-    const registerMovement = async (input: RegisterMovementInput) => {
+    const fetchMovements = useCallback(async (filters?: KardexFilters) => {
         setIsLoading(true);
+        setError(null);
         try {
-            const response = await api.post<InventoryTransaction>('/inventory/movements', input);
-            
-            // Opcional: Atualização otimista da lista se estiver vendo o mesmo item
-            setTransactions((prev) => {
-                if (prev.length > 0 && prev[0].variantId === input.variantId) {
-                    return [response.data, ...prev];
-                }
-                // Se for visão global, adiciona no topo também
-                if (!input.variantId || prev.length > 0) {
-                     return [response.data, ...prev];
-                }
-                return prev;
-            });
-
-            return response.data;
-        } catch (error) {
-            console.error('Erro ao registrar movimentação:', error);
-            throw error; 
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    /**
-     * Busca o histórico (Kardex).
-     * Agora suporta busca Global (sem ID) ou Específica (com ID/Filtros).
-     * GET /inventory/kardex
-     */
-    const fetchMovements = useCallback(async (filters?: MovementFilter) => {
-        setIsLoading(true);
-        try {
-            // Alteração: Usamos query params para flexibilidade (Global vs Produto Único)
-            // O backend deve suportar receber os filtros via query string
             const response = await api.get<InventoryTransaction[]>('/inventory/kardex', {
                 params: filters
             });
             setTransactions(response.data);
-        } catch (error) {
-            console.error('Erro ao buscar movimentações:', error);
+        } catch (err: any) {
+            console.error('❌ [useStockMovements] Erro ao buscar Kardex:', err);
+            const msg = err.response?.data?.message || 'Falha ao carregar o histórico de movimentações.';
+            setError(msg);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
+    // =========================================================================
+    // 🚀 O GATILHO DE IGNIÇÃO AUTOMÁTICO (Efeito Colateral Seguro)
+    // Dispara a busca global assim que o módulo/componente é montado.
+    // Na arquitetura Master-Detail, isso garante que o painel lateral já abra
+    // buscando os dados caso o componente seja renderizado condicionalmente.
+    // =========================================================================
+    useEffect(() => {
+        fetchMovements();
+    }, [fetchMovements]);
+
     /**
-     * Mantive a assinatura antiga para compatibilidade, mas redirecionando para a nova lógica.
-     * Isso evita quebrar telas que já usam fetchKardex(id).
+     * @method fetchKardex
+     * @description Facade (Fachada) mantida para retrocompatibilidade e conveniência.
+     * Um atalho limpo e semântico para buscar a timeline de uma variante específica
+     * sem precisar instanciar o objeto de filtros manualmente.
+     * @param variantId O UUID da variação do produto.
      */
     const fetchKardex = useCallback(async (variantId: string) => {
         if (!variantId) return;
@@ -79,18 +69,22 @@ export function useStockMovements() {
     }, [fetchMovements]);
 
     /**
-     * Limpa o estado atual das transações
+     * @method clearTransactions
+     * @description Utilitário de Limpeza (Garbage Collection visual). 
+     * Limpa o estado atual da lista. Vital para evitar "fantasmas" na UI 
+     * ao trocar rapidamente entre a visão detalhada de dois produtos diferentes.
      */
     const clearTransactions = useCallback(() => {
         setTransactions([]);
+        setError(null);
     }, []);
 
     return {
         transactions,
         isLoading,
-        registerMovement,
-        fetchMovements, // Nova função flexível
-        fetchKardex,    // Mantida para retrocompatibilidade
+        error,
+        fetchMovements,
+        fetchKardex,
         clearTransactions
     };
 }

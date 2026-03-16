@@ -137,3 +137,33 @@ export interface MovementFilter {
     page?: number;
     limit?: number;
 }
+
+// Adicione este bloco no seu InventoryTypes.ts
+
+/**
+ * @interface InventoryStock
+ * @description Representa a fotografia atual do saldo na prateleira.
+ * Retornado pela rota Master (/balances).
+ */
+export interface InventoryStock {
+    id: string;
+    warehouseId: string;
+    variantId: string;
+    
+    // Saldos
+    quantity: number;           // Físico na prateleira
+    reservedQuantity: number;   // Reservado (Pedidos pendentes)
+    
+    updatedAt: string;
+
+    // Relações Expandidas (Trazidas via Join pelo Backend)
+    warehouse?: Warehouse;
+    variant?: {
+        id: string;
+        sku: string;
+        name?: string;
+        product?: {
+            name: string;
+        };
+    };
+}

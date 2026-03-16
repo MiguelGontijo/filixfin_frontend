@@ -17,10 +17,13 @@ import { MovementsTab } from '../components/tabs/MovementsTab';
 import { WarehousesTab } from '../components/tabs/WarehousesTab';
 
 // --- Imports Cross-Module (Reutilização de Componentes Existentes) ---
-import { FiscalList } from '../../fiscal/components/FiscalList';
 import { useAIContextInjector } from '@/core/ai/hooks/useAIContextInjector';
 import { FeatureKeys } from '@/core/ai/types/enums/AIEnums';
 import { CategoryRegistry } from '../registries/CategoryRegistry';
+import { FiscalRegistry } from '@/modules/fiscal/registries/FiscalRegistry';
+import { ProductRegistry } from '../registries/ProductRegistry';
+import { WarehouseRegistry } from '@/modules/inventory/registries/WarehouseRegistry';
+import { InventoryRegistry } from '@/modules/inventory/registries/InventoryRegistry';
 
 export type ProductViewType = 
     | 'OVERVIEW'
@@ -67,21 +70,16 @@ export const ProductContainer: React.FC<ProductContainerProps> = ({
             case 'OVERVIEW':
                 return <OverviewTab />;
             case 'CATALOG':
-                return <CatalogTab />;
+                return <ProductRegistry />;
             case 'MOVEMENTS':
-                return <MovementsTab />;
+                return <InventoryRegistry />;
             case 'WAREHOUSES':
-                return <WarehousesTab />;
+                return <WarehouseRegistry />;
             case 'CATEGORIES':
                 // Nova implementação: Componente nativo do módulo Products
                 return <CategoryRegistry />;
             case 'FISCAL':
-                return (
-                    // Wrapper estilizado com tema Metálico para listas externas (Fiscal ainda é legado)
-                    <div className="bg-base-metallic rounded-xl shadow-lg border border-gray-700 overflow-hidden min-h-[500px]">
-                        <FiscalList />
-                    </div>
-                );
+                return <FiscalRegistry />
             default:
                 return <OverviewTab />;
         }

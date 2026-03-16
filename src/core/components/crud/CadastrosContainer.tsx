@@ -3,6 +3,8 @@
 'use client';
 
 import { FiscalRegistry } from '@/modules/fiscal/registries/FiscalRegistry';
+import { InventoryRegistry } from '@/modules/inventory/registries/InventoryRegistry';
+import { WarehouseRegistry } from '@/modules/inventory/registries/WarehouseRegistry';
 import { CategoryRegistry } from '@/modules/products/registries/CategoryRegistry';
 import { ProductRegistry } from '@/modules/products/registries/ProductRegistry';
 import React, { useState, useMemo } from 'react';
@@ -39,7 +41,7 @@ const RegistryPlaceholder: React.FC<{ title: string, icon: React.ReactNode }> = 
 export const CadastrosContainer: React.FC = () => {
     
     // O Estado que guarda o ID do cadastro atualmente visível na tela
-    const [activeRegistryId, setActiveRegistryId] = useState<string>('CATEGORIES');
+    const [activeRegistryId, setActiveRegistryId] = useState<string>('PRODUCTS');
 
     // =========================================================================
     // 🗺️ O MAPA DE NAVEGAÇÃO (Menu Lateral)
@@ -47,21 +49,21 @@ export const CadastrosContainer: React.FC = () => {
     // =========================================================================
     const menuGroups = useMemo(() => [
         {
+            module: 'CRM & Vendas',
+            icon: <FaChartLine />,
+            items: [
+                { id: 'DEAL', label: 'Deals' },
+                { id: 'PIPELINE', label: 'Pipelines' },
+            ]
+        },
+        {
             module: 'Produtos & Estoque',
             icon: <FaBoxOpen />,
             items: [
                 { id: 'PRODUCTS', label: 'Produtos' },
                 { id: 'CATEGORIES', label: 'Categorias de Produto' },
-                { id: 'BRANDS', label: 'Marcas / Fabricantes' },
-                { id: 'UNITS', label: 'Unidades de Medida' },
-            ]
-        },
-        {
-            module: 'CRM & Vendas',
-            icon: <FaChartLine />,
-            items: [
-                { id: 'LOSS_REASONS', label: 'Motivos de Perda' },
-                { id: 'LEAD_SOURCES', label: 'Origens de Lead' },
+                { id: 'WAREHOUSES', label: 'Warehouses' },
+                { id: 'INVENTORY', label: 'Inventário' },
             ]
         },
         {
@@ -69,7 +71,6 @@ export const CadastrosContainer: React.FC = () => {
             icon: <FaFileInvoiceDollar />,
             items: [
                 { id: 'FISCAL_GROUPS', label: 'Grupos Fiscais' },
-                { id: 'TAX_RULES', label: 'Regras de Imposto' },
             ]
         },
         {
@@ -90,7 +91,9 @@ export const CadastrosContainer: React.FC = () => {
         // 'CATEGORIES': <CategoryRegistry />, // <- Descomente isso quando o CategoryRegistry estiver pronto!
         'PRODUCTS': < ProductRegistry/>,
         'CATEGORIES': <CategoryRegistry />,
-
+        'WAREHOUSES': <WarehouseRegistry />,
+        'INVENTORY': <InventoryRegistry />,
+        
         // 'CATEGORIES': <RegistryPlaceholder title="Categorias de Produto" icon={<FaTags />} />,
         'BRANDS': <RegistryPlaceholder title="Marcas / Fabricantes" icon={<FaBoxOpen />} />,
         'UNITS': <RegistryPlaceholder title="Unidades de Medida" icon={<FaBalanceScale />} />,

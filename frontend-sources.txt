@@ -17,15 +17,6 @@
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── crm
 │   │   │   │   │   └── page.tsx
-│   │   │   │   ├── fiscal
-│   │   │   │   │   └── page.tsx
-│   │   │   │   ├── inventory
-│   │   │   │   │   ├── movements
-│   │   │   │   │   │   └── page.tsx
-│   │   │   │   │   └── warehouses
-│   │   │   │   │       ├── [id]
-│   │   │   │   │       │   └── page.tsx
-│   │   │   │   │       └── page.tsx
 │   │   │   │   ├── products
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── schedule
@@ -204,30 +195,27 @@
 │   │   │       └── pipeline.types.ts
 │   │   ├── fiscal
 │   │   │   ├── components
-│   │   │   │   ├── FiscalForm.tsx
-│   │   │   │   ├── FiscalList.tsx
-│   │   │   │   └── FiscalListGrid.tsx
+│   │   │   │   └── TaxRuleManager.tsx
 │   │   │   ├── hooks
 │   │   │   │   ├── useFiscal.ts
 │   │   │   │   └── useFiscalMutation.ts
+│   │   │   ├── registries
+│   │   │   │   └── FiscalRegistry.tsx
 │   │   │   ├── schemas
 │   │   │   │   └── fiscalSchema.ts
 │   │   │   └── types.ts
 │   │   ├── inventory
-│   │   │   ├── components
-│   │   │   │   ├── drawers
-│   │   │   │   │   ├── ManageWarehouseDrawer.tsx
-│   │   │   │   │   └── RegisterMovementDrawer.tsx
-│   │   │   │   ├── forms
-│   │   │   │   │   ├── MovementForm.tsx
-│   │   │   │   │   └── WarehouseForm.tsx
-│   │   │   │   ├── MovementsList.tsx
-│   │   │   │   └── WarehousesList.tsx
 │   │   │   ├── hooks
+│   │   │   │   ├── useStockMovementMutation.ts
 │   │   │   │   ├── useStockMovements.ts
+│   │   │   │   ├── useWarehouseMutation.ts
 │   │   │   │   └── useWarehouses.ts
-│   │   │   ├── presentation
-│   │   │   │   └── MovementsContainer.tsx
+│   │   │   ├── registries
+│   │   │   │   ├── InventoryRegistry.tsx
+│   │   │   │   └── WarehouseRegistry.tsx
+│   │   │   ├── schemas
+│   │   │   │   ├── inventorySchema.ts
+│   │   │   │   └── warehouseSchema.ts
 │   │   │   └── types
 │   │   │       └── InventoryTypes.ts
 │   │   ├── products
@@ -382,7 +370,7 @@ export default eslintConfig;
 
 /// <reference types="next" />
 /// <reference types="next/image-types/global" />
-import "./.next/types/routes.d.ts";
+import "./.next/dev/types/routes.d.ts";
 
 // NOTE: This file should not be edited
 // see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
@@ -612,153 +600,6 @@ import { CRMContainer } from '@/modules/crm/presentation/CRMContainer';
  */
 export default function CRMPage() {
     return <CRMContainer />;
-}
-
-
-// ===== FILE: src/app/[tenantId]/dashboard/fiscal/page.tsx =====
-
-import { FiscalList } from '@/modules/fiscal/components/FiscalList';
-
-/**
- * Rota Principal do Módulo Fiscal.
- * * URL: /[tenantId]/dashboard/fiscal
- * * Responsabilidade: Renderizar o Container de Listagem (Smart Component).
- * * Nota: A lógica de estado e dados reside dentro de <FiscalList />.
- */
-export default function FiscalPage() {
-    return <FiscalList />;
-}
-
-
-// ===== FILE: src/app/[tenantId]/dashboard/inventory/movements/page.tsx =====
-
-// src/app/[tenantId]/dashboard/inventory/movements/page.tsx
-
-import React from 'react';
-import { MovementsContainer } from '@/modules/inventory/presentation/MovementsContainer';
-
-/**
- * @page MovementsPage
- * @description Rota para o histórico de movimentações.
- * Implementa o padrão "Dumb Page", delegando toda a UI para o Container do módulo.
- */
-export default function MovementsPage() {
-    return <MovementsContainer />;
-}
-
-
-// ===== FILE: src/app/[tenantId]/dashboard/inventory/warehouses/[id]/page.tsx =====
-
-'use client';
-
-import React, { useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-// Uso do alias conforme solicitado
-import { WarehouseForm } from '@/modules/inventory/components/forms/WarehouseForm';
-import { useWarehouses } from '@/modules/inventory/hooks/useWarehouses';
-
-interface Props {
-    params: {
-        tenantId: string;
-        id: string;
-    };
-}
-
-/**
- * Rota: /dashboard/inventory/warehouses/[id]
- * Responsabilidade: Página de Edição. Busca o dado e alimenta o formulário.
- */
-export default function EditWarehousePage({ params }: Props) {
-    const router = useRouter();
-    const { warehouses, isLoading, fetchWarehouses } = useWarehouses();
-
-    // 1. Garante que os dados estão carregados
-    useEffect(() => {
-        fetchWarehouses();
-    }, [fetchWarehouses]);
-
-    // 2. Busca o depósito específico na lista carregada
-    const warehouse = useMemo(() => {
-        return warehouses.find((w) => w.id === params.id);
-    }, [warehouses, params.id]);
-
-    // 3. Renderização Condicional (Loading / Not Found / Form)
-    if (isLoading) {
-        return (
-            <div className="flex h-full items-center justify-center p-12">
-                <div className="text-gray-400 text-sm animate-pulse">Carregando dados do depósito...</div>
-            </div>
-        );
-    }
-
-    if (!isLoading && !warehouse) {
-        return (
-            <main className="flex-1 w-full h-full p-6">
-                <div className="max-w-4xl mx-auto text-center py-12">
-                    <h3 className="text-lg font-medium text-gray-900">Depósito não encontrado</h3>
-                    <p className="mt-1 text-sm text-gray-500">O local que você está tentando editar não existe ou foi removido.</p>
-                    <button
-                        onClick={() => router.back()}
-                        className="mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-                    >
-                        Voltar
-                    </button>
-                </div>
-            </main>
-        );
-    }
-
-    return (
-        <main className="flex-1 w-full h-full p-6 overflow-y-auto">
-            <div className="max-w-4xl mx-auto">
-                <div className="mb-6 flex items-center text-sm text-gray-500">
-                    <span>Inventário</span>
-                    <span className="mx-2">/</span>
-                    <span>Depósitos</span>
-                    <span className="mx-2">/</span>
-                    <span className="font-medium text-gray-900">Editar: {warehouse?.name}</span>
-                </div>
-
-                {/* Renderiza o Formulário com os dados iniciais (initialData) */}
-                <WarehouseForm 
-                    tenantId={params.tenantId} 
-                    initialData={warehouse} 
-                />
-            </div>
-        </main>
-    );
-}
-
-
-// ===== FILE: src/app/[tenantId]/dashboard/inventory/warehouses/page.tsx =====
-
-import React from 'react';
-import { WarehousesList } from '@/modules/inventory/components/WarehousesList';
-
-interface Props {
-    params: {
-        tenantId: string;
-    };
-}
-
-/**
- * Rota: /dashboard/inventory/warehouses
- * Exibe a grade de depósitos cadastrados.
- */
-export default function WarehousesListPage({ params }: Props) {
-    return (
-        <main className="flex-1 w-full h-full p-6 overflow-y-auto">
-            <div className="max-w-7xl mx-auto">
-                <div className="mb-6 flex items-center text-sm text-gray-500">
-                    <span>Inventário</span>
-                    <span className="mx-2">/</span>
-                    <span className="font-medium text-gray-900">Depósitos</span>
-                </div>
-
-                <WarehousesList tenantId={params.tenantId} />
-            </div>
-        </main>
-    );
 }
 
 
@@ -4972,6 +4813,9 @@ export const ClientTablePage: React.FC = () => {
 
 'use client';
 
+import { FiscalRegistry } from '@/modules/fiscal/registries/FiscalRegistry';
+import { InventoryRegistry } from '@/modules/inventory/registries/InventoryRegistry';
+import { WarehouseRegistry } from '@/modules/inventory/registries/WarehouseRegistry';
 import { CategoryRegistry } from '@/modules/products/registries/CategoryRegistry';
 import { ProductRegistry } from '@/modules/products/registries/ProductRegistry';
 import React, { useState, useMemo } from 'react';
@@ -5021,8 +4865,8 @@ export const CadastrosContainer: React.FC = () => {
             items: [
                 { id: 'PRODUCTS', label: 'Produtos' },
                 { id: 'CATEGORIES', label: 'Categorias de Produto' },
-                { id: 'BRANDS', label: 'Marcas / Fabricantes' },
-                { id: 'UNITS', label: 'Unidades de Medida' },
+                { id: 'WAREHOUSES', label: 'Warehouses' },
+                { id: 'INVENTORY', label: 'Inventário' },
             ]
         },
         {
@@ -5038,7 +4882,6 @@ export const CadastrosContainer: React.FC = () => {
             icon: <FaFileInvoiceDollar />,
             items: [
                 { id: 'FISCAL_GROUPS', label: 'Grupos Fiscais' },
-                { id: 'CFOPS', label: 'Naturezas de Operação' },
                 { id: 'TAX_RULES', label: 'Regras de Imposto' },
             ]
         },
@@ -5060,7 +4903,9 @@ export const CadastrosContainer: React.FC = () => {
         // 'CATEGORIES': <CategoryRegistry />, // <- Descomente isso quando o CategoryRegistry estiver pronto!
         'PRODUCTS': < ProductRegistry/>,
         'CATEGORIES': <CategoryRegistry />,
-
+        'WAREHOUSES': <WarehouseRegistry />,
+        'INVENTORY': <InventoryRegistry />,
+        
         // 'CATEGORIES': <RegistryPlaceholder title="Categorias de Produto" icon={<FaTags />} />,
         'BRANDS': <RegistryPlaceholder title="Marcas / Fabricantes" icon={<FaBoxOpen />} />,
         'UNITS': <RegistryPlaceholder title="Unidades de Medida" icon={<FaBalanceScale />} />,
@@ -5070,8 +4915,7 @@ export const CadastrosContainer: React.FC = () => {
         'LEAD_SOURCES': <RegistryPlaceholder title="Origens de Lead" icon={<FaDatabase />} />,
 
         // MÓDULO: FISCAL
-        'FISCAL_GROUPS': <RegistryPlaceholder title="Grupos Fiscais" icon={<FaFileInvoiceDollar />} />,
-        'CFOPS': <RegistryPlaceholder title="Naturezas de Operação" icon={<FaFileInvoiceDollar />} />,
+        'FISCAL_GROUPS': <FiscalRegistry />,
         'TAX_RULES': <RegistryPlaceholder title="Regras de Imposto" icon={<FaFileInvoiceDollar />} />,
 
         // MÓDULO: SISTEMA
@@ -5159,10 +5003,12 @@ export const CadastrosContainer: React.FC = () => {
 
 // ===== FILE: src/core/components/crud/CrudForm.tsx =====
 
+// ===== FILE: src/core/components/crud/CrudForm.tsx =====
+
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useForm, Controller, FieldValues, SubmitHandler, DefaultValues } from 'react-hook-form';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useForm, Controller, FieldValues, SubmitHandler, DefaultValues, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FaTimes, FaSave, FaChevronDown, FaChevronUp, FaShieldAlt } from 'react-icons/fa';
 import { CrudConfig, CrudFieldConfig } from './types';
@@ -5176,9 +5022,10 @@ interface CrudFormProps<TData, TForm extends FieldValues> {
 }
 
 /**
- * @component CrudForm (A Impressora 3D)
- * @description Drawer universal que desenha inputs automaticamente baseado na config.
- * Utiliza Generics <T> para garantir que a tipagem do formulário seja idêntica à do Zod.
+ * @component CrudForm (A Impressora 3D - Motor V4.1)
+ * @description Drawer universal que desenha inputs automaticamente.
+ * CLASSE OURO: Implementa o "Absolute Reset" para evitar vazamento de memória
+ * em arrays complexos (Master-Detail) na transição de Edição para Criação.
  */
 export function CrudForm<TData, TForm extends FieldValues>({
     isOpen,
@@ -5192,32 +5039,59 @@ export function CrudForm<TData, TForm extends FieldValues>({
     const [showSystemInfo, setShowSystemInfo] = useState(false);
 
     // =========================================================================
-    // 🧠 O CÉREBRO DO FORMULÁRIO (React Hook Form + Zod)
+    // 🧹 GHOST-BUSTER (O Gerador de Estado Vazio)
+    // O RHF não limpa arrays (useFieldArray) automaticamente com um `reset({})`.
+    // Nós mapeamos a configuração para forçar a limpeza estrutural de tudo.
     // =========================================================================
+    const defaultFormValues = useMemo(() => {
+        const defaults: any = {};
+        config.fields.forEach(field => {
+            if (field.type === 'custom') {
+                // 💡 A MÁGICA: Se for um array/grid customizado, cravamos [] (Vazio).
+                // Isso diz ao RHF: "Destrua as regras da memória agora!"
+                defaults[field.name] = []; 
+            } else if (field.type === 'boolean') {
+                defaults[field.name] = true;
+            } else {
+                defaults[field.name] = '';
+            }
+        });
+        return defaults as DefaultValues<TForm>;
+    }, [config.fields]);
+
+    // =========================================================================
+    // 🧠 O CÉREBRO DO FORMULÁRIO
+    // =========================================================================
+    const formContext = useForm<TForm>({
+        resolver: zodResolver(config.schema as any),
+        mode: 'onChange',
+        defaultValues: defaultFormValues // Injeta o estado vazio como base
+    });
+
     const {
         register,
         handleSubmit,
         reset,
         control,
         formState: { errors }
-    } = useForm<TForm>({
-        resolver: zodResolver(config.schema as any), // Conecta a validação Zod!
-        mode: 'onChange', // Valida em tempo real enquanto o usuário digita
-    });
+    } = formContext;
 
-    // Hidratação: Preenche ou limpa o formulário sempre que abrir/fechar
+    // =========================================================================
+    // 💧 HIDRATAÇÃO E DELTA SYNC
+    // =========================================================================
     useEffect(() => {
         if (isOpen) {
             if (initialData) {
-                // MODO EDIÇÃO: Preenche com os dados existentes
+                // MODO EDIÇÃO: Preenche com os dados do banco (trazendo as regras com IDs)
                 reset(initialData as DefaultValues<TForm>);
             } else {
-                // MODO CRIAÇÃO: Reseta para vazio (pega defaults do Zod)
-                // O cast vazio {} as T é seguro pois o Zod resolverá os campos obrigatórios
-                reset({} as DefaultValues<TForm>); 
+                // 💡 MODO CRIAÇÃO (O Bloqueio do Roubo Relacional):
+                // Injetamos o `defaultFormValues` explícito. O array `rules` será cravado
+                // como `[]`, e o formulário abrirá 100% virgem e seguro.
+                reset(defaultFormValues); 
             }
         }
-    }, [isOpen, initialData, reset]);
+    }, [isOpen, initialData, reset, defaultFormValues]);
 
     // =========================================================================
     // ⚙️ HANDLERS
@@ -5226,10 +5100,9 @@ export function CrudForm<TData, TForm extends FieldValues>({
         setIsSubmitting(true);
         try {
             await onSubmit(data);
-            onClose(); // Só fecha se a mutação na API der sucesso
+            onClose(); 
         } catch (error) {
             console.error('❌ [CrudForm] Erro ao salvar:', error);
-            // Os erros de API (como "Nome já existe") podem ser tratados pelo Toast global
         } finally {
             setIsSubmitting(false);
         }
@@ -5241,9 +5114,7 @@ export function CrudForm<TData, TForm extends FieldValues>({
     const renderField = (field: CrudFieldConfig<TForm>) => {
         const fieldName = String(field.name);
         const hasError = !!errors[fieldName];
-        const errorMessage = errors[fieldName]?.message as string;
 
-        // Classes base compartilhadas para manter o Design System (Dark/Metallic)
         const baseInputClasses = `
             w-full bg-gray-900 border rounded-lg px-3 py-2.5 text-sm text-white 
             focus:outline-none transition-all placeholder-gray-600
@@ -5263,7 +5134,6 @@ export function CrudForm<TData, TForm extends FieldValues>({
                         type={field.type === 'number' || field.type === 'currency' ? 'number' : 'text'}
                         step={field.type === 'currency' ? '0.01' : undefined}
                         {...register(field.name as any, { 
-                            // Garante que números não virem strings "10" na hora de enviar pro Zod
                             setValueAs: v => (field.type === 'number' || field.type === 'currency') ? (v === '' ? undefined : Number(v)) : v 
                         })}
                         placeholder={field.placeholder}
@@ -5305,8 +5175,6 @@ export function CrudForm<TData, TForm extends FieldValues>({
                 );
 
             case 'boolean':
-                // Para booleanos (Toggle), usamos o Controller do React Hook Form
-                // pois elementos customizados precisam de gerenciamento de estado controlado
                 return (
                     <Controller
                         name={field.name as any}
@@ -5342,19 +5210,23 @@ export function CrudForm<TData, TForm extends FieldValues>({
                     />
                 );
 
+            case 'custom':
+                if (field.customRender) {
+                    return field.customRender(formContext);
+                }
+                return (
+                    <div className="p-3 bg-red-900/20 text-red-400 text-xs rounded border border-red-500/50">
+                        ⚠️ Desenvolvedor: Forneça a propriedade `customRender` para o campo '{fieldName}'.
+                    </div>
+                );
+
             default:
                 return null;
         }
     };
 
-    // Se o Drawer estiver fechado, não carrega a árvore no DOM
     if (!isOpen) return null;
 
-    // =========================================================================
-    // 🖼️ A ESTRUTURA VISUAL DO DRAWER
-    // =========================================================================
-    // Se o Drawer estiver fechado, evitamos que ele bloqueie os cliques
-    // Mantemos ele no DOM para a animação de saída funcionar suavemente
     return (
         <div 
             className={`
@@ -5365,8 +5237,6 @@ export function CrudForm<TData, TForm extends FieldValues>({
         >
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                 
-                {/* O SEU CABEÇALHO, FORMULÁRIO E BOTÕES CONTINUAM EXATAMENTE AQUI DENTRO, SEM MUDAR NADA */} 
-                {/* Header Dinâmico */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-700 bg-gray-900/50 flex-shrink-0">
                     <div>
                         <h3 className="text-lg font-semibold text-base-text leading-tight">
@@ -5385,36 +5255,32 @@ export function CrudForm<TData, TForm extends FieldValues>({
                     </button>
                 </div>
 
-                {/* Corpo Form: O Loop Mágico */}
                 <form id="crud-form" onSubmit={handleSubmit(handleFormSubmit)} className="flex-1 p-6 space-y-5 overflow-y-auto custom-scrollbar">
                     
                     {config.fields.map((field) => {
                         const fieldName = String(field.name);
                         const hasError = !!errors[fieldName];
+                        const errorMessage = errors[fieldName]?.message as string;
+                        const displayError = typeof errorMessage === 'string' ? errorMessage : undefined;
 
                         return (
                             <div key={fieldName} className="space-y-1.5 animate-fade-in">
                                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                                     {field.label}
-                                    {/* Asterisco se o Zod exigir o campo (Não é opcional) */}
                                     {!config.schema.isOptional() && <span className="text-accent-primary ml-1">*</span>}
                                 </label>
                                 
                                 {renderField(field)}
                                 
-                                {/* Mensagem de Erro Injetada Automaticamente pelo Zod */}
-                                {hasError && (
+                                {hasError && displayError && (
                                     <p className="text-[10px] text-red-400 mt-1 font-medium">
-                                        {errors[fieldName]?.message as string}
+                                        {displayError}
                                     </p>
                                 )}
                             </div>
                         );
                     })}
 
-                    {/* ========================================================================= */}
-                    {/* 🛡️ SANFONA DE AUDITORIA E SISTEMA (Visível apenas em Modo Edição) */}
-                    {/* ========================================================================= */}
                     {initialData && config.systemFields && config.systemFields.length > 0 && (
                         <div className="pt-4 mt-6 border-t border-gray-800/50 animate-fade-in flex-shrink-0">
                             <button
@@ -5429,8 +5295,7 @@ export function CrudForm<TData, TForm extends FieldValues>({
                                 {showSystemInfo ? <FaChevronUp className="w-3 h-3 text-gray-500" /> : <FaChevronDown className="w-3 h-3 text-gray-500" />}
                             </button>
 
-                            {/* O Corpo da Sanfona */}
-                            {showSystemInfo && (
+                           {showSystemInfo && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-3 p-5 bg-gray-900/50 border border-gray-800/50 rounded-lg shadow-inner animate-fade-in">
                                     {config.systemFields.map((field) => {
                                         const fieldName = String(field.name);
@@ -5439,9 +5304,9 @@ export function CrudForm<TData, TForm extends FieldValues>({
                                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                                                     {field.label}
                                                 </label>
-                                                {/* Forçamos os campos de sistema a serem Read-Only visualmente */}
                                                 <div className="opacity-60 pointer-events-none grayscale">
-                                                    {renderField({ ...field, disabled: true })}
+                                                    {/* 💡 FIX TS 2345: Assinatura de contrato garantida para o motor de renderização */}
+                                                    {renderField({ ...field, disabled: true } as unknown as CrudFieldConfig<TForm>)}
                                                 </div>
                                             </div>
                                         );
@@ -5450,10 +5315,8 @@ export function CrudForm<TData, TForm extends FieldValues>({
                             )}
                         </div>
                     )}
-
                 </form>
 
-                {/* Footer (Ações) */}
                 <div className="p-6 border-t border-gray-700 bg-gray-900/30 flex justify-end gap-3 flex-shrink-0">
                     <button
                         type="button"
@@ -5482,7 +5345,6 @@ export function CrudForm<TData, TForm extends FieldValues>({
                         )}
                     </button>
                 </div>
-
             </div>
         </div>
     );
@@ -5812,17 +5674,20 @@ export function CrudTable<T extends { id: string }>({
 
 // ===== FILE: src/core/components/crud/types.ts =====
 
+// ===== FILE: src/core/components/crud/types.ts =====
+
 import { z } from 'zod';
-import { FieldValues } from 'react-hook-form';
+import { FieldValues, UseFormReturn } from 'react-hook-form';
 
 /**
  * @type CrudFieldType
  * @description Os tipos de inputs que a nossa "Impressora 3D" (CrudForm) sabe desenhar.
+ * CLASSE OURO: Adicionado o tipo 'custom' para suportar Master-Detail (Arrays, Grids).
  */
 export type CrudFieldType = 
     | 'text' 
     | 'number' 
-    | 'boolean' // Renderiza um Toggle/Switch
+    | 'boolean' 
     | 'textarea' 
     | 'select' 
     | 'currency'
@@ -5830,7 +5695,8 @@ export type CrudFieldType =
     | 'date'
     | 'datetime'
     | 'time'
-    | 'file';
+    | 'file'
+    | 'custom'; // 👈 NOVO: O portal para componentes complexos (Ex: Grade de Variantes, Regras Fiscais)
 
 export interface CrudFieldOption {
     label: string;
@@ -5841,21 +5707,24 @@ export interface CrudFieldOption {
  * @interface CrudFieldConfig
  * @description Configuração individual de cada campo do formulário.
  */
-export interface CrudFieldConfig<TForm> {
+export interface CrudFieldConfig<TForm extends FieldValues> {
     name: keyof TForm;
     label: string;
     type: CrudFieldType;
     placeholder?: string;
     disabled?: boolean;
-    options?: CrudFieldOption[]; // Exclusivo para type === 'select'
+    options?: CrudFieldOption[]; 
     
-    // =========================================================================
-    // 🎚️ CUSTOMIZAÇÃO DO SWITCH (Feature V3)
-    // Permite transformar o toggle padrão (Ativo/Inativo) em opções de negócios.
-    // Ex: trueLabel: 'Produto', falseLabel: 'Serviço'
-    // =========================================================================
+    // Customização do Switch
     trueLabel?: string;  
     falseLabel?: string; 
+
+    // =========================================================================
+    // 🧩 RENDERIZADOR CUSTOMIZADO (Feature V4)
+    // Permite injetar um componente React inteiro dentro do formulário.
+    // Ele recebe o contexto completo do 'useForm' para poder manipular arrays (useFieldArray).
+    // =========================================================================
+    customRender?: (formContext: UseFormReturn<TForm>) => React.ReactNode;
 }
 
 /**
@@ -5864,27 +5733,21 @@ export interface CrudFieldConfig<TForm> {
  */
 export interface CrudColumnConfig<TData> {
     header: string;
-    // O accessor pode ser a chave direta do objeto ou uma função que retorna um JSX customizado (ex: Badges coloridas)
     accessor: keyof TData | ((item: TData) => React.ReactNode);
 }
 
 /**
  * @interface CrudConfig
- * @description O "Manual de Instruções" central que dita como o CrudLayout e o CrudForm vão se comportar.
+ * @description O "Manual de Instruções" central do Motor V3.
  */
 export interface CrudConfig<TData, TForm extends FieldValues> {
     title: string;
     description?: string;
-    schema: z.ZodType<TForm>; // Acordo de Paz: O Zod que validará as entradas
-    columns: CrudColumnConfig<TData>[]; // Colunas da Tabela
-    fields: CrudFieldConfig<TForm>[];   // Campos do Formulário
+    schema: z.ZodType<TForm>; 
+    columns: CrudColumnConfig<TData>[]; 
+    fields: CrudFieldConfig<TForm>[];   
     
-    // =========================================================================
-    // 🛡️ DADOS DE SISTEMA / AUDITORIA (Feature V3)
-    // Se preenchido, o CrudForm renderizará um Accordion no final da tela 
-    // com campos de somente-leitura (Data de Criação, IDs, Slugs, etc).
-    // =========================================================================
-    systemFields?: CrudFieldConfig<TForm>[]; 
+    systemFields?: CrudFieldConfig<any>[]; 
 }
 
 /**
@@ -13383,456 +13246,234 @@ export interface IUpdatePipelineDTO {
 }
 
 
-// ===== FILE: src/modules/fiscal/components/FiscalForm.tsx =====
+// ===== FILE: src/modules/fiscal/components/TaxRuleManager.tsx =====
 
 'use client';
 
-import { useState, FormEvent } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
-import { FaSave, FaArrowLeft } from 'react-icons/fa';
-
-// Importação dos Hooks e Tipos
-import { useFiscalMutation } from '../hooks/useFiscalMutation';
-import { ICreateFiscalGroupDTO } from '../types';
+import React from 'react';
+import { useFieldArray, UseFormReturn } from 'react-hook-form';
+import { FaPlus, FaTrash, FaGlobeAmericas, FaMapMarkerAlt, FaPercent, FaFileInvoice } from 'react-icons/fa';
 
 /**
- * Formulário de Criação de Grupo Fiscal.
- * * Responsabilidade:
- * - Coletar dados de NCM e Alíquotas.
- * - Converter inputs numéricos corretamente.
- * - Submeter via Mutation e redirecionar.
+ * @interface TaxRuleManagerProps
+ * @description Recebe o controle total do formulário pai via portal customRender.
  */
-export function FiscalForm() {
-    // 1. Contexto e Navegação
-    const router = useRouter();
-    const params = useParams();
-    const tenantId = params.tenantId as string;
+interface TaxRuleManagerProps {
+    formContext: UseFormReturn<any>;
+}
 
-    // 2. Hook de Mutação
-    const { createFiscalGroup, isLoading, error } = useFiscalMutation();
+/**
+ * @component TaxRuleManager
+ * @description O Motor Visual da Matriz Tributária.
+ * Permite adicionar, editar e remover regras fiscais dinamicamente.
+ */
+export function TaxRuleManager({ formContext }: TaxRuleManagerProps) {
+    const { control, register, formState: { errors } } = formContext;
 
-    // 3. Estado Local
-    // Iniciamos com valores zerados para os impostos
-    const [formData, setFormData] = useState<ICreateFiscalGroupDTO>({
-        name: '',
-        ncmDefault: '',
-        icms: 0,
-        pis: 0,
-        cofins: 0
+    // =========================================================================
+    // 🧠 O CÉREBRO DO ARRAY DINÂMICO
+    // =========================================================================
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: 'rules', // O nome exato do array no nosso Zod Schema
     });
 
-    // 4. Handlers
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-
-        // Validação simples de campos obrigatórios
-        if (!formData.name.trim() || !formData.ncmDefault.trim()) {
-            alert('Por favor, preencha o Nome e o NCM Padrão.');
-            return;
-        }
-
-        // Envio dos dados
-        const result = await createFiscalGroup(formData);
-        
-        // Redirecionamento em caso de sucesso
-        if (result) {
-            router.push(`/${tenantId}/dashboard/fiscal`);
-        }
+    // Função para adicionar uma nova linha em branco (SEMPRE sem ID, garantindo que seja uma criação nova)
+    const handleAddRule = () => {
+        append({
+            ufOrigem: '',
+            ufDestino: '',
+            cfopState: '',
+            cfopInterstate: '',
+            cstCsosn: '',
+            icmsRate: 0,
+            pisRate: 0,
+            cofinsRate: 0,
+        });
     };
 
-    /**
-     * Gerencia a alteração dos inputs, tratando conversão numérica.
-     */
-    const handleChange = (field: keyof ICreateFiscalGroupDTO, value: string) => {
-        // Lista de campos que são numéricos no DTO
-        const numericFields = ['icms', 'pis', 'cofins'];
-
-        if (numericFields.includes(field)) {
-            // Converte para float, aceitando input vazio como 0 temporariamente
-            const numValue = parseFloat(value);
-            setFormData(prev => ({ 
-                ...prev, 
-                [field]: isNaN(numValue) ? 0 : numValue 
-            }));
-        } else {
-            // Campos de texto normal
-            setFormData(prev => ({ ...prev, [field]: value }));
-        }
-    };
+    // 💡 FIX CLASSE OURO (TypeScript 7053):
+    // Como o 'errors.rules' pode ser o erro geral do Array OU um mapa de erros por índice,
+    // nós fazemos uma coerção segura para um Record (Dicionário numérico) para o TS não reclamar.
+    const safeRulesErrors = errors.rules as unknown as Record<number, any>;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6 p-6 animate-fade-in">
-            {/* Header com Navegação de Voltar */}
-            <div className="flex items-center gap-4">
-                <Link 
-                    href={`/${tenantId}/dashboard/fiscal`}
-                    className="p-2 rounded-lg bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-                >
-                    <FaArrowLeft />
-                </Link>
+        <div className="space-y-4 animate-fade-in mt-6 border-t border-gray-700/50 pt-6">
+            
+            {/* --- CABEÇALHO DO GESTOR --- */}
+            <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Novo Grupo Fiscal</h1>
-                    <p className="text-sm text-gray-400">Defina as alíquotas e classificação padrão</p>
+                    <h4 className="text-sm font-bold text-gray-300 uppercase tracking-widest flex items-center gap-2">
+                        <FaFileInvoice className="text-accent-primary" />
+                        Matriz de Regras de Imposto
+                    </h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                        Defina a regra padrão global e adicione exceções por Estado (UF).
+                    </p>
                 </div>
-            </div>
-
-            {/* Tratamento de Erro da API */}
-            {error && (
-                <div className="p-4 bg-red-900/20 border border-red-500/50 text-red-200 rounded-lg text-sm flex items-center gap-2">
-                    <span>⚠️</span>
-                    {error}
-                </div>
-            )}
-
-            {/* Formulário */}
-            <form onSubmit={handleSubmit} className="bg-base-metallic p-6 rounded-lg border border-gray-700 shadow-lg space-y-6">
                 
-                {/* Seção 1: Identificação */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Campo Nome */}
-                    <div className="space-y-2">
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-400">
-                            Nome do Grupo <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="name"
-                            type="text"
-                            value={formData.name}
-                            onChange={(e) => handleChange('name', e.target.value)}
-                            placeholder="Ex: Revenda Mercadoria, Serviço..."
-                            className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-accent-primary focus:border-transparent outline-none transition-all placeholder-gray-600"
-                            disabled={isLoading}
-                            autoFocus
-                        />
-                    </div>
-
-                    {/* Campo NCM */}
-                    <div className="space-y-2">
-                        <label htmlFor="ncm" className="block text-sm font-medium text-gray-400">
-                            NCM Padrão <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="ncm"
-                            type="text"
-                            value={formData.ncmDefault}
-                            onChange={(e) => handleChange('ncmDefault', e.target.value)}
-                            placeholder="Ex: 8517.12.31"
-                            className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white font-mono focus:ring-2 focus:ring-accent-primary focus:border-transparent outline-none transition-all placeholder-gray-600"
-                            disabled={isLoading}
-                        />
-                        <p className="text-xs text-gray-500">Código NCM usado por padrão nas notas fiscais.</p>
-                    </div>
-                </div>
-
-                {/* Seção 2: Tributação */}
-                <div className="border-t border-gray-700 pt-6">
-                    <h3 className="text-sm font-bold text-gray-300 mb-4 uppercase tracking-wider flex items-center gap-2">
-                        <span className="w-1 h-4 bg-accent-primary rounded-full"></span>
-                        Alíquotas de Imposto (%)
-                    </h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* ICMS */}
-                        <div className="space-y-2">
-                            <label htmlFor="icms" className="block text-xs font-medium text-blue-400">
-                                ICMS %
-                            </label>
-                            <input
-                                id="icms"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                max="100"
-                                value={formData.icms}
-                                onChange={(e) => handleChange('icms', e.target.value)}
-                                className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                disabled={isLoading}
-                            />
-                        </div>
-
-                        {/* PIS */}
-                        <div className="space-y-2">
-                            <label htmlFor="pis" className="block text-xs font-medium text-green-400">
-                                PIS %
-                            </label>
-                            <input
-                                id="pis"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                max="100"
-                                value={formData.pis}
-                                onChange={(e) => handleChange('pis', e.target.value)}
-                                className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
-                                disabled={isLoading}
-                            />
-                        </div>
-
-                        {/* COFINS */}
-                        <div className="space-y-2">
-                            <label htmlFor="cofins" className="block text-xs font-medium text-yellow-400">
-                                COFINS %
-                            </label>
-                            <input
-                                id="cofins"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                max="100"
-                                value={formData.cofins}
-                                onChange={(e) => handleChange('cofins', e.target.value)}
-                                className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none transition-all"
-                                disabled={isLoading}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Footer de Ações */}
-                <div className="pt-6 border-t border-gray-700 flex justify-end gap-3">
-                    <Link href={`/${tenantId}/dashboard/fiscal`}>
-                        <button 
-                            type="button" 
-                            className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors font-medium"
-                            disabled={isLoading}
-                        >
-                            Cancelar
-                        </button>
-                    </Link>
-                    
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="flex items-center gap-2 bg-accent-primary hover:bg-accent-primary/90 text-base-dark font-bold py-2 px-6 rounded-lg transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isLoading ? (
-                            <>
-                                <span className="animate-spin">⏳</span> Salvando...
-                            </>
-                        ) : (
-                            <>
-                                <FaSave /> Salvar Configuração
-                            </>
-                        )}
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
-}
-
-
-// ===== FILE: src/modules/fiscal/components/FiscalList.tsx =====
-
-'use client';
-
-import { useEffect } from 'react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { FaPlus, FaBalanceScale } from 'react-icons/fa';
-
-// Importação dos Hooks (serão criados nos próximos passos)
-import { useFiscal } from '../hooks/useFiscal';
-import { useFiscalMutation } from '../hooks/useFiscalMutation';
-
-// Importação do Componente Visual
-import { FiscalListGrid } from './FiscalListGrid';
-
-/**
- * Container Principal da Listagem Fiscal.
- * * Tipo: Smart Component.
- * * Responsabilidade:
- * - Gerenciar o estado da tela (Loading, Erro).
- * - Chamar os Hooks de API (useFiscal, useFiscalMutation).
- * - Renderizar o Cabeçalho e passar dados para o Grid.
- */
-export function FiscalList() {
-    // 1. Contexto
-    const params = useParams();
-    const tenantId = params.tenantId as string;
-
-    // 2. Hooks de Dados e Mutação
-    const { fiscalGroups, isLoading, error, refreshFiscalGroups } = useFiscal();
-    const { deleteFiscalGroup } = useFiscalMutation();
-
-    // 3. Efeitos (Busca inicial)
-    useEffect(() => {
-        refreshFiscalGroups();
-    }, [refreshFiscalGroups]);
-
-    // 4. Handlers
-    const handleDelete = async (id: string) => {
-        // Confirmação nativa para evitar dependências extras
-        if (!window.confirm('Tem certeza que deseja remover este grupo fiscal? Isso pode afetar produtos vinculados.')) return;
-        
-        const success = await deleteFiscalGroup(id);
-        if (success) {
-            await refreshFiscalGroups();
-        }
-    };
-
-    return (
-        <div className="w-full space-y-6 p-6 animate-fade-in">
-            {/* Header da Página */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-base-metallic p-4 rounded-lg border border-gray-700 shadow-lg">
-                <div className="flex items-center gap-3">
-                    <div className="p-3 bg-gray-800 rounded-lg text-accent-primary border border-gray-700">
-                        <FaBalanceScale className="text-xl" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-white tracking-tight">
-                            Grupos Fiscais
-                        </h1>
-                        <p className="text-sm text-gray-400">
-                            Configure regras de tributação (NCM, ICMS) para seus produtos
-                        </p>
-                    </div>
-                </div>
-
-                {/* Botão de Criação (Navega para rota create) */}
-                <Link href={`/${tenantId}/dashboard/fiscal/create`}>
-                    <button className="flex items-center gap-2 bg-accent-primary hover:bg-accent-primary/90 text-base-dark font-bold py-2.5 px-5 rounded-md transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5">
-                        <FaPlus />
-                        <span>Novo Grupo Fiscal</span>
-                    </button>
-                </Link>
+                <button
+                    type="button"
+                    onClick={handleAddRule}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-base-dark bg-accent-primary rounded-md hover:bg-accent-primary-hover transition-colors shadow-lg"
+                >
+                    <FaPlus /> Nova Regra
+                </button>
             </div>
 
-            {/* Tratamento de Erro Visual */}
-            {error && (
-                <div className="p-4 bg-red-900/20 border border-red-500/50 text-red-200 rounded-lg text-sm flex items-center gap-2">
-                    <span>⚠️</span>
-                    {error}
+            {/* --- ERRO GLOBAL DO ARRAY --- */}
+            {/* Aqui pegamos a mensagem se o erro for do array inteiro (Ex: Array vazio) */}
+            {errors.rules && !Array.isArray(errors.rules) && (errors.rules as any).message && (
+                <div className="p-3 bg-red-900/20 text-red-400 text-xs rounded-lg border border-red-500/30">
+                    ⚠️ {(errors.rules as any).message}
                 </div>
             )}
 
-            {/* Renderização do Grid (Pure Component) */}
-            <FiscalListGrid
-                fiscalGroups={fiscalGroups}
-                isLoading={isLoading}
-                onDelete={handleDelete}
-                tenantId={tenantId}
-            />
-        </div>
-    );
-}
-
-
-// ===== FILE: src/modules/fiscal/components/FiscalListGrid.tsx =====
-
-import Link from 'next/link';
-import { FaEdit, FaTrash } from 'react-icons/fa';
-import { IFiscalGroup } from '../types';
-
-/**
- * Interface de Props para o Grid Fiscal.
- * Segue o padrão Presentational Component (Burro):
- * - Recebe os dados prontos (fiscalGroups).
- * - Recebe os estados de UI (isLoading).
- * - Recebe as funções de ação (onDelete).
- */
-interface FiscalListGridProps {
-    fiscalGroups: IFiscalGroup[];
-    isLoading: boolean;
-    onDelete: (id: string) => void;
-    tenantId: string;
-}
-
-/**
- * Componente de Grid para Listagem de Grupos Fiscais.
- * * Padrão Visual (Extraído de ProductListGrid):
- * - Container: bg-gray-800/50, border-gray-700.
- * - Tabela: HTML nativo + Tailwind.
- * - Ícones: react-icons/fa.
- */
-export function FiscalListGrid({ 
-    fiscalGroups, 
-    isLoading, 
-    onDelete, 
-    tenantId 
-}: FiscalListGridProps) {
-    
-    return (
-        <div className="overflow-x-auto rounded-lg border border-gray-700 bg-gray-800/50 shadow-sm">
-            <table className="w-full text-left text-sm text-gray-400">
-                {/* Cabeçalho da Tabela */}
-                <thead className="bg-gray-900/50 text-xs uppercase text-gray-400 font-semibold">
-                    <tr>
-                        <th className="px-6 py-4">Nome do Grupo</th>
-                        <th className="px-6 py-4">NCM Padrão</th>
-                        <th className="px-6 py-4 text-center">Tributação (ICMS/PIS/COFINS)</th>
-                        <th className="px-6 py-4 text-right">Ações</th>
-                    </tr>
-                </thead>
-
-                {/* Corpo da Tabela */}
-                <tbody className="divide-y divide-gray-700/50">
-                    {/* Estado de Carregamento */}
-                    {isLoading && (
-                        <tr>
-                            <td colSpan={4} className="px-6 py-8 text-center text-gray-500 animate-pulse">
-                                Carregando dados fiscais...
-                            </td>
-                        </tr>
-                    )}
-
-                    {/* Estado Vazio */}
-                    {!isLoading && fiscalGroups.length === 0 && (
-                        <tr>
-                            <td colSpan={4} className="px-6 py-8 text-center text-gray-500 italic">
-                                Nenhum grupo fiscal cadastrado.
-                            </td>
-                        </tr>
-                    )}
-
-                    {/* Listagem de Dados */}
-                    {!isLoading && fiscalGroups.map((group) => (
-                        <tr 
-                            key={group.id} 
-                            className="hover:bg-gray-700/50 transition-colors duration-200"
+            {/* --- O LOOP DE RENDERIZAÇÃO DAS REGRAS (Cards) --- */}
+            <div className="space-y-4">
+                {fields.map((field, index) => {
+                    
+                    // 💡 Aplicação do FIX TS: Buscamos os erros exatos desta linha
+                    const ruleErrors = safeRulesErrors?.[index];
+                    
+                    return (
+                        <div 
+                            key={field.id} 
+                            className="relative bg-gray-900 border border-gray-700 rounded-xl p-5 transition-all hover:border-gray-600 shadow-sm group"
                         >
-                            <td className="px-6 py-4 font-medium text-gray-200">
-                                {group.name}
-                            </td>
-                            <td className="px-6 py-4 font-mono text-xs text-accent-primary">
-                                {group.ncmDefault}
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                                {/* Badge de Tributos */}
-                                <span className="inline-flex items-center gap-2 text-xs bg-gray-900 rounded-full px-3 py-1 border border-gray-700">
-                                    <span className="text-blue-400" title="ICMS">ICMS: {group.icms}%</span>
-                                    <span className="text-gray-600">|</span>
-                                    <span className="text-green-400" title="PIS">PIS: {group.pis}%</span>
-                                    <span className="text-gray-600">|</span>
-                                    <span className="text-yellow-400" title="COFINS">COFINS: {group.cofins}%</span>
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                                <div className="flex justify-end items-center gap-3">
-                                    {/* Botão Editar */}
-                                    <Link 
-                                        href={`/${tenantId}/dashboard/fiscal/${group.id}`}
-                                        className="text-blue-400 hover:text-blue-300 transition-colors p-1"
-                                        title="Editar Grupo"
-                                    >
-                                        <FaEdit className="w-4 h-4" />
-                                    </Link>
+                            {/* BADGE DA REGRA & BOTÃO EXCLUIR */}
+                            <div className="absolute top-0 right-0 p-3 flex gap-2">
+                                {index === 0 && (
+                                    <span className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-gray-800 text-accent-primary rounded border border-gray-700">
+                                        <FaGlobeAmericas /> Padrão Global
+                                    </span>
+                                )}
+                                
+                                <button
+                                    type="button"
+                                    onClick={() => remove(index)}
+                                    disabled={fields.length === 1} 
+                                    className="text-gray-500 hover:text-red-400 transition-colors p-1 disabled:opacity-30 disabled:cursor-not-allowed"
+                                    title={fields.length === 1 ? "O grupo precisa de pelo menos 1 regra" : "Excluir regra"}
+                                >
+                                    <FaTrash className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
 
-                                    {/* Botão Excluir */}
-                                    <button
-                                        onClick={() => onDelete(group.id)}
-                                        className="text-red-400 hover:text-red-300 transition-colors p-1 hover:bg-red-900/20 rounded"
-                                        title="Excluir Grupo"
-                                    >
-                                        <FaTrash className="w-4 h-4" />
-                                    </button>
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-2">
+                                
+                                {/* 1. BLOCO DE CENÁRIO (Origem/Destino) */}
+                                <div className="md:col-span-3 space-y-3 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                                    <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                                        <FaMapMarkerAlt /> Cenário (UF)
+                                    </h5>
+                                    
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-[10px] text-gray-500 mb-1">Origem</label>
+                                            <input
+                                                {...register(`rules.${index}.ufOrigem`)}
+                                                placeholder="Ex: SP"
+                                                maxLength={2}
+                                                className={`w-full bg-gray-900 border ${ruleErrors?.ufOrigem ? 'border-red-500' : 'border-gray-700'} rounded p-2 text-xs text-white text-center uppercase focus:ring-1 focus:ring-accent-primary outline-none`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] text-gray-500 mb-1">Destino</label>
+                                            <input
+                                                {...register(`rules.${index}.ufDestino`)}
+                                                placeholder="Ex: RJ"
+                                                maxLength={2}
+                                                className={`w-full bg-gray-900 border ${ruleErrors?.ufDestino ? 'border-red-500' : 'border-gray-700'} rounded p-2 text-xs text-white text-center uppercase focus:ring-1 focus:ring-accent-primary outline-none`}
+                                            />
+                                        </div>
+                                    </div>
+                                    {(ruleErrors?.ufOrigem || ruleErrors?.ufDestino) && (
+                                        <p className="text-[9px] text-red-400 mt-1 leading-tight">UF deve ter 2 letras.</p>
+                                    )}
                                 </div>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+
+                                {/* 2. BLOCO DE CÓDIGOS NF-E */}
+                                <div className="md:col-span-5 space-y-3 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                                    <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                                        Códigos de Operação (NF-e)
+                                    </h5>
+                                    
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div>
+                                            <label className="block text-[10px] text-gray-500 mb-1">CFOP Interno</label>
+                                            <input
+                                                {...register(`rules.${index}.cfopState`)}
+                                                placeholder="5102"
+                                                maxLength={4}
+                                                className={`w-full bg-gray-900 border ${ruleErrors?.cfopState ? 'border-red-500' : 'border-gray-700'} rounded p-2 text-xs text-white font-mono focus:ring-1 focus:ring-accent-primary outline-none`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] text-gray-500 mb-1">CFOP Externo</label>
+                                            <input
+                                                {...register(`rules.${index}.cfopInterstate`)}
+                                                placeholder="6102"
+                                                maxLength={4}
+                                                className={`w-full bg-gray-900 border ${ruleErrors?.cfopInterstate ? 'border-red-500' : 'border-gray-700'} rounded p-2 text-xs text-white font-mono focus:ring-1 focus:ring-accent-primary outline-none`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] text-gray-500 mb-1" title="Situação Tributária">CST/CSOSN</label>
+                                            <input
+                                                {...register(`rules.${index}.cstCsosn`)}
+                                                placeholder="102"
+                                                className={`w-full bg-gray-900 border border-gray-700 rounded p-2 text-xs text-white font-mono focus:ring-1 focus:ring-accent-primary outline-none`}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 3. BLOCO DE ALÍQUOTAS (%) */}
+                                <div className="md:col-span-4 space-y-3 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                                    <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                                        <FaPercent /> Alíquotas Base
+                                    </h5>
+                                    
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div>
+                                            <label className="block text-[10px] text-blue-400 mb-1">ICMS %</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                {...register(`rules.${index}.icmsRate`, { valueAsNumber: true })}
+                                                className={`w-full bg-gray-900 border ${ruleErrors?.icmsRate ? 'border-red-500' : 'border-gray-700'} rounded p-2 text-xs text-white focus:ring-1 focus:ring-blue-500 outline-none`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] text-green-400 mb-1">PIS %</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                {...register(`rules.${index}.pisRate`, { valueAsNumber: true })}
+                                                className={`w-full bg-gray-900 border ${ruleErrors?.pisRate ? 'border-red-500' : 'border-gray-700'} rounded p-2 text-xs text-white focus:ring-1 focus:ring-green-500 outline-none`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] text-yellow-400 mb-1">COFINS %</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                {...register(`rules.${index}.cofinsRate`, { valueAsNumber: true })}
+                                                className={`w-full bg-gray-900 border ${ruleErrors?.cofinsRate ? 'border-red-500' : 'border-gray-700'} rounded p-2 text-xs text-white focus:ring-1 focus:ring-yellow-500 outline-none`}
+                                            />
+                                        </div>
+                                    </div>
+                                    {(ruleErrors?.icmsRate || ruleErrors?.pisRate || ruleErrors?.cofinsRate) && (
+                                        <p className="text-[9px] text-red-400 mt-1 leading-tight">Verifique as alíquotas.</p>
+                                    )}
+                                </div>
+                                
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }
@@ -13994,25 +13635,163 @@ export function useFiscalMutation() {
 }
 
 
+// ===== FILE: src/modules/fiscal/registries/FiscalRegistry.tsx =====
+
+'use client';
+
+import React from 'react';
+import { CrudLayout } from '@/core/components/crud/CrudLayout';
+import { CrudConfig } from '@/core/components/crud/types';
+import { FaFileInvoiceDollar, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+
+// Importação dos Contratos e Validações
+import { ITaxGroup } from '../types';
+import { UpdateFiscalGroupSchema, FiscalFormInput } from '../schemas/fiscalSchema';
+
+// Importação dos Motores de Dados (Hooks)
+import { useFiscal } from '../hooks/useFiscal';
+import { useFiscalMutation } from '../hooks/useFiscalMutation';
+
+// Importação do Inquilino Customizado (A Matriz Tributária)
+import { TaxRuleManager } from '../components/TaxRuleManager';
+
+/**
+ * @component FiscalRegistry
+ * @description O Ponto de Entrada (Entrypoint) do Módulo Fiscal.
+ * Define como os dados serão exibidos no Grid e como o Formulário será montado.
+ */
+export function FiscalRegistry() {
+    // 1. Instanciamos os motores de leitura e escrita
+    const { taxGroups, isLoading: isReading, error: readError, refreshTaxGroups } = useFiscal();
+    const { createTaxGroup, updateTaxGroup, deleteTaxGroup, isLoading: isWriting, error: writeError } = useFiscalMutation();
+
+    // =========================================================================
+    // ⚙️ CONFIGURAÇÃO CLASSE OURO (O Manual de Instruções do Motor V4)
+    // =========================================================================
+    const config: CrudConfig<ITaxGroup, FiscalFormInput> = {
+        title: 'Grupos Fiscais',
+        description: 'Gerencie os perfis de tributação e suas respectivas matrizes de regras estaduais (ICMS, PIS, COFINS).',
+        
+        // A Alfândega: Protege o envio de dados
+        schema: UpdateFiscalGroupSchema,
+
+        // --- COLUNAS DA TABELA (Visão Master) ---
+        columns: [
+            {
+                header: 'Nome do Perfil',
+                accessor: 'name'
+            },
+            {
+                header: 'Qtd. de Regras',
+                // Renderização Customizada Nível Ouro: Um badge mostrando quantas regras o grupo tem
+                accessor: (item) => (
+                    <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900/30 text-blue-400 border border-blue-800/50">
+                        {item.rules?.length || 0} regra(s)
+                    </span>
+                )
+            },
+            {
+                header: 'Status',
+                // Renderização Customizada Visual para booleanos
+                accessor: (item) => item.isActive ? (
+                    <span className="inline-flex items-center gap-1.5 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                        <FaCheckCircle /> Ativo
+                    </span>
+                ) : (
+                    <span className="inline-flex items-center gap-1.5 text-red-400 text-xs font-bold uppercase tracking-wider">
+                        <FaTimesCircle /> Inativo
+                    </span>
+                )
+            }
+        ],
+
+        // --- CAMPOS DO FORMULÁRIO (A Impressora 3D) ---
+        fields: [
+            {
+                name: 'name',
+                label: 'Nome do Grupo Fiscal',
+                type: 'text',
+                placeholder: 'Ex: Revenda de Mercadorias (Simples Nacional)'
+            },
+            {
+                name: 'description',
+                label: 'Descrição / Observações',
+                type: 'textarea',
+                placeholder: 'Descreva em quais cenários este imposto deve ser aplicado...'
+            },
+            {
+                name: 'isActive',
+                label: 'Status do Grupo',
+                type: 'boolean',
+                trueLabel: 'Liberado para uso',
+                falseLabel: 'Bloqueado (Inativo)'
+            },
+            // 💡 O PORTAL MÁGICO: A injeção da Matriz Tributária dentro do formulário linear
+            {
+                name: 'rules', // O nome exato que o Zod está esperando
+                label: '', // Deixamos vazio pois o próprio Manager tem seu cabeçalho elegante
+                type: 'custom',
+                customRender: (formContext) => <TaxRuleManager formContext={formContext} />
+            }
+        ],
+
+        // --- DADOS DE SISTEMA (Sanfona de Auditoria no final do form) ---
+        systemFields: [
+            { name: 'id', label: 'ID Único (UUID)', type: 'text' },
+            { name: 'createdAt', label: 'Data de Criação', type: 'text' },
+            { name: 'updatedAt', label: 'Última Atualização', type: 'text' }
+        ]
+    };
+
+    // =========================================================================
+    // 🔌 ROTEAMENTO DE AÇÕES (O Cabo de Rede)
+    // =========================================================================
+    return (
+        <div className="h-full w-full animate-fade-in">
+            <CrudLayout<ITaxGroup, FiscalFormInput>
+                config={config}
+                hooks={{
+                    data: taxGroups,
+                    // O loading geral é a união da leitura com a escrita
+                    isLoading: isReading || isWriting,
+                    // Exibe o erro de quem falhou primeiro
+                    error: writeError || readError,
+                    onCreate: async (data) => {
+                        await createTaxGroup(data as any);
+                    },
+                    onUpdate: async (id, data) => {
+                        await updateTaxGroup(id, data as any);
+                    },
+                    onDelete: async (id) => {
+                        await deleteTaxGroup(id);
+                    },
+                    onRefresh: refreshTaxGroups
+                }}
+            />
+        </div>
+    );
+}
+
+
 // ===== FILE: src/modules/fiscal/schemas/fiscalSchema.ts =====
 
 import { z } from 'zod';
 
 /**
- * @description Helpers Nível Ouro para React Hook Form.
- * Formulários HTML sempre enviam strings vazias ("") quando um campo não é preenchido.
- * Esses helpers transformam "" em `undefined`, protegendo o Backend de erros de @Length e @IsUUID.
+ * @description Helpers Nível Ouro para React Hook Form (Resiliência a Null).
+ * O Banco de Dados manda `null`, o HTML manda `""`.
+ * Estes helpers absorvem qualquer um dos dois e convertem para `undefined` limpo.
  */
-const OptionalUfField = z.string().trim().toUpperCase()
-    .transform(val => val === '' ? undefined : val)
+const OptionalUfField = z.string().nullable().optional()
+    .transform(val => (!val || val.trim() === '') ? undefined : val.trim().toUpperCase())
     .refine(val => val === undefined || val.length === 2, { message: 'A UF deve ter exatamente 2 letras (Ex: SP)' });
 
-const OptionalCfopField = z.string().trim()
-    .transform(val => val === '' ? undefined : val)
+const OptionalCfopField = z.string().nullable().optional()
+    .transform(val => (!val || val.trim() === '') ? undefined : val.trim())
     .refine(val => val === undefined || val.length === 4, { message: 'O CFOP deve ter exatamente 4 dígitos' });
 
-const OptionalStringField = z.string().trim()
-    .transform(val => val === '' ? undefined : val);
+const OptionalStringField = z.string().nullable().optional()
+    .transform(val => (!val || val.trim() === '') ? undefined : val.trim());
 
 /**
  * =========================================================================
@@ -14020,7 +13799,7 @@ const OptionalStringField = z.string().trim()
  * =========================================================================
  */
 export const TaxRuleSchema = z.object({
-    id: z.string().uuid('ID da regra inválido').optional(), // ID serve para o Delta Sync (Update)
+    id: z.uuid('ID da regra inválido').optional(), // ID serve para o Delta Sync (Update)
     
     // Cenários de Estado
     ufOrigem: OptionalUfField,
@@ -14047,6 +13826,7 @@ export const TaxRuleSchema = z.object({
  */
 export const CreateFiscalGroupSchema = z.object({
     name: z.string().trim().min(3, 'O nome do grupo fiscal deve ter no mínimo 3 caracteres'),
+    // Usamos o Helper resiliente aqui também
     description: OptionalStringField,
     isActive: z.boolean().default(true),
     
@@ -14061,7 +13841,7 @@ export const CreateFiscalGroupSchema = z.object({
  * =========================================================================
  */
 export const UpdateFiscalGroupSchema = CreateFiscalGroupSchema.extend({
-    id: z.uuid('ID do grupo fiscal inválido').optional(),
+    id: z.string().uuid('ID do grupo fiscal inválido').optional(),
 });
 
 // Extração automática dos tipos (Para uso direto nos formulários)
@@ -14177,1512 +13957,126 @@ export interface IUpdateTaxGroupDTO {
 }
 
 
-// ===== FILE: src/modules/inventory/components/MovementsList.tsx =====
-
-// src/modules/inventory/components/MovementsList.tsx
-
-'use client';
-
-import React, { useEffect } from 'react';
-import { 
-    FaArrowUp, 
-    FaArrowDown, 
-    FaHistory, 
-    FaBox,
-    FaWarehouse
-} from 'react-icons/fa';
-import { useStockMovements } from '../hooks/useStockMovements';
-import { TransactionType } from '../types/InventoryTypes';
-
-interface Props {
-    variantId?: string;
-}
-
-/**
- * @component MovementsList
- * @description Kardex Visual alinhado ao tema Dark/Metallic do CRM.
- */
-export const MovementsList: React.FC<Props> = ({ variantId }) => {
-    
-    const { 
-        transactions, 
-        isLoading, 
-        fetchMovements 
-    } = useStockMovements();
-
-    useEffect(() => {
-        fetchMovements({ variantId });
-    }, [variantId, fetchMovements]);
-
-    // --- Formatadores ---
-
-    const formatDate = (dateString: string) => {
-        return new Intl.DateTimeFormat('pt-BR', {
-            day: '2-digit', month: '2-digit', year: '2-digit',
-            hour: '2-digit', minute: '2-digit'
-        }).format(new Date(dateString));
-    };
-
-    /**
-     * Estilização Dark Mode para os Badges
-     */
-    const getTransactionStyle = (type: TransactionType) => {
-        const isEntry = type.startsWith('IN_');
-        
-        if (isEntry) {
-            return {
-                icon: <FaArrowUp className="w-2.5 h-2.5" />,
-                // Fundo translúcido verde, texto verde claro, borda sutil
-                badgeClass: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-                amountClass: 'text-emerald-400',
-                label: getTransactionLabel(type)
-            };
-        }
-        
-        return {
-            icon: <FaArrowDown className="w-2.5 h-2.5" />,
-            // Fundo translúcido vermelho, texto vermelho claro
-            badgeClass: 'bg-rose-500/10 text-rose-400 border border-rose-500/20',
-            amountClass: 'text-rose-400',
-            label: getTransactionLabel(type)
-        };
-    };
-
-    const getTransactionLabel = (type: TransactionType) => {
-        const labels: Record<string, string> = {
-            IN_PURCHASE: 'Compra',
-            IN_TRANSFER: 'Entrada Transf.',
-            IN_ADJUSTMENT: 'Sobra de Inv.',
-            IN_RETURN: 'Devolução',
-            OUT_SALE: 'Venda',
-            OUT_CONSUMPTION: 'Consumo',
-            OUT_LOSS: 'Perda/Quebra',
-            OUT_TRANSFER: 'Saída Transf.',
-            OUT_ADJUSTMENT: 'Falta de Inv.'
-        };
-        return labels[type] || type;
-    };
-
-    // --- Loading State (Skeleton Dark) ---
-    if (isLoading) {
-        return (
-            <div className="w-full p-8 flex flex-col items-center justify-center space-y-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent-primary"></div>
-                <span className="text-sm text-gray-500 animate-pulse">Sincronizando Kardex...</span>
-            </div>
-        );
-    }
-
-    // --- Empty State (Estilo CRM) ---
-    if (!isLoading && transactions.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-gray-700/50 rounded-xl bg-gray-800/20">
-                <div className="p-4 bg-gray-800 rounded-full mb-4">
-                    <FaHistory className="w-8 h-8 text-gray-600" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-300">Sem histórico</h3>
-                <p className="text-sm text-gray-500 mt-1 max-w-xs">
-                    Nenhuma movimentação de estoque registrada para este contexto até o momento.
-                </p>
-            </div>
-        );
-    }
-
-    // --- Tabela Dark ---
-    return (
-        <div className="overflow-hidden rounded-xl border border-gray-700 bg-base-metallic shadow-lg">
-            <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-700/50">
-                    
-                    {/* Cabeçalho Escuro */}
-                    <thead className="bg-gray-800/50">
-                        <tr>
-                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                Data
-                            </th>
-                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                Natureza
-                            </th>
-                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                Item / Depósito
-                            </th>
-                            <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                Qtd.
-                            </th>
-                            <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                Saldo Final
-                            </th>
-                        </tr>
-                    </thead>
-
-                    {/* Corpo da Tabela */}
-                    <tbody className="divide-y divide-gray-700/50">
-                        {transactions.map((tx) => {
-                            const style = getTransactionStyle(tx.type);
-                            
-                            return (
-                                <tr key={tx.id} className="hover:bg-gray-700/30 transition-colors duration-150">
-                                    {/* Data */}
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 font-mono">
-                                        {formatDate(tx.createdAt)}
-                                    </td>
-
-                                    {/* Badge de Tipo */}
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${style.badgeClass}`}>
-                                            <span className="mr-2">{style.icon}</span>
-                                            {style.label}
-                                        </span>
-                                    </td>
-
-                                    {/* Detalhes (Produto + Depósito) */}
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col space-y-1">
-                                            {/* Nome do Produto */}
-                                            <span className="text-sm font-medium text-gray-200 flex items-center">
-                                                <FaBox className="mr-2 text-gray-500 w-3 h-3" />
-                                                {tx.variant?.product?.name || 'Item Removido'}
-                                                {tx.variant?.name && (
-                                                    <span className="ml-2 text-xs text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded">
-                                                        {tx.variant.name}
-                                                    </span>
-                                                )}
-                                            </span>
-                                            {/* Nome do Depósito */}
-                                            <span className="text-xs text-gray-500 flex items-center ml-5">
-                                                <FaWarehouse className="mr-1.5 w-2.5 h-2.5" />
-                                                {tx.warehouse?.name || 'N/A'}
-                                            </span>
-                                        </div>
-                                    </td>
-
-                                    {/* Quantidade Colorida */}
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold font-mono">
-                                        <span className={style.amountClass}>
-                                            {tx.type.startsWith('IN_') ? '+' : ''}{tx.quantity}
-                                        </span>
-                                    </td>
-
-                                    {/* Saldo (Neutro) */}
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-300 font-mono bg-gray-800/20">
-                                        {tx.newBalance}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-};
-
-
-// ===== FILE: src/modules/inventory/components/WarehousesList.tsx =====
-
-'use client';
-
-import React, { useEffect } from 'react';
-import Link from 'next/link';
-import { useWarehouses } from '../hooks/useWarehouses';
-import { Warehouse } from '../types/InventoryTypes';
-
-interface Props {
-    tenantId: string;
-}
-
-export function WarehousesList({ tenantId }: Props) {
-    const { warehouses, isLoading, fetchWarehouses } = useWarehouses();
-
-    // Busca os dados ao montar o componente
-    useEffect(() => {
-        fetchWarehouses();
-    }, [fetchWarehouses]);
-
-    // Renderização de Carregamento (Skeleton Simples)
-    if (isLoading) {
-        return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
-                {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-40 bg-gray-100 rounded-lg border border-gray-200"></div>
-                ))}
-            </div>
-        );
-    }
-
-    // Renderização de Estado Vazio
-    if (!isLoading && warehouses.length === 0) {
-        return (
-            <div className="text-center py-16 bg-white rounded-lg border border-dashed border-gray-300">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum depósito cadastrado</h3>
-                <p className="mt-1 text-sm text-gray-500">Comece criando o local onde seus produtos são armazenados.</p>
-                <div className="mt-6">
-                    <Link
-                        href={`/dashboard/inventory/warehouses/create`}
-                        className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                    >
-                        Criar Primeiro Depósito
-                    </Link>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-6">
-            {/* Header da Seção */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Locais de Estoque</h2>
-                    <p className="text-sm text-gray-500">Gerencie seus depósitos físicos, lojas e áreas de reserva.</p>
-                </div>
-                <Link
-                    href={`/dashboard/inventory/warehouses/create`}
-                    className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-                >
-                    + Novo Local
-                </Link>
-            </div>
-
-            {/* Grid de Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {warehouses.map((warehouse) => (
-                    <div 
-                        key={warehouse.id} 
-                        className={`relative group bg-white rounded-lg border transition-shadow hover:shadow-md ${
-                            warehouse.isDefault ? 'border-blue-300 ring-1 ring-blue-100' : 'border-gray-200'
-                        }`}
-                    >
-                        {/* Badge de Padrão */}
-                        {warehouse.isDefault && (
-                            <div className="absolute top-0 right-0 -mt-2 -mr-2">
-                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200 shadow-sm">
-                                    Padrão
-                                </span>
-                            </div>
-                        )}
-
-                        <div className="p-6">
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-center">
-                                    <div className="p-2 bg-gray-50 rounded-lg text-gray-500">
-                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-                                        </svg>
-                                    </div>
-                                    <div className="ml-4">
-                                        <h3 className="text-lg font-medium text-gray-900">{warehouse.name}</h3>
-                                        <span className={`text-xs px-2 py-0.5 rounded-full ${warehouse.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                            {warehouse.isActive ? 'Ativo' : 'Inativo'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-4 border-t border-gray-100 pt-4 space-y-3">
-                                {/* Informação: Estoque Negativo */}
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Estoque Negativo:</span>
-                                    {warehouse.allowsNegativeStock ? (
-                                        <span className="text-orange-600 font-medium flex items-center">
-                                            <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                            </svg>
-                                            Permitido
-                                        </span>
-                                    ) : (
-                                        <span className="text-green-600 font-medium flex items-center">
-                                            <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            Bloqueado
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Informação: Localização */}
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Localização:</span>
-                                    <span className="text-gray-900 truncate max-w-[150px]">
-                                        {(warehouse.addressInfo as any)?.city || '-'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* Footer do Card com Ações */}
-                        <div className="bg-gray-50 px-6 py-3 rounded-b-lg border-t border-gray-200 flex justify-end space-x-3">
-                            {/* Obs: Link para Edição - Rota que criaremos no futuro se necessário */}
-                            <Link 
-                                href={`/dashboard/inventory/warehouses/${warehouse.id}`}
-                                className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
-                            >
-                                Detalhes / Editar
-                            </Link>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-
-// ===== FILE: src/modules/inventory/components/drawers/ManageWarehouseDrawer.tsx =====
-
-import React, { useEffect, useState } from 'react';
-import { useWarehouses } from '../../hooks/useWarehouses';
-import { CreateWarehouseInput, Warehouse } from '../../types/InventoryTypes';
-
-interface Props {
-    isOpen: boolean;
-    onClose: () => void;
-    initialData?: Warehouse;
-}
-
-// Estado inicial limpo para o formulário
-const INITIAL_STATE: CreateWarehouseInput = {
-    name: '',
-    isDefault: false,
-    allowsNegativeStock: false,
-    addressInfo: {
-        city: '',
-        street: ''
-    }
-};
-
-export function ManageWarehouseDrawer({ isOpen, onClose, initialData }: Props) {
-    // Hooks do módulo de inventário
-    const { createWarehouse, updateWarehouse, isLoading } = useWarehouses();
-    
-    // Gestão de Estado Manual (React Nativo)
-    const [formData, setFormData] = useState<CreateWarehouseInput>(INITIAL_STATE);
-    const [error, setError] = useState('');
-
-    // Efeito: Quando o drawer abre, decide se popula (edição) ou limpa (criação)
-    useEffect(() => {
-        if (isOpen) {
-            setError(''); // Limpa erros anteriores
-            if (initialData) {
-                // Modo Edição: Preenche o state com os dados recebidos
-                setFormData({
-                    name: initialData.name,
-                    isDefault: initialData.isDefault,
-                    allowsNegativeStock: initialData.allowsNegativeStock,
-                    // Garante que addressInfo existe para evitar crash
-                    addressInfo: initialData.addressInfo || { city: '', street: '' }
-                });
-            } else {
-                // Modo Criação: Reseta para o estado inicial
-                setFormData(INITIAL_STATE);
-            }
-        }
-    }, [isOpen, initialData]);
-
-    // Handler genérico para inputs de texto
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        
-        // Lógica para campos aninhados (ex: addressInfo.city)
-        if (name.includes('.')) {
-            const [parent, child] = name.split('.');
-            setFormData(prev => ({
-                ...prev,
-                [parent]: {
-                    ...(prev as any)[parent],
-                    [child]: value
-                }
-            }));
-            return;
-        }
-
-        // Campos normais
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    // Handler específico para Checkboxes (booleanos)
-    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, checked } = e.target;
-        setFormData(prev => ({ ...prev, [name]: checked }));
-    };
-
-    // Função de Salvar com Validação Manual
-    const handleSave = async (e: React.FormEvent) => {
-        e.preventDefault();
-        
-        // 1. Validação Básica
-        if (!formData.name.trim()) {
-            setError('O nome do depósito é obrigatório.');
-            return;
-        }
-
-        try {
-            // 2. Chama a API (Create ou Update)
-            if (initialData) {
-                await updateWarehouse(initialData.id, formData);
-            } else {
-                await createWarehouse(formData);
-            }
-            // 3. Fecha o drawer em caso de sucesso
-            onClose(); 
-        } catch (err) {
-            console.error('Erro ao salvar depósito:', err);
-            setError('Não foi possível salvar. Verifique os dados e tente novamente.');
-        }
-    };
-
-    // Definição visual do Drawer (Slide-Over da direita)
-    const drawerClasses = `fixed inset-y-0 right-0 w-96 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 flex flex-col border-l border-gray-200 ${
-        isOpen ? 'translate-x-0' : 'translate-x-full'
-    }`;
-
-    return (
-        <>
-            {/* Overlay Transparente:
-               Serve apenas para capturar o clique fora e fechar o drawer.
-               bg-transparent garante que NÃO HÁ tela preta de fundo.
-            */}
-            {isOpen && (
-                <div 
-                    onClick={onClose} 
-                    className="fixed inset-0 bg-transparent z-40"
-                    aria-hidden="true"
-                />
-            )}
-
-            {/* O Painel Lateral */}
-            <div className={drawerClasses}>
-                
-                {/* Cabeçalho */}
-                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-                    <h2 className="text-lg font-semibold text-gray-800">
-                        {initialData ? 'Editar Local' : 'Novo Local'}
-                    </h2>
-                    <button 
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
-                        type="button"
-                    >
-                        <span className="text-2xl">&times;</span>
-                    </button>
-                </div>
-
-                {/* Corpo do Formulário (Scrollável) */}
-                <div className="flex-1 overflow-y-auto p-6">
-                    <form id="warehouse-drawer-form" onSubmit={handleSave} className="space-y-6">
-                        
-                        {/* Exibição de Erro */}
-                        {error && (
-                            <div className="p-3 bg-red-50 text-red-700 text-sm rounded border border-red-100 animate-pulse">
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Campo: Nome */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Nome do Local *</label>
-                            <input
-                                name="name"
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                type="text"
-                                placeholder="Ex: Almoxarifado Central"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border transition-colors"
-                                autoFocus
-                            />
-                        </div>
-
-                        {/* Grupo: Configurações (Checkboxes) */}
-                        <div className="space-y-4 bg-gray-50 p-4 rounded-md border border-gray-100">
-                            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Regras</h3>
-                            
-                            <label className="flex items-center space-x-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    name="isDefault"
-                                    checked={formData.isDefault}
-                                    onChange={handleCheckboxChange}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                />
-                                <span className="text-sm text-gray-700">Depósito Padrão</span>
-                            </label>
-
-                            <label className="flex items-center space-x-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    name="allowsNegativeStock"
-                                    checked={formData.allowsNegativeStock}
-                                    onChange={handleCheckboxChange}
-                                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                                />
-                                <span className="text-sm text-gray-700">Permitir Estoque Negativo</span>
-                            </label>
-                        </div>
-
-                        {/* Campo: Cidade (Exemplo de dado aninhado) */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Cidade</label>
-                            <input
-                                name="addressInfo.city"
-                                value={(formData.addressInfo as any).city || ''}
-                                onChange={handleInputChange}
-                                type="text"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
-                            />
-                        </div>
-
-                    </form>
-                </div>
-
-                {/* Rodapé com Ações */}
-                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end space-x-3">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        form="warehouse-drawer-form"
-                        disabled={isLoading}
-                        className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isLoading ? 'Salvando...' : 'Salvar Local'}
-                    </button>
-                </div>
-            </div>
-        </>
-    );
-}
-
-
-// ===== FILE: src/modules/inventory/components/drawers/RegisterMovementDrawer.tsx =====
-
-import React, { useEffect, useState } from 'react';
-import { useStockMovements } from '../../hooks/useStockMovements';
-import { useWarehouses } from '../../hooks/useWarehouses';
-import { RegisterMovementInput, TransactionType } from '../../types/InventoryTypes';
-
-interface Props {
-    isOpen: boolean;
-    onClose: () => void;
-    preSelectedVariantId?: string; // Se vier preenchido, trava o campo de produto
-    onSuccess?: () => void; // Callback para atualizar a lista pai
-}
-
-// Estado inicial limpo
-const INITIAL_STATE: RegisterMovementInput = {
-    warehouseId: '',
-    variantId: '',
-    type: TransactionType.IN_PURCHASE, // Padrão inicial
-    quantity: 1,
-    unitCost: 0,
-    documentRef: '',
-    notes: ''
-};
-
-export function RegisterMovementDrawer({ isOpen, onClose, preSelectedVariantId, onSuccess }: Props) {
-    // Hooks do domínio
-    const { registerMovement, isLoading } = useStockMovements();
-    const { warehouses, fetchWarehouses } = useWarehouses();
-    
-    // Controle de Estado Nativo
-    const [formData, setFormData] = useState<RegisterMovementInput>(INITIAL_STATE);
-    const [isEntryMode, setIsEntryMode] = useState(true); // Controla visualmente se é Entrada (+) ou Saída (-)
-    const [error, setError] = useState('');
-
-    // Ao abrir o Drawer
-    useEffect(() => {
-        if (isOpen) {
-            fetchWarehouses();
-            setError('');
-            
-            // Reseta o formulário mantendo o ID do produto se for passado
-            setFormData({
-                ...INITIAL_STATE,
-                variantId: preSelectedVariantId || '',
-                type: TransactionType.IN_PURCHASE
-            });
-            setIsEntryMode(true);
-        }
-    }, [isOpen, fetchWarehouses, preSelectedVariantId]);
-
-    // Handler Genérico de Input
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    // Alterna entre Modos (Entrada vs Saída) e reseta o Tipo de Transação compatível
-    const handleModeToggle = (isEntry: boolean) => {
-        setIsEntryMode(isEntry);
-        setFormData(prev => ({
-            ...prev,
-            // Seta um valor padrão válido para o novo modo para evitar inconsistência
-            type: isEntry ? TransactionType.IN_PURCHASE : TransactionType.OUT_SALE
-        }));
-    };
-
-    // Validação e Envio Manual
-    const handleSave = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-
-        // Validações
-        if (!formData.warehouseId) {
-            setError('Selecione o Local de Estoque.');
-            return;
-        }
-        if (!formData.variantId) {
-            setError('O Produto é obrigatório.');
-            return;
-        }
-        if (Number(formData.quantity) <= 0) {
-            setError('A quantidade deve ser maior que zero.');
-            return;
-        }
-
-        try {
-            // Garante conversão de números antes de enviar
-            await registerMovement({
-                ...formData,
-                quantity: Number(formData.quantity),
-                unitCost: Number(formData.unitCost || 0)
-            });
-
-            if (onSuccess) onSuccess();
-            onClose();
-        } catch (err) {
-            console.error('Erro ao movimentar:', err);
-            setError('Erro ao registrar movimentação. Verifique os dados.');
-        }
-    };
-
-    // Listas de Tipos para o Select (Filtradas pelo Modo)
-    const entryOptions = [
-        { label: 'Compra (NF)', value: TransactionType.IN_PURCHASE },
-        { label: 'Transferência (Entrada)', value: TransactionType.IN_TRANSFER },
-        { label: 'Ajuste de Sobra', value: TransactionType.IN_ADJUSTMENT },
-        { label: 'Devolução de Cliente', value: TransactionType.IN_RETURN },
-    ];
-
-    const exitOptions = [
-        { label: 'Venda', value: TransactionType.OUT_SALE },
-        { label: 'Consumo Interno', value: TransactionType.OUT_CONSUMPTION },
-        { label: 'Perda / Quebra', value: TransactionType.OUT_LOSS },
-        { label: 'Transferência (Saída)', value: TransactionType.OUT_TRANSFER },
-        { label: 'Ajuste de Falta', value: TransactionType.OUT_ADJUSTMENT },
-    ];
-
-    const currentOptions = isEntryMode ? entryOptions : exitOptions;
-
-    // Classes CSS Dinâmicas
-    const drawerClasses = `fixed inset-y-0 right-0 w-96 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 flex flex-col border-l border-gray-200 ${
-        isOpen ? 'translate-x-0' : 'translate-x-full'
-    }`;
-
-    const headerColorClass = isEntryMode ? 'bg-green-50 border-green-100 text-green-800' : 'bg-red-50 border-red-100 text-red-800';
-
-    return (
-        <>
-            {/* Overlay Transparente (Sem tela preta) */}
-            {isOpen && (
-                <div onClick={onClose} className="fixed inset-0 bg-transparent z-40" aria-hidden="true" />
-            )}
-
-            <div className={drawerClasses}>
-                
-                {/* Cabeçalho com cor dinâmica */}
-                <div className={`px-6 py-4 border-b flex items-center justify-between ${headerColorClass}`}>
-                    <div>
-                        <h2 className="text-lg font-bold">
-                            {isEntryMode ? 'Registrar Entrada' : 'Registrar Saída'}
-                        </h2>
-                    </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                        <span className="text-2xl">&times;</span>
-                    </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    <form id="movement-drawer-form" onSubmit={handleSave} className="space-y-5">
-                        
-                        {error && (
-                            <div className="p-3 bg-red-50 text-red-700 text-sm border border-red-100 rounded animate-pulse">
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Toggle de Modo (Tabs Visuais) */}
-                        <div className="flex rounded-md bg-gray-100 p-1">
-                            <button
-                                type="button"
-                                onClick={() => handleModeToggle(true)}
-                                className={`flex-1 py-2 text-sm font-medium rounded transition-all ${
-                                    isEntryMode ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                            >
-                                Entrada (+)
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleModeToggle(false)}
-                                className={`flex-1 py-2 text-sm font-medium rounded transition-all ${
-                                    !isEntryMode ? 'bg-white text-red-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                            >
-                                Saída (-)
-                            </button>
-                        </div>
-
-                        {/* Se o produto não veio pré-selecionado, mostra input */}
-                        {!preSelectedVariantId && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Produto (ID/SKU)</label>
-                                <input
-                                    name="variantId"
-                                    value={formData.variantId}
-                                    onChange={handleInputChange}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
-                                    placeholder="Digite o ID..."
-                                />
-                            </div>
-                        )}
-
-                        {/* Seleção de Depósito */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Local de Estoque *</label>
-                            <select
-                                name="warehouseId"
-                                value={formData.warehouseId}
-                                onChange={handleInputChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-white"
-                            >
-                                <option value="">Selecione...</option>
-                                {warehouses.map(w => (
-                                    <option key={w.id} value={w.id}>
-                                        {w.name} {w.isDefault ? '(Padrão)' : ''}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Tipo de Transação (Opções mudam conforme o modo) */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Motivo *</label>
-                            <select
-                                name="type"
-                                value={formData.type}
-                                onChange={handleInputChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-white"
-                            >
-                                {currentOptions.map(opt => (
-                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Quantidade e Custo */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Qtd *</label>
-                                <input
-                                    type="number"
-                                    name="quantity"
-                                    value={formData.quantity}
-                                    onChange={handleInputChange}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Custo Unit.</label>
-                                <input
-                                    type="number"
-                                    name="unitCost"
-                                    value={formData.unitCost}
-                                    onChange={handleInputChange}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
-                                    placeholder="0.00"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Observações */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Observação</label>
-                            <textarea
-                                name="notes"
-                                rows={2}
-                                value={formData.notes}
-                                onChange={handleInputChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
-                            />
-                        </div>
-                    </form>
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end space-x-3">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        form="movement-drawer-form"
-                        disabled={isLoading}
-                        className={`px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md focus:outline-none disabled:opacity-50 ${
-                            isEntryMode 
-                            ? 'bg-green-600 hover:bg-green-700' 
-                            : 'bg-red-600 hover:bg-red-700'
-                        }`}
-                    >
-                        {isLoading ? '...' : 'Confirmar'}
-                    </button>
-                </div>
-            </div>
-        </>
-    );
-}
-
-
-// ===== FILE: src/modules/inventory/components/forms/MovementForm.tsx =====
-
-'use client';
-
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useStockMovements } from '../../hooks/useStockMovements';
-import { useWarehouses } from '../../hooks/useWarehouses';
-import { RegisterMovementInput, TransactionType } from '../../types/InventoryTypes';
-
-interface Props {
-    tenantId: string;
-    preSelectedVariantId?: string; // Opcional: Para quando viermos da tela de detalhes do produto
-}
-
-// Estado Inicial
-const INITIAL_STATE: RegisterMovementInput = {
-    warehouseId: '',
-    variantId: '',
-    type: TransactionType.IN_PURCHASE,
-    quantity: 1,
-    unitCost: 0,
-    documentRef: '',
-    notes: ''
-};
-
-export function MovementForm({ tenantId, preSelectedVariantId }: Props) {
-    const router = useRouter();
-    
-    // Hooks do Módulo de Inventário
-    const { registerMovement, isLoading } = useStockMovements();
-    const { warehouses, fetchWarehouses, isLoading: isLoadingWarehouses } = useWarehouses();
-
-    // Estado Local de Controle
-    const [formData, setFormData] = useState<RegisterMovementInput>(INITIAL_STATE);
-    const [isEntry, setIsEntry] = useState(true); // Controle visual (Entrada vs Saída)
-    const [error, setError] = useState('');
-    const [successMsg, setSuccessMsg] = useState('');
-
-    // 1. Carregar Depósitos ao montar
-    useEffect(() => {
-        fetchWarehouses();
-    }, [fetchWarehouses]);
-
-    // 2. Aplicar Pré-seleção de Produto (se houver)
-    useEffect(() => {
-        if (preSelectedVariantId) {
-            setFormData(prev => ({ ...prev, variantId: preSelectedVariantId }));
-        }
-    }, [preSelectedVariantId]);
-
-    // 3. Alternar Tipo (Entrada/Saída) e Resetar o Select de Tipo
-    const handleTypeToggle = (entryMode: boolean) => {
-        setIsEntry(entryMode);
-        setFormData(prev => ({
-            ...prev,
-            // Reseta para o padrão daquele modo para evitar inconsistência
-            type: entryMode ? TransactionType.IN_PURCHASE : TransactionType.OUT_CONSUMPTION
-        }));
-    };
-
-    // 4. Handler Genérico
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    // 5. Submit com Validação Robusta
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setSuccessMsg('');
-
-        // Validações
-        if (!formData.warehouseId) return setError('Selecione um local de estoque (Depósito).');
-        if (!formData.variantId) return setError('O ID ou SKU do produto é obrigatório.');
-        if (Number(formData.quantity) <= 0) return setError('A quantidade deve ser maior que zero.');
-        
-        // Validação de Custo (Opcional, mas recomendado para Entradas)
-        if (isEntry && Number(formData.unitCost) < 0) return setError('O custo unitário não pode ser negativo.');
-
-        try {
-            await registerMovement({
-                ...formData,
-                quantity: Number(formData.quantity),
-                unitCost: formData.unitCost ? Number(formData.unitCost) : 0
-            });
-            
-            setSuccessMsg('Movimentação registrada com sucesso!');
-            
-            // Limpa o form (mas mantém o produto e depósito para facilitar lançamentos em série)
-            setFormData(prev => ({
-                ...INITIAL_STATE,
-                warehouseId: prev.warehouseId,
-                variantId: prev.variantId,
-                type: prev.type
-            }));
-
-            // Opcional: Se quiser redirecionar, descomente abaixo
-            // router.push(`/${tenantId}/dashboard/products`);
-            
-        } catch (err) {
-            console.error(err);
-            setError('Erro ao processar. Verifique se há saldo suficiente (para saídas) ou conexão.');
-        }
-    };
-
-    // Opções de Select baseadas no Modo (Entrada vs Saída)
-    const transactionOptions = isEntry 
-        ? [
-            { label: 'Compra (NF)', value: TransactionType.IN_PURCHASE },
-            { label: 'Transferência (Entrada)', value: TransactionType.IN_TRANSFER },
-            { label: 'Ajuste de Sobra (Inventário)', value: TransactionType.IN_ADJUSTMENT },
-            { label: 'Devolução de Cliente', value: TransactionType.IN_RETURN },
-          ]
-        : [
-            { label: 'Consumo Interno', value: TransactionType.OUT_CONSUMPTION },
-            { label: 'Venda (Manual/S. Cupom)', value: TransactionType.OUT_SALE },
-            { label: 'Perda / Quebra / Avaria', value: TransactionType.OUT_LOSS },
-            { label: 'Transferência (Saída)', value: TransactionType.OUT_TRANSFER },
-            { label: 'Ajuste de Falta (Inventário)', value: TransactionType.OUT_ADJUSTMENT },
-          ];
-
-    return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 max-w-4xl mx-auto">
-            
-            <div className="mb-6 pb-4 border-b border-gray-100 flex justify-between items-center">
-                <div>
-                    <h2 className="text-xl font-bold text-gray-800">Nova Movimentação</h2>
-                    <p className="text-sm text-gray-500 mt-1">Registre entradas ou saídas manuais de estoque.</p>
-                </div>
-                {/* Indicador Visual do Modo */}
-                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                    isEntry ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                    {isEntry ? 'Modo Entrada (+)' : 'Modo Saída (-)'}
-                </span>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-8">
-                
-                {/* Feedback */}
-                {error && <div className="p-4 bg-red-50 text-red-700 rounded border border-red-100 text-sm font-medium">{error}</div>}
-                {successMsg && <div className="p-4 bg-green-50 text-green-700 rounded border border-green-100 text-sm font-medium">{successMsg}</div>}
-
-                {/* --- SELETOR DE MODO (TABS VISUAIS) --- */}
-                <div className="flex p-1 bg-gray-100 rounded-lg">
-                    <button
-                        type="button"
-                        onClick={() => handleTypeToggle(true)}
-                        className={`flex-1 py-3 text-sm font-medium rounded-md transition-all duration-200 ${
-                            isEntry 
-                            ? 'bg-white text-green-700 shadow-sm ring-1 ring-black/5' 
-                            : 'text-gray-500 hover:text-gray-700'
-                        }`}
-                    >
-                        Entrada (+)
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => handleTypeToggle(false)}
-                        className={`flex-1 py-3 text-sm font-medium rounded-md transition-all duration-200 ${
-                            !isEntry 
-                            ? 'bg-white text-red-700 shadow-sm ring-1 ring-black/5' 
-                            : 'text-gray-500 hover:text-gray-700'
-                        }`}
-                    >
-                        Saída (-)
-                    </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    {/* Depósito */}
-                    <div className="col-span-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Local de Estoque *</label>
-                        <select
-                            name="warehouseId"
-                            value={formData.warehouseId}
-                            onChange={handleInputChange}
-                            disabled={isLoadingWarehouses}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
-                        >
-                            <option value="">Selecione um depósito...</option>
-                            {warehouses.map(w => (
-                                <option key={w.id} value={w.id}>
-                                    {w.name} {w.isDefault ? '(Padrão)' : ''}
-                                </option>
-                            ))}
-                        </select>
-                        {isLoadingWarehouses && <p className="text-xs text-gray-400 mt-1">Carregando locais...</p>}
-                    </div>
-
-                    {/* Tipo de Operação */}
-                    <div className="col-span-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Natureza da Operação *</label>
-                        <select
-                            name="type"
-                            value={formData.type}
-                            onChange={handleInputChange}
-                            className={`w-full px-3 py-2 border rounded-md shadow-sm sm:text-sm bg-white focus:ring-2 focus:ring-offset-1 ${
-                                isEntry 
-                                ? 'border-gray-300 focus:border-green-500 focus:ring-green-500' 
-                                : 'border-gray-300 focus:border-red-500 focus:ring-red-500'
-                            }`}
-                        >
-                            {transactionOptions.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Produto (ID/SKU Temporário - Futuro: Autocomplete) */}
-                    <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Produto (ID ou SKU) *</label>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                name="variantId"
-                                value={formData.variantId}
-                                onChange={handleInputChange}
-                                placeholder="Digite o ID do produto ou SKU..."
-                                disabled={!!preSelectedVariantId} // Trava se já vier selecionado
-                                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${preSelectedVariantId ? 'bg-gray-50 text-gray-500' : ''}`}
-                            />
-                            {/* Ícone de busca (Visual apenas por enquanto) */}
-                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                        {!preSelectedVariantId && (
-                            <p className="text-xs text-gray-400 mt-1">
-                                * No futuro, aqui teremos uma busca inteligente pelo nome do produto.
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Quantidade e Custo */}
-                    <div className="col-span-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade *</label>
-                        <input
-                            type="number"
-                            name="quantity"
-                            step="0.001"
-                            min="0.001"
-                            value={formData.quantity}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm font-mono"
-                        />
-                    </div>
-
-                    <div className="col-span-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Custo Unitário (R$) 
-                            <span className="text-gray-400 font-normal ml-1">(Opcional)</span>
-                        </label>
-                        <input
-                            type="number"
-                            name="unitCost"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                            value={formData.unitCost || ''}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm font-mono"
-                        />
-                    </div>
-
-                    {/* Detalhes Finais */}
-                    <div className="col-span-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Referência / Documento</label>
-                        <input
-                            type="text"
-                            name="documentRef"
-                            value={formData.documentRef}
-                            onChange={handleInputChange}
-                            placeholder="Ex: NF-e 1234, Pedido #900"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                        />
-                    </div>
-
-                    <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
-                        <textarea
-                            name="notes"
-                            rows={3}
-                            value={formData.notes}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            placeholder="Justificativa do ajuste ou detalhes adicionais..."
-                        />
-                    </div>
-                </div>
-
-                {/* Footer de Ações */}
-                <div className="flex items-center justify-end space-x-4 pt-4 border-t border-gray-100">
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="px-6 py-2.5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className={`px-6 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
-                            isEntry 
-                            ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500' 
-                            : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-                        }`}
-                    >
-                        {isLoading ? 'Processando...' : isEntry ? 'Confirmar Entrada' : 'Confirmar Saída'}
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
-}
-
-
-// ===== FILE: src/modules/inventory/components/forms/WarehouseForm.tsx =====
-
-'use client';
-
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useWarehouses } from '../../hooks/useWarehouses';
-import { CreateWarehouseInput, Warehouse } from '../../types/InventoryTypes';
-
-interface Props {
-    initialData?: Warehouse; // Se passado, é Edição. Se não, é Criação.
-    tenantId: string; // Necessário para voltar a navegação correta
-}
-
-// Estado Inicial Limpo
-const INITIAL_STATE: CreateWarehouseInput = {
-    name: '',
-    isDefault: false,
-    allowsNegativeStock: false,
-    addressInfo: { city: '', street: '' } // Inicializa objeto aninhado para evitar crash
-};
-
-export function WarehouseForm({ initialData, tenantId }: Props) {
-    const router = useRouter();
-    const { createWarehouse, updateWarehouse, isLoading } = useWarehouses();
-
-    // 1. Estado Local (Regra: Sem libs externas, controle manual)
-    const [formData, setFormData] = useState<CreateWarehouseInput>(INITIAL_STATE);
-    const [error, setError] = useState<string>('');
-    const [successMsg, setSuccessMsg] = useState<string>('');
-
-    // 2. Popula dados se for Edição
-    useEffect(() => {
-        if (initialData) {
-            setFormData({
-                name: initialData.name,
-                isDefault: initialData.isDefault,
-                allowsNegativeStock: initialData.allowsNegativeStock,
-                addressInfo: initialData.addressInfo || { city: '', street: '' }
-            });
-        }
-    }, [initialData]);
-
-    // 3. Handlers de Input (Change Manual)
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-
-        // Lógica para campos aninhados (ex: addressInfo.city)
-        if (name.includes('.')) {
-            const [parent, child] = name.split('.');
-            setFormData(prev => ({
-                ...prev,
-                [parent]: {
-                    ...(prev as any)[parent],
-                    [child]: value
-                }
-            }));
-            return;
-        }
-
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, checked } = e.target;
-        setFormData(prev => ({ ...prev, [name]: checked }));
-    };
-
-    // 4. Submit com Validação Manual
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setSuccessMsg('');
-
-        // Validação Simples
-        if (!formData.name.trim()) {
-            setError('O nome do depósito é obrigatório.');
-            return;
-        }
-
-        try {
-            if (initialData) {
-                await updateWarehouse(initialData.id, formData);
-                setSuccessMsg('Depósito atualizado com sucesso!');
-            } else {
-                await createWarehouse(formData);
-                setSuccessMsg('Depósito criado com sucesso!');
-            }
-
-            // Opcional: Redirecionar após sucesso ou aguardar o usuário
-            // router.push(`/${tenantId}/dashboard/inventory/warehouses`); 
-        } catch (err) {
-            console.error(err);
-            setError('Ocorreu um erro ao salvar. Tente novamente.');
-        }
-    };
-
-    return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 max-w-4xl mx-auto">
-            
-            <div className="mb-6 border-b border-gray-100 pb-4">
-                <h2 className="text-xl font-bold text-gray-800">
-                    {initialData ? 'Editar Depósito' : 'Novo Depósito'}
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                    Defina as regras de negócio para este local de estoque.
-                </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-                
-                {/* Feedback Visual de Erro/Sucesso */}
-                {error && (
-                    <div className="p-4 bg-red-50 text-red-700 rounded-md border border-red-100 text-sm">
-                        {error}
-                    </div>
-                )}
-                {successMsg && (
-                    <div className="p-4 bg-green-50 text-green-700 rounded-md border border-green-100 text-sm">
-                        {successMsg}
-                    </div>
-                )}
-
-                {/* --- BLOCO 1: Informações Básicas --- */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Nome do Local *
-                        </label>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="Ex: Loja Matriz, Depósito Central, Carro de Vendas 01"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Cidade
-                        </label>
-                        <input
-                            type="text"
-                            name="addressInfo.city"
-                            value={(formData.addressInfo as any).city}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Logradouro / Rua
-                        </label>
-                        <input
-                            type="text"
-                            name="addressInfo.street"
-                            value={(formData.addressInfo as any).street}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                        />
-                    </div>
-                </div>
-
-                {/* --- BLOCO 2: Regras de Negócio (Checkboxes) --- */}
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-4">
-                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-                        Configurações
-                    </h3>
-                    
-                    <div className="flex items-start">
-                        <div className="flex items-center h-5">
-                            <input
-                                id="isDefault"
-                                name="isDefault"
-                                type="checkbox"
-                                checked={formData.isDefault}
-                                onChange={handleCheckboxChange}
-                                className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
-                            />
-                        </div>
-                        <div className="ml-3 text-sm">
-                            <label htmlFor="isDefault" className="font-medium text-gray-700">Depósito Principal</label>
-                            <p className="text-gray-500">Se marcado, será usado automaticamente em vendas onde o local não for especificado.</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-start">
-                        <div className="flex items-center h-5">
-                            <input
-                                id="allowsNegativeStock"
-                                name="allowsNegativeStock"
-                                type="checkbox"
-                                checked={formData.allowsNegativeStock}
-                                onChange={handleCheckboxChange}
-                                className="focus:ring-orange-500 h-4 w-4 text-orange-600 border-gray-300 rounded"
-                            />
-                        </div>
-                        <div className="ml-3 text-sm">
-                            <label htmlFor="allowsNegativeStock" className="font-medium text-gray-700">Permitir Estoque Negativo</label>
-                            <p className="text-gray-500">Permite continuar vendendo mesmo que o saldo lógico seja zero. <span className="text-orange-600 font-semibold">(Cuidado)</span></p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* --- FOOTER: Ações --- */}
-                <div className="flex items-center justify-end space-x-4 pt-4 border-t border-gray-100">
-                    <button
-                        type="button"
-                        onClick={() => router.back()} // Volta para a listagem usando o Router do Next
-                        className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isLoading ? 'Salvando...' : 'Salvar Depósito'}
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
-}
-
-
-// ===== FILE: src/modules/inventory/hooks/useStockMovements.ts =====
-
-// src/modules/inventory/hooks/useStockMovements.ts
+// ===== FILE: src/modules/inventory/hooks/useStockMovementMutation.ts =====
 
 'use client';
 
 import { useState, useCallback } from 'react';
 import { api } from '@/core/services/api';
-import { 
-    InventoryTransaction, 
-    RegisterMovementInput,
-    MovementFilter // Importando o filtro que definimos no InventoryTypes.ts
-} from '../types/InventoryTypes';
+import { InventoryTransaction, RegisterMovementInput } from '../types/InventoryTypes';
 
 /**
- * Hook para gerenciamento de Movimentações de Estoque.
- * Responsável por registrar entradas/saídas e consultar o histórico (Kardex).
+ * @hook useStockMovementMutation
+ * @description Hook de Mutação (Write Operations) para o Kardex.
+ * CLASSE OURO: Responsabilidade Única (CQRS - Command). 
+ * Focado estritamente em registrar novas movimentações no estoque e 
+ * traduzir os erros de validação da API para a interface.
  */
-export function useStockMovements() {
-    const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
+export function useStockMovementMutation() {
     const [isLoading, setIsLoading] = useState(false);
+    
+    // O CrudLayout consome este estado para renderizar a tarja vermelha
+    const [error, setError] = useState<string | null>(null);
 
     /**
-     * Registra uma nova movimentação (Entrada ou Saída).
-     * POST /inventory/movements
+     * @helper extractError
+     * @description Tradutor universal de erros do NestJS para o Frontend.
      */
-    const registerMovement = async (input: RegisterMovementInput) => {
+    const extractError = useCallback((err: any, fallbackMessage: string): string => {
+        console.error(`❌ [useStockMovementMutation] Erro:`, err);
+        const backendMessage = err.response?.data?.message;
+        
+        if (Array.isArray(backendMessage)) {
+            return backendMessage.join(' | ');
+        }
+        return backendMessage || fallbackMessage;
+    }, []);
+
+    /**
+     * @method registerMovement
+     * @description Envia o payload para a API processar a entrada ou saída.
+     * Importante: A lógica de cálculo de saldo fica 100% no Backend.
+     */
+    const registerMovement = useCallback(async (input: RegisterMovementInput): Promise<InventoryTransaction> => {
         setIsLoading(true);
+        setError(null);
+        
         try {
             const response = await api.post<InventoryTransaction>('/inventory/movements', input);
-            
-            // Opcional: Atualização otimista da lista se estiver vendo o mesmo item
-            setTransactions((prev) => {
-                if (prev.length > 0 && prev[0].variantId === input.variantId) {
-                    return [response.data, ...prev];
-                }
-                // Se for visão global, adiciona no topo também
-                if (!input.variantId || prev.length > 0) {
-                     return [response.data, ...prev];
-                }
-                return prev;
-            });
-
             return response.data;
-        } catch (error) {
-            console.error('Erro ao registrar movimentação:', error);
-            throw error; 
+        } catch (err: any) {
+            const msg = extractError(err, 'Falha ao tentar registrar a movimentação de estoque.');
+            setError(msg);
+            throw err; // Essencial para avisar o CrudForm que a mutação falhou
         } finally {
             setIsLoading(false);
         }
+    }, [extractError]);
+
+    return {
+        registerMovement,
+        isLoading,
+        error
     };
+}
+
+
+// ===== FILE: src/modules/inventory/hooks/useStockMovements.ts =====
+
+// ===== FILE: src/modules/inventory/hooks/useStockMovements.ts =====
+
+'use client';
+
+import { useState, useCallback, useEffect } from 'react';
+import { api } from '@/core/services/api';
+import { InventoryTransaction, MovementFilter } from '../types/InventoryTypes';
+
+/**
+ * @hook useStockMovements
+ * @description Hook de Leitura (Query Operations) para o Kardex.
+ * CLASSE OURO: Responsabilidade Única (CQRS - Query). Focado estritamente em 
+ * buscar o histórico de movimentações (global ou por produto) e expor o estado.
+ */
+export function useStockMovements() {
+    const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
+    // Começamos com 'true' para garantir que a UI mostre o Skeleton Loading na montagem
+    const [isLoading, setIsLoading] = useState(true); 
+    const [error, setError] = useState<string | null>(null);
 
     /**
-     * Busca o histórico (Kardex).
-     * Agora suporta busca Global (sem ID) ou Específica (com ID/Filtros).
-     * GET /inventory/kardex
+     * @method fetchMovements
+     * @description Busca o histórico (Kardex) no backend. Aceita filtros flexíveis.
+     * Memoizado com useCallback para ser seguro dentro do useEffect.
      */
     const fetchMovements = useCallback(async (filters?: MovementFilter) => {
         setIsLoading(true);
+        setError(null);
         try {
-            // Alteração: Usamos query params para flexibilidade (Global vs Produto Único)
-            // O backend deve suportar receber os filtros via query string
             const response = await api.get<InventoryTransaction[]>('/inventory/kardex', {
                 params: filters
             });
             setTransactions(response.data);
-        } catch (error) {
-            console.error('Erro ao buscar movimentações:', error);
+        } catch (err: any) {
+            console.error('❌ [useStockMovements] Erro ao buscar Kardex:', err);
+            const msg = err.response?.data?.message || 'Falha ao carregar o histórico de movimentações.';
+            setError(msg);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
+    // =========================================================================
+    // 🚀 O GATILHO DE IGNIÇÃO AUTOMÁTICO
+    // Dispara a busca global assim que o módulo de Inventário é aberto.
+    // =========================================================================
+    useEffect(() => {
+        fetchMovements();
+    }, [fetchMovements]);
+
     /**
-     * Mantive a assinatura antiga para compatibilidade, mas redirecionando para a nova lógica.
-     * Isso evita quebrar telas que já usam fetchKardex(id).
+     * @method fetchKardex
+     * @description Mantido para retrocompatibilidade. Atalho para buscar a timeline
+     * de um produto específico.
      */
     const fetchKardex = useCallback(async (variantId: string) => {
         if (!variantId) return;
@@ -15690,191 +14084,709 @@ export function useStockMovements() {
     }, [fetchMovements]);
 
     /**
-     * Limpa o estado atual das transações
+     * @method clearTransactions
+     * @description Limpa o estado atual (útil ao desmontar componentes ou trocar de visão).
      */
     const clearTransactions = useCallback(() => {
         setTransactions([]);
+        setError(null);
     }, []);
 
     return {
         transactions,
         isLoading,
-        registerMovement,
-        fetchMovements, // Nova função flexível
-        fetchKardex,    // Mantida para retrocompatibilidade
+        error,
+        fetchMovements,
+        fetchKardex,
         clearTransactions
+    };
+}
+
+
+// ===== FILE: src/modules/inventory/hooks/useWarehouseMutation.ts =====
+
+// ===== FILE: src/modules/inventory/hooks/useWarehouseMutation.ts =====
+
+'use client';
+
+import { useState, useCallback } from 'react';
+import { api } from '@/core/services/api';
+import { Warehouse, CreateWarehouseInput } from '../types/InventoryTypes';
+
+/**
+ * @hook useWarehouseMutation
+ * @description Hook de Mutação (Write Operations) para Depósitos (Warehouses).
+ * CLASSE OURO: Separação de Responsabilidades (CQRS). Lida exclusivamente com 
+ * POST, PATCH, DELETE e captura padronizada de erros do NestJS.
+ */
+export function useWarehouseMutation() {
+    const [isLoading, setIsLoading] = useState(false);
+    
+    // O CrudLayout escuta este estado para exibir tarjas vermelhas de erro
+    const [error, setError] = useState<string | null>(null);
+
+    /**
+     * @helper extractError
+     * @description Traduz erros brutos da API (Axios/NestJS) para mensagens amigáveis na UI.
+     * Suporta a extração de arrays do class-validator.
+     */
+    const extractError = useCallback((err: any, fallbackMessage: string): string => {
+        console.error(`❌ [useWarehouseMutation] Erro:`, err);
+        const backendMessage = err.response?.data?.message;
+        
+        if (Array.isArray(backendMessage)) {
+            return backendMessage.join(' | '); // Junta múltiplos erros de validação
+        }
+        return backendMessage || fallbackMessage;
+    }, []);
+
+    /**
+     * @method createWarehouse
+     * @description Cria um novo depósito.
+     */
+    const createWarehouse = useCallback(async (data: CreateWarehouseInput): Promise<Warehouse> => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            const response = await api.post<Warehouse>('/inventory/warehouses', data);
+            return response.data;
+        } catch (err: any) {
+            const msg = extractError(err, 'Falha ao tentar criar o depósito.');
+            setError(msg);
+            throw err; // Re-lança para o CrudForm parar o "isSubmitting"
+        } finally {
+            setIsLoading(false);
+        }
+    }, [extractError]);
+
+    /**
+     * @method updateWarehouse
+     * @description Atualiza parcialmente um depósito.
+     */
+    const updateWarehouse = useCallback(async (id: string, data: Partial<CreateWarehouseInput>): Promise<Warehouse> => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            const response = await api.patch<Warehouse>(`/inventory/warehouses/${id}`, data);
+            return response.data;
+        } catch (err: any) {
+            const msg = extractError(err, 'Falha ao atualizar o depósito.');
+            setError(msg);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }, [extractError]);
+
+    /**
+     * @method deleteWarehouse
+     * @description Remove o depósito (geralmente Soft Delete).
+     */
+    const deleteWarehouse = useCallback(async (id: string): Promise<boolean> => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            await api.delete(`/inventory/warehouses/${id}`);
+            return true;
+        } catch (err: any) {
+            const msg = extractError(err, 'Não foi possível remover este depósito. Pode estar em uso por movimentações.');
+            setError(msg);
+            throw err; 
+        } finally {
+            setIsLoading(false);
+        }
+    }, [extractError]);
+
+    return {
+        createWarehouse,
+        updateWarehouse,
+        deleteWarehouse,
+        isLoading,
+        error
     };
 }
 
 
 // ===== FILE: src/modules/inventory/hooks/useWarehouses.ts =====
 
-'use strict';
+// ===== FILE: src/modules/inventory/hooks/useWarehouses.ts =====
 
-import { useState, useCallback } from 'react';
-import { api } from '@/core/services/api'; // Caminho relativo para o Core
-import { Warehouse, CreateWarehouseInput } from '../types/InventoryTypes';
+'use client';
+
+import { useState, useCallback, useEffect } from 'react';
+import { api } from '@/core/services/api';
+import { Warehouse } from '../types/InventoryTypes';
 
 /**
- * Hook para gerenciamento de Depósitos (Warehouses).
- * Responsável por conectar com a API e gerenciar o estado local da lista.
+ * @hook useWarehouses
+ * @description Hook de Leitura (Query Operations) para Depósitos.
+ * CLASSE OURO: Responsabilidade Única (CQRS - Query). Focado em buscar 
+ * a lista de depósitos, expor o estado de carregamento e tratar erros de GET.
  */
 export function useWarehouses() {
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true); // Começa true para skeleton loading
+    const [error, setError] = useState<string | null>(null);
 
     /**
-     * Busca todos os depósitos do tenant (GET /inventory/warehouses)
+     * @method fetchWarehouses
+     * @description Busca a lista completa de depósitos do tenant atual.
+     * Memoizado para estabilidade do useEffect.
      */
     const fetchWarehouses = useCallback(async () => {
         setIsLoading(true);
+        setError(null);
         try {
             const response = await api.get<Warehouse[]>('/inventory/warehouses');
             setWarehouses(response.data);
-        } catch (error) {
-            console.error('Erro ao buscar depósitos:', error);
-            // Aqui poderíamos integrar com um Toast Notification global se houver
+        } catch (err: any) {
+            console.error('❌ [useWarehouses] Erro ao buscar depósitos:', err);
+            const msg = err.response?.data?.message || 'Falha ao carregar a lista de depósitos.';
+            setError(msg);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    /**
-     * Cria um novo depósito (POST /inventory/warehouses)
-     */
-    const createWarehouse = async (input: CreateWarehouseInput) => {
-        setIsLoading(true);
-        try {
-            const response = await api.post<Warehouse>('/inventory/warehouses', input);
-            // Atualiza a lista localmente para evitar refetch desnecessário
-            setWarehouses((prev) => [...prev, response.data]);
-            return response.data;
-        } catch (error) {
-            console.error('Erro ao criar depósito:', error);
-            throw error; // Repassa o erro para o componente tratar (ex: fechar modal ou mostrar erro)
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    /**
-     * Atualiza um depósito existente (PATCH /inventory/warehouses/:id)
-     */
-    const updateWarehouse = async (id: string, input: Partial<CreateWarehouseInput>) => {
-        setIsLoading(true);
-        try {
-            const response = await api.patch<Warehouse>(`/inventory/warehouses/${id}`, input);
-            
-            // Atualiza o item específico na lista local
-            setWarehouses((prev) => 
-                prev.map((item) => (item.id === id ? response.data : item))
-            );
-
-            // Se o depósito atualizado virou padrão (isDefault), precisamos atualizar a flag dos outros
-            if (input.isDefault) {
-                setWarehouses((prev) => 
-                    prev.map((item) => 
-                        item.id === id 
-                            ? { ...item, isDefault: true } 
-                            : { ...item, isDefault: false }
-                    )
-                );
-            }
-
-            return response.data;
-        } catch (error) {
-            console.error('Erro ao atualizar depósito:', error);
-            throw error;
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    // =========================================================================
+    // 🚀 O GATILHO DE IGNIÇÃO AUTOMÁTICO
+    // =========================================================================
+    useEffect(() => {
+        fetchWarehouses();
+    }, [fetchWarehouses]);
 
     return {
         warehouses,
         isLoading,
-        fetchWarehouses,
-        createWarehouse,
-        updateWarehouse
+        error,
+        refreshWarehouses: fetchWarehouses // Alias semântico para recarregar a tela
     };
 }
 
 
-// ===== FILE: src/modules/inventory/presentation/MovementsContainer.tsx =====
+// ===== FILE: src/modules/inventory/registries/InventoryRegistry.tsx =====
 
-// src/modules/inventory/presentation/MovementsContainer.tsx
+// ===== FILE: src/modules/inventory/registries/InventoryRegistry.tsx =====
+
+'use client';
+
+import React, { useMemo } from 'react';
+import { CrudLayout } from '@/core/components/crud/CrudLayout';
+import { CrudConfig } from '@/core/components/crud/types';
+import { 
+    FaArrowDown, 
+    FaArrowUp 
+} from 'react-icons/fa';
+
+// --- Contratos e Validações ---
+import { InventoryTransaction, TransactionType } from '../types/InventoryTypes';
+import { RegisterMovementSchema, InventoryFormInput } from '../schemas/inventorySchema';
+
+// --- Motores de Dados (CQRS Hooks) ---
+import { useStockMovements } from '../hooks/useStockMovements';
+import { useStockMovementMutation } from '../hooks/useStockMovementMutation';
+import { useWarehouses } from '../hooks/useWarehouses'; // Para popular o Dropdown de locais
+
+/**
+ * @component InventoryRegistry (Kardex)
+ * @description O Painel de Auditoria e Lançamento de Estoque.
+ * CLASSE OURO: Consome hooks separados (CQRS). Bloqueia edição e exclusão 
+ * nativamente para garantir a imutabilidade contábil do sistema.
+ */
+export function InventoryRegistry() {
+    // 1. Instanciamos o motor de LEITURA (Query)
+    const { 
+        transactions, 
+        isLoading: isReading, 
+        error: readError, 
+        fetchMovements 
+    } = useStockMovements();
+
+    // 2. Instanciamos o motor de ESCRITA (Command)
+    const { 
+        registerMovement, 
+        isLoading: isWriting, 
+        error: writeError 
+    } = useStockMovementMutation();
+
+    // 3. Instanciamos o motor de Depósitos (apenas leitura para o select)
+    const { warehouses } = useWarehouses();
+
+    // =========================================================================
+    // 🏗️ PREPARAÇÃO DE OPÇÕES (Dropdowns)
+    // =========================================================================
+    const warehouseOptions = useMemo(() => 
+        warehouses.map(w => ({ label: w.name, value: w.id })), 
+    [warehouses]);
+
+    const typeOptions = [
+        { label: '📦 Entrada por Compra', value: TransactionType.IN_PURCHASE },
+        { label: '➕ Ajuste de Entrada (Sobra)', value: TransactionType.IN_ADJUSTMENT },
+        { label: '🚚 Transferência (Entrada)', value: TransactionType.IN_TRANSFER },
+        { label: '🛒 Venda (Saída)', value: TransactionType.OUT_SALE },
+        { label: '➖ Ajuste de Saída (Perda)', value: TransactionType.OUT_LOSS },
+        { label: '🏢 Consumo Interno', value: TransactionType.OUT_CONSUMPTION },
+    ];
+
+    // =========================================================================
+    // ⚙️ CONFIGURAÇÃO CLASSE OURO
+    // =========================================================================
+    const config: CrudConfig<InventoryTransaction, InventoryFormInput> = {
+        title: 'Movimentações de Estoque (Kardex)',
+        description: 'Histórico completo de entradas e saídas. Registre ajustes e visualize o fluxo físico (Imutável).',
+        schema: RegisterMovementSchema,
+
+        // --- COLUNAS DO KARDEX ---
+        columns: [
+            {
+                header: 'Data / Hora',
+                accessor: (item) => (
+                    <div className="flex flex-col">
+                        <span className="text-xs font-bold text-gray-300">
+                            {new Date(item.createdAt).toLocaleDateString()}
+                        </span>
+                        <span className="text-[10px] text-gray-500 italic">
+                            {new Date(item.createdAt).toLocaleTimeString()}
+                        </span>
+                    </div>
+                )
+            },
+            {
+                header: 'Produto / SKU',
+                accessor: (item) => (
+                    <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-accent-primary">
+                            {item.variant?.product?.name || 'Produto não identificado'}
+                        </span>
+                        <span className="text-[11px] font-mono text-gray-500">
+                            SKU: {item.variant?.sku || 'N/A'}
+                        </span>
+                    </div>
+                )
+            },
+            {
+                header: 'Tipo',
+                accessor: (item) => {
+                    const isEntry = item.type.startsWith('IN_');
+                    return (
+                        <span className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-black uppercase tracking-tighter border ${
+                            isEntry 
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                            : 'bg-red-500/10 text-red-400 border-red-500/20'
+                        }`}>
+                            {isEntry ? <FaArrowUp /> : <FaArrowDown />}
+                            {item.type.split('_')[1]}
+                        </span>
+                    );
+                }
+            },
+            {
+                header: 'Quant. / Saldo',
+                accessor: (item) => {
+                    const isEntry = item.type.startsWith('IN_');
+                    return (
+                        <div className="flex items-center gap-3">
+                            <div className="text-right">
+                                <p className={`text-sm font-bold ${isEntry ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    {isEntry ? '+' : '-'}{item.quantity}
+                                </p>
+                                <p className="text-[10px] text-gray-500 italic">
+                                    Saldo: {item.newBalance}
+                                </p>
+                            </div>
+                        </div>
+                    );
+                }
+            }
+        ],
+
+        // --- CAMPOS DO FORMULÁRIO (Novo Lançamento) ---
+        fields: [
+            {
+                name: 'warehouseId',
+                label: 'Depósito / Local',
+                type: 'select',
+                options: warehouseOptions
+            },
+            {
+                name: 'variantId',
+                label: 'UUID do Produto (SKU)',
+                type: 'text', // Em uma fase futura, isso será um ComboBox de busca inteligente
+                placeholder: 'Cole o ID da variante do produto...'
+            },
+            {
+                name: 'type',
+                label: 'Natureza da Operação',
+                type: 'select',
+                options: typeOptions
+            },
+            {
+                name: 'quantity',
+                label: 'Quantidade',
+                type: 'number',
+                placeholder: 'Ex: 10'
+            },
+            {
+                name: 'unitCost',
+                label: 'Custo Unitário (Opcional)',
+                type: 'currency',
+                placeholder: '0.00'
+            },
+            {
+                name: 'documentRef',
+                label: 'Referência (NF, Pedido)',
+                type: 'text',
+                placeholder: 'Ex: NF-12345'
+            },
+            {
+                name: 'notes',
+                label: 'Motivo / Observação',
+                type: 'textarea',
+                placeholder: 'Justifique esta movimentação...'
+            }
+        ],
+
+        systemFields: [
+            { name: 'id', label: 'ID do Movimento', type: 'text' },
+            { name: 'createdBy', label: 'Operador', type: 'text' },
+            { name: 'previousBalance', label: 'Saldo Anterior', type: 'number' }
+        ]
+    };
+
+    // =========================================================================
+    // 🔌 ROTEAMENTO DE AÇÕES (Unindo Leitura e Escrita)
+    // =========================================================================
+    return (
+        <div className="h-full w-full animate-fade-in">
+            <CrudLayout<InventoryTransaction, InventoryFormInput>
+                config={config}
+                hooks={{
+                    data: transactions,
+                    // COMBINAÇÃO DE ESTADOS: Loading ocorre se lendo ou salvando
+                    isLoading: isReading || isWriting,
+                    // COMBINAÇÃO DE ERROS: Exibe a tarja vermelha de quem falhou
+                    error: writeError || readError,
+                    
+                    onCreate: async (data) => {
+                        await registerMovement(data);
+                        // Como deixamos a lógica de saldo no backend, nós forçamos 
+                        // um refresh limpo do Kardex após o salvamento ser concluído.
+                        fetchMovements();
+                    },
+                    
+                    // 💡 BLINDAGEM CONTÁBIL: Kardex não se edita nem se apaga.
+                    onUpdate: async () => {
+                        alert('⚠️ Acesso Negado: Movimentações de estoque não podem ser editadas por segurança contábil. Faça um lançamento de estorno.');
+                    },
+                    onDelete: async () => {
+                        alert('⚠️ Acesso Negado: Movimentações de estoque não podem ser excluídas. Faça um lançamento de estorno.');
+                    },
+                    
+                    onRefresh: fetchMovements
+                }}
+            />
+        </div>
+    );
+}
+
+
+// ===== FILE: src/modules/inventory/registries/WarehouseRegistry.tsx =====
+
+// ===== FILE: src/modules/inventory/registries/WarehouseRegistry.tsx =====
 
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { FaPlus, FaArrowLeft } from 'react-icons/fa';
-import { MovementsList } from '../components/MovementsList';
+import { CrudLayout } from '@/core/components/crud/CrudLayout';
+import { CrudConfig } from '@/core/components/crud/types';
+import { 
+    FaCheckCircle, 
+    FaTimesCircle, 
+    FaStar, 
+    FaExclamationTriangle
+} from 'react-icons/fa';
+
+// --- Contratos e Validações ---
+import { Warehouse } from '../types/InventoryTypes';
+import { UpdateWarehouseSchema, WarehouseFormInput } from '../schemas/warehouseSchema';
+
+// --- Motores de Dados (CQRS Hooks) ---
+import { useWarehouses } from '../hooks/useWarehouses';
+import { useWarehouseMutation } from '../hooks/useWarehouseMutation';
 
 /**
- * @component MovementsContainer
- * @description Container de Apresentação (Smart Component) para a tela de Movimentações.
- * Gerencia o layout, cabeçalhos e navegação.
- * ESTILO: Dark/Metallic (CRM Style).
+ * @component WarehouseRegistry
+ * @description Central de Gerenciamento de Locais de Estoque (Warehouses).
+ * CLASSE OURO: Consome hooks separados para leitura e escrita (CQRS), 
+ * unificando os estados de loading e erro para a interface de forma transparente.
  */
-export const MovementsContainer: React.FC = () => {
-    // Recupera o ID do tenant da URL para construir os links de navegação
-    const params = useParams();
-    const tenantId = params?.tenantId as string;
+export function WarehouseRegistry() {
+    // 1. Instanciamos o motor de LEITURA (Query)
+    const { 
+        warehouses, 
+        isLoading: isReading, 
+        error: readError, 
+        refreshWarehouses 
+    } = useWarehouses();
 
+    // 2. Instanciamos o motor de ESCRITA (Command)
+    const { 
+        createWarehouse, 
+        updateWarehouse, 
+        deleteWarehouse, 
+        isLoading: isWriting, 
+        error: writeError 
+    } = useWarehouseMutation();
+
+    // =========================================================================
+    // ⚙️ CONFIGURAÇÃO CLASSE OURO (O Manual do Maestro)
+    // =========================================================================
+    const config: CrudConfig<Warehouse, WarehouseFormInput> = {
+        title: 'Depósitos e Logística',
+        description: 'Gerencie seus centros de distribuição, lojas físicas e locais de armazenagem.',
+        schema: UpdateWarehouseSchema,
+
+        // --- COLUNAS DA TABELA ---
+        columns: [
+            {
+                header: 'Nome do Depósito',
+                accessor: (item) => (
+                    <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-200">{item.name}</span>
+                        {item.isDefault && (
+                            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                                <FaStar className="w-2 h-2" /> Padrão
+                            </span>
+                        )}
+                    </div>
+                )
+            },
+            {
+                header: 'Endereço',
+                accessor: (item) => {
+                    const addr = item.addressInfo;
+                    if (!addr?.city) return <span className="text-gray-600 italic text-xs">Não informado</span>;
+                    return (
+                        <span className="text-xs text-gray-400">
+                            {addr.city}{addr.state ? ` / ${addr.state}` : ''}
+                        </span>
+                    );
+                }
+            },
+            {
+                header: 'Estoque Negativo',
+                accessor: (item) => item.allowsNegativeStock ? (
+                    <span className="flex items-center gap-1.5 text-amber-400 text-[10px] font-bold uppercase tracking-wider">
+                        <FaExclamationTriangle className="w-3 h-3" /> Permitido
+                    </span>
+                ) : (
+                    <span className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">
+                        Bloqueado
+                    </span>
+                )
+            },
+            {
+                header: 'Status',
+                accessor: (item) => item.isActive ? (
+                    <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                        <FaCheckCircle /> Ativo
+                    </span>
+                ) : (
+                    <span className="flex items-center gap-1.5 text-red-400 text-xs font-bold uppercase tracking-wider">
+                        <FaTimesCircle /> Inativo
+                    </span>
+                )
+            }
+        ],
+
+        // --- CAMPOS DO FORMULÁRIO (A Impressora 3D) ---
+        fields: [
+            {
+                name: 'name',
+                label: 'Identificação do Depósito',
+                type: 'text',
+                placeholder: 'Ex: CD Principal, Loja Centro, Estoque Trânsito'
+            },
+            {
+                name: 'isDefault',
+                label: 'Depósito Principal?',
+                type: 'boolean',
+                trueLabel: 'Sim, usar como padrão para vendas',
+                falseLabel: 'Não, apenas depósito auxiliar'
+            },
+            {
+                name: 'allowsNegativeStock',
+                label: 'Permitir Estoque Negativo?',
+                type: 'boolean',
+                trueLabel: 'Sim (Risco: Pode causar furos de estoque)',
+                falseLabel: 'Não (Seguro: Bloqueia venda sem saldo)'
+            },
+            {
+                name: 'isActive',
+                label: 'Status da Operação',
+                type: 'boolean'
+            },
+            
+            // Bloco de Endereço (Mapeamento direto para JSONB)
+            {
+                name: 'addressInfo.street' as any,
+                label: 'Logradouro / Rua',
+                type: 'text',
+                placeholder: 'Av. Paulista, 1000'
+            },
+            {
+                name: 'addressInfo.city' as any,
+                label: 'Cidade',
+                type: 'text',
+                placeholder: 'São Paulo'
+            },
+            {
+                name: 'addressInfo.state' as any,
+                label: 'UF',
+                type: 'text',
+                placeholder: 'SP'
+            }
+        ],
+
+        // --- DADOS DE SISTEMA (Auditoria) ---
+        systemFields: [
+            { name: 'id', label: 'UUID do Depósito', type: 'text' },
+            { name: 'createdAt', label: 'Criado em', type: 'text' },
+            { name: 'updatedAt', label: 'Última Movimentação', type: 'text' }
+        ]
+    };
+
+    // =========================================================================
+    // 🔌 ROTEAMENTO DE AÇÕES (Unindo Leitura e Escrita)
+    // =========================================================================
     return (
-        // Alterado: bg-gray-50 -> bg-gray-900 (Dark Background)
-        <div className="flex flex-col h-full bg-gray-900 p-8 overflow-y-auto custom-scrollbar">
-            <div className="max-w-7xl mx-auto w-full space-y-6">
-                
-                {/* --- Header da Página --- */}
-                <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in-down">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <Link 
-                                href={`/${tenantId}/dashboard/supply-chain`}
-                                // Alterado: Cores do botão voltar para Dark Mode
-                                className="text-gray-400 hover:text-white transition-colors p-2 rounded-full hover:bg-gray-800"
-                                title="Voltar para Supply Chain"
-                            >
-                                <FaArrowLeft className="w-4 h-4" />
-                            </Link>
-                            {/* Alterado: text-gray-800 -> text-white */}
-                            <h1 className="text-2xl font-bold text-white tracking-tight">
-                                Movimentações de Estoque
-                            </h1>
-                        </div>
-                        {/* Alterado: text-gray-500 -> text-gray-400 */}
-                        <p className="text-gray-400 text-sm ml-9">
-                            Visão global de entradas, saídas e auditoria (Kardex).
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href={`/${tenantId}/dashboard/inventory/movements/create`}
-                            className="flex items-center gap-2 bg-accent-primary hover:bg-accent-primary/90 text-white px-4 py-2.5 rounded-lg font-medium transition-all shadow-lg shadow-accent-primary/20 hover:shadow-accent-primary/40 active:scale-95"
-                        >
-                            <FaPlus className="w-4 h-4" />
-                            <span>Nova Movimentação</span>
-                        </Link>
-                    </div>
-                </header>
-
-                {/* --- Área Principal (Lista) --- */}
-                {/* Alterado: Removido bg-white e border para evitar "caixa branca" atrás da tabela.
-                    A tabela (MovementsList) já tem seu próprio card estilizado.
-                    Tornamos este wrapper transparente.
-                */}
-                <section className="bg-transparent rounded-xl overflow-hidden animate-fade-in">
-                    <MovementsList />
-                </section>
-
-            </div>
+        <div className="h-full w-full animate-fade-in">
+            <CrudLayout<Warehouse, WarehouseFormInput>
+                config={config}
+                hooks={{
+                    data: warehouses,
+                    // 💡 COMBINAÇÃO DE ESTADOS: A tela carrega se estiver lendo OU escrevendo
+                    isLoading: isReading || isWriting,
+                    // 💡 COMBINAÇÃO DE ERROS: Exibe o erro de quem falhou
+                    error: writeError || readError,
+                    onCreate: async (data) => {
+                        await createWarehouse(data);
+                    },
+                    onUpdate: async (id, data) => {
+                        await updateWarehouse(id, data);
+                    },
+                    onDelete: async (id) => {
+                        await deleteWarehouse(id);
+                    },
+                    onRefresh: refreshWarehouses
+                }}
+            />
         </div>
     );
-};
+}
+
+
+// ===== FILE: src/modules/inventory/schemas/inventorySchema.ts =====
+
+import { z } from 'zod';
+import { TransactionType } from '../types/InventoryTypes';
+
+/**
+ * @description Schema para Registro de Movimentação de Estoque (Kardex).
+ * CLASSE OURO: Foco em coerção de tipos e validação de Enums.
+ */
+export const RegisterMovementSchema = z.object({
+    // IDs de Relacionamento (Obrigatórios)
+    warehouseId: z.string().uuid('Selecione um depósito válido'),
+    variantId: z.string().uuid('Selecione um produto/variante'),
+
+    // Enum Nativo: Garante que a IA ou o Usuário usem apenas os tipos do Backend
+    type: z.enum(TransactionType, {
+        error: () => ({ message: 'Tipo de movimentação inválido' })
+    }),
+
+    // Coerção Numérica: O HTML manda string, o Zod converte para Number
+    quantity: z.coerce.number()
+        .min(0.0001, 'A quantidade deve ser maior que zero'),
+    
+    unitCost: z.coerce.number()
+        .min(0, 'O custo não pode ser negativo')
+        .optional()
+        .default(0),
+
+    // Documentação e Auditoria
+    documentRef: z.string().trim().max(50, 'Referência muito longa').optional(),
+    notes: z.string().trim().max(255, 'A observação deve ter no máximo 255 caracteres').optional(),
+});
+
+/**
+ * @description Como o Kardex é imutável, o UpdateSchema é idêntico ao Create,
+ * mas na prática, o Registry irá bloquear a edição.
+ */
+export const UpdateMovementSchema = RegisterMovementSchema.extend({
+    id: z.string().uuid().optional(),
+});
+
+export type InventoryFormInput = z.infer<typeof RegisterMovementSchema>;
+
+
+// ===== FILE: src/modules/inventory/schemas/warehouseSchema.ts =====
+
+// ===== FILE: src/modules/inventory/schemas/warehouseSchema.ts =====
+
+import { z } from 'zod';
+
+/**
+ * @description Helper para campos de texto opcionais e resilientes.
+ */
+const OptionalString = z.string().nullable().optional()
+    .transform(val => (!val || val.trim() === '') ? undefined : val.trim());
+
+/**
+ * @description Schema do Objeto de Endereço (JSONB)
+ */
+const AddressInfoSchema = z.object({
+    street: OptionalString,
+    city: OptionalString,
+    zipCode: OptionalString,
+    state: z.string().nullable().optional()
+        .transform(val => (!val || val.trim() === '') ? undefined : val.trim().toUpperCase())
+        .refine(val => val === undefined || val.length === 2, { message: 'UF deve ter 2 letras' }),
+});
+
+/**
+ * @description Schema Principal para Criação de Depósitos
+ * FIX CLASSE OURO (TS 2769): O .default() agora contém explicitamente as chaves 
+ * como undefined. Isso satisfaz o rigor do TypeScript e evita o erro de sobrecarga.
+ */
+export const CreateWarehouseSchema = z.object({
+    name: z.string().trim().min(3, 'O nome do depósito deve ter no mínimo 3 caracteres'),
+    
+    isDefault: z.boolean().default(false),
+    isActive: z.boolean().default(true),
+    allowsNegativeStock: z.boolean().default(false),
+
+    // 💡 A Mágica: Definimos o valor default com a estrutura que o TS espera
+    addressInfo: AddressInfoSchema.default({
+        street: undefined,
+        city: undefined,
+        zipCode: undefined,
+        state: undefined
+    }),
+});
+
+export const UpdateWarehouseSchema = CreateWarehouseSchema.extend({
+    id: z.string().uuid('ID do depósito inválido').optional(),
+});
+
+/**
+ * 💡 EXPORTAÇÃO VITAL (TS 2305): 
+ * Este é o tipo que o WarehouseRegistry está tentando importar.
+ */
+export type WarehouseFormInput = z.infer<typeof CreateWarehouseSchema>;
 
 
 // ===== FILE: src/modules/inventory/types/InventoryTypes.ts =====
@@ -18603,10 +17515,13 @@ import { MovementsTab } from '../components/tabs/MovementsTab';
 import { WarehousesTab } from '../components/tabs/WarehousesTab';
 
 // --- Imports Cross-Module (Reutilização de Componentes Existentes) ---
-import { FiscalList } from '../../fiscal/components/FiscalList';
 import { useAIContextInjector } from '@/core/ai/hooks/useAIContextInjector';
 import { FeatureKeys } from '@/core/ai/types/enums/AIEnums';
 import { CategoryRegistry } from '../registries/CategoryRegistry';
+import { FiscalRegistry } from '@/modules/fiscal/registries/FiscalRegistry';
+import { ProductRegistry } from '../registries/ProductRegistry';
+import { WarehouseRegistry } from '@/modules/inventory/registries/WarehouseRegistry';
+import { InventoryRegistry } from '@/modules/inventory/registries/InventoryRegistry';
 
 export type ProductViewType = 
     | 'OVERVIEW'
@@ -18653,21 +17568,16 @@ export const ProductContainer: React.FC<ProductContainerProps> = ({
             case 'OVERVIEW':
                 return <OverviewTab />;
             case 'CATALOG':
-                return <CatalogTab />;
+                return <ProductRegistry />;
             case 'MOVEMENTS':
-                return <MovementsTab />;
+                return <InventoryRegistry />;
             case 'WAREHOUSES':
-                return <WarehousesTab />;
+                return <WarehouseRegistry />;
             case 'CATEGORIES':
                 // Nova implementação: Componente nativo do módulo Products
                 return <CategoryRegistry />;
             case 'FISCAL':
-                return (
-                    // Wrapper estilizado com tema Metálico para listas externas (Fiscal ainda é legado)
-                    <div className="bg-base-metallic rounded-xl shadow-lg border border-gray-700 overflow-hidden min-h-[500px]">
-                        <FiscalList />
-                    </div>
-                );
+                return <FiscalRegistry />
             default:
                 return <OverviewTab />;
         }
@@ -18910,6 +17820,7 @@ import { useProductMutation } from '../hooks/useProductMutation';
 import { useCategories } from '@/modules/categories/hooks/useCategories';
 import { useFiscal } from '@/modules/fiscal/hooks/useFiscal'; // Import herdado do seu legado
 import { BaseUOM, ProductType } from '../types/enums';
+import { ITaxGroup } from '@/modules/fiscal/types';
 
 export const ProductRegistry: React.FC = () => {
     // 🔌 1. Conectando os Cabos (Data Fetching)
@@ -18918,7 +17829,7 @@ export const ProductRegistry: React.FC = () => {
     
     // Dependências (Dropdowns)
     const { categories, isLoading: loadingCats } = useCategories();
-    const { fiscalGroups, isLoading: loadingFiscal } = useFiscal();
+    const { taxGroups, isLoading: loadingFiscal } = useFiscal();
 
     // =========================================================================
     // 🔄 2. FILTRO DE HIDRATAÇÃO (O Caminho Inverso do Zod)
@@ -18949,8 +17860,16 @@ export const ProductRegistry: React.FC = () => {
     // =========================================================================
     // 🗂️ 3. OPÇÕES DOS DROPDOWNS (Selects)
     // =========================================================================
-    const categoryOptions = useMemo(() => categories.map(cat => ({ label: cat.name, value: cat.id })), [categories]);
-    const fiscalOptions = useMemo(() => fiscalGroups.map(fg => ({ label: `${fg.name} (NCM: ${fg.ncmDefault || 'N/A'})`, value: fg.id })), [fiscalGroups]);
+    const categoryOptions = useMemo(() => 
+        categories?.map(cat => ({ label: cat.name, value: cat.id })) || [], 
+    [categories]);
+
+    const fiscalOptions = useMemo(() => 
+        taxGroups?.map((fg: ITaxGroup) => ({ 
+            label: fg.name, 
+            value: fg.id 
+        })) || [], 
+    [taxGroups]);
     
     // Enums mapeados para o Select
     const typeOptions = [
