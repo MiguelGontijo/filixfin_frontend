@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { FaTimes, FaUserPlus, FaUserEdit } from 'react-icons/fa';
-import { Client } from '@/core/types/client';
+import { Client } from '@/core/client/types/client';
 import { ClientForm } from './ClientForm'; // Importa o formulário unificado
 
 interface ClientModalProps {

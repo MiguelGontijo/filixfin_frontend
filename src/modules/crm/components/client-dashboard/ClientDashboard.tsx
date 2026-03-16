@@ -7,7 +7,7 @@ import {
     FaMagic, FaPlusCircle, FaStickyNote, 
     FaChevronDown, FaChevronUp
 } from 'react-icons/fa';
-import { Client, AddressType } from '@/core/types/client';
+import { Client, AddressType } from '@/core/client/types/client';
 import { ClientForm } from '@/core/components/client/ClientForm';
 
 // --- AQUI ESTÁ A MUDANÇA: Importamos o Módulo Soberano ---

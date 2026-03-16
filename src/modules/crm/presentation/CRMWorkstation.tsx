@@ -10,7 +10,7 @@ import { WhatsAppWidget } from '@/modules/crm/components/communication/WhatsAppW
 import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget';
 
 // --- TIPOS ---
-import { Client } from '@/core/types/client';
+import { Client } from '@/core/client/types/client';
 import { InteractionAnalysis } from '@/modules/crm/types';
 
 /**

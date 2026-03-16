@@ -82,6 +82,16 @@
 │   │   │   │       └── AIState.ts
 │   │   │   └── utils
 │   │   │       └── imageCompressor.ts
+│   │   ├── client
+│   │   │   ├── hooks
+│   │   │   │   ├── useClientMutation.ts
+│   │   │   │   └── useClients.ts
+│   │   │   ├── registries
+│   │   │   │   └── ClientRegistry.tsx
+│   │   │   ├── schemas
+│   │   │   │   └── clientSchema.ts
+│   │   │   └── types
+│   │   │       └── client.ts
 │   │   ├── components
 │   │   │   ├── auth
 │   │   │   │   ├── AuthGuard.tsx
@@ -100,8 +110,6 @@
 │   │   │   └── tenant
 │   │   │       └── TenantSelector.tsx
 │   │   ├── hooks
-│   │   │   ├── useClientMutation.ts
-│   │   │   ├── useClients.ts
 │   │   │   ├── useFeatureMutation.ts
 │   │   │   ├── useFeatures.ts
 │   │   │   ├── useMessaging.ts
@@ -122,7 +130,6 @@
 │   │   │   │   └── StorageUploadResponse.dto.ts
 │   │   │   ├── acl.ts
 │   │   │   ├── auth.ts
-│   │   │   ├── client.ts
 │   │   │   ├── messaging.ts
 │   │   │   ├── tenant.ts
 │   │   │   └── user.ts
@@ -206,6 +213,7 @@
 │   │   │   └── types.ts
 │   │   ├── inventory
 │   │   │   ├── hooks
+│   │   │   │   ├── useBalances.ts
 │   │   │   │   ├── useStockMovementMutation.ts
 │   │   │   │   ├── useStockMovements.ts
 │   │   │   │   ├── useWarehouseMutation.ts
@@ -217,6 +225,7 @@
 │   │   │   │   ├── inventorySchema.ts
 │   │   │   │   └── warehouseSchema.ts
 │   │   │   └── types
+│   │   │       ├── InventoryFilters.ts
 │   │   │       └── InventoryTypes.ts
 │   │   ├── products
 │   │   │   ├── components
@@ -4130,6 +4139,496 @@ export const compressImage = async (file: File, options: CompressOptions = {}): 
 };
 
 
+// ===== FILE: src/core/client/hooks/useClientMutation.ts =====
+
+
+import { useState } from 'react';
+import { api } from '@/core/services/api';
+import { Client, CreateClientDto, UpdateClientDto } from '@/core/client/types/client';
+
+/**
+ * @function useClientMutation
+ * @description Hook de mutação para gerenciar as operações de escrita (C/U/D) sobre Clientes.
+ * Porquê: Centraliza o tratamento de loading e erros de API.
+ */
+export function useClientMutation() {
+    
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    /**
+     * @method createClient
+     * @description Envia uma requisição POST para criar um novo Cliente.
+     * Inclui a checagem de ACL (limite de clientes).
+     */
+    const createClient = async (data: CreateClientDto): Promise<Client> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            // Rota POST /client implementada no Backend
+            const response = await api.post('/client', data);
+            return response.data as Client;
+        } catch (err: any) {
+            // Captura erros de ACL (403/422) ou Conflito (409) do Backend.
+            const errorMessage = err.response?.data?.message || 'Falha ao criar o Cliente.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    /**
+     * @method updateClient
+     * @description Envia requisição PATCH para atualizar dados parciais do cliente.
+     * @param id UUID do cliente.
+     * @param data Objeto com os campos a serem alterados.
+     */
+    const updateClient = async (id: string, data: UpdateClientDto): Promise<Client> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.patch(`/client/${id}`, data);
+            return response.data as Client;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao atualizar o Cliente.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    /**
+     * @method deleteClient
+     * @description Executa um "Soft Delete" (Desativação) via PATCH.
+     * @param id UUID do cliente.
+     */
+    const deleteClient = async (id: string): Promise<void> => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            // Porquê: O Backend espera um PATCH com isActive: false para desativar.
+            // Isso mantém o histórico (interações, vendas) intacto.
+            await api.patch(`/client/${id}`, { isActive: false });
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || 'Falha ao desativar o Cliente.';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return { createClient,
+                updateClient,
+                deleteClient,
+                isLoading,
+                error
+            };
+}
+
+
+// ===== FILE: src/core/client/hooks/useClients.ts =====
+
+// src/core/hooks/useClients.ts
+
+import { useState, useEffect, useCallback } from 'react';
+import { api } from '@/core/services/api';
+import { Client } from '@/core/client/types/client';
+
+/**
+ * @function useClients
+ * @description Hook inteligente para gerenciamento de Clientes.
+ * @update Adicionado 'externalTrigger' para permitir recarga forçada por componentes pais.
+ */
+export function useClients(externalTrigger: number = 0) {
+    const [clients, setClients] = useState<Client[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // --- ESTADO DE BUSCA ---
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedTerm, setDebouncedTerm] = useState('');
+
+    // 1. EFEITO DE DEBOUNCE
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedTerm(searchTerm);
+        }, 500); 
+
+        return () => {
+            clearTimeout(timer); 
+        };
+    }, [searchTerm]);
+
+    // 2. FUNÇÃO DE BUSCA (Memoized)
+    const fetchClients = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            
+            const params = debouncedTerm ? { q: debouncedTerm } : {};
+
+            const response = await api.get('/client', { params });
+            
+            setClients(response.data as Client[]);
+            
+        } catch (err: any) {
+            console.error("Erro ao buscar clientes:", err);
+            const errorMessage = err.response?.data?.message || "Falha ao carregar lista de Clientes.";
+            setError(errorMessage);
+            
+        } finally {
+            setIsLoading(false);
+        }
+    }, [debouncedTerm]); 
+
+    // 3. DISPARO INICIAL E REATIVO
+    // IMPORTANTE: Adicionamos 'externalTrigger' aqui. Se ele mudar, o efeito roda novamente.
+    useEffect(() => {
+        fetchClients();
+    }, [fetchClients, externalTrigger]);
+
+    return { 
+        clients, 
+        isLoading, 
+        error, 
+        refreshData: fetchClients,
+        searchTerm,
+        setSearchTerm 
+    };
+}
+
+
+// ===== FILE: src/core/client/registries/ClientRegistry.tsx =====
+
+'use client';
+
+import React, { useMemo } from 'react';
+import { FaUserTie, FaRobot, FaStickyNote } from 'react-icons/fa';
+
+// --- Motor CRUD V4 ---
+import { CrudLayout } from '@/core/components/crud/CrudLayout';
+import { CrudConfig, CrudHooks } from '@/core/components/crud/types';
+
+// --- Tipos e Schemas do Domínio ---
+import { Client } from '../types/client';
+import { ClientFormSchema, ClientFormInput } from '../schemas/clientSchema';
+
+// --- Motores de Dados (CQRS) ---
+import { useClients } from '../hooks/useClients';
+import { useClientMutation } from '../hooks/useClientMutation';
+
+/**
+ * ============================================================================
+ * 🏭 COMPONENTE PRINCIPAL: CLIENT REGISTRY
+ * @description O Orquestrador da base de Clientes. 
+ * Conecta o Motor V4 aos fluxos de leitura (useClients) e escrita (useClientMutation).
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO:
+ * 1. UX Imersiva: Renderização de colunas ricas combinando dados (Nome + Contato).
+ * 2. IA Native: Exposição visual do 'aiSummary' mostrando o DNA tecnológico do CRM.
+ * 3. Delegação Transparente: O CrudLayout cuida da transição de telas, este 
+ * componente cuida apenas das regras de negócio.
+ * ============================================================================
+ */
+export function ClientRegistry() {
+    
+    // 1. O Motor de Leitura (Vitrine)
+    const { clients, isLoading: loadingRead, error: readError, refreshData } = useClients();
+
+    // 2. O Motor de Mutação (A Caneta)
+    const { createClient, updateClient, deleteClient, isLoading: writing, error: writeError } = useClientMutation();
+
+    // =========================================================================
+    // ⚙️ CONFIGURAÇÃO CLASSE OURO (O Manual do CrudLayout)
+    // =========================================================================
+    const config: CrudConfig<Client, ClientFormInput> = useMemo(() => ({
+        title: 'Carteira de Clientes',
+        description: 'Gerencie a sua base de contatos, histórico e percepções de inteligência artificial.',
+        schema: ClientFormSchema as any, // Zod para blindagem de payload
+
+        // --- VISÃO MASTER (GRID DE CLIENTES) ---
+        columns: [
+            {
+                header: 'Cliente / Contato Principal',
+                accessor: (item) => (
+                    <div className="flex items-center gap-3">
+                        <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-accent-primary/10 text-accent-primary flex-shrink-0">
+                            <FaUserTie className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-bold text-white tracking-tight">
+                                {item.name}
+                            </span>
+                            <span className="text-[11px] text-gray-500">
+                                {item.email || item.phone || 'Sem contato cadastrado'}
+                            </span>
+                        </div>
+                    </div>
+                )
+            },
+            {
+                header: 'Documento',
+                accessor: (item) => (
+                    <span className="text-sm text-gray-400 font-mono">
+                        {item.document || '-'}
+                    </span>
+                )
+            },
+            {
+                header: 'Inteligência AI',
+                accessor: (item) => (
+                    item.aiSummary ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20" title="Perfil analisado pela IA">
+                            <FaRobot /> Analisado
+                        </span>
+                    ) : (
+                        <span className="text-[10px] text-gray-600 uppercase tracking-widest">Pendente</span>
+                    )
+                )
+            },
+            {
+                header: 'Status',
+                accessor: (item) => (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest ${
+                        item.isActive 
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    }`}>
+                        {item.isActive ? 'Ativo' : 'Inativo'}
+                    </span>
+                )
+            }
+        ],
+
+        // --- VISÃO DETAIL (O FORMULÁRIO DE CADASTRO/EDIÇÃO) ---
+        fields: [
+            // Agrupamento: Dados Principais
+            { name: 'name', label: 'Nome Completo / Razão Social', type: 'text', placeholder: 'Ex: Stark Industries' },
+            { name: 'document', label: 'CPF / CNPJ', type: 'text', placeholder: 'Apenas números' },
+            
+            // Agrupamento: Contato
+            { name: 'email', label: 'E-mail Principal', type: 'text', placeholder: 'contato@empresa.com' },
+            { name: 'phone', label: 'Telefone / WhatsApp', type: 'text', placeholder: '(11) 90000-0000' },
+            
+            // Agrupamento: Observações Humanas (HITL)
+            { 
+                name: 'userNotes', 
+                label: 'Anotações Privadas (Opcional)', 
+                type: 'textarea', 
+                placeholder: 'Registre detalhes de negociação, preferências ou contexto do cliente...' 
+            },
+
+            // Controle de Acesso
+            { name: 'isActive', label: 'Cliente Ativo (Permite Vendas)', type: 'boolean', trueLabel: 'Ativo', falseLabel: 'Inativo' }
+        ],
+
+        // --- VISÃO DE AUDITORIA (Gaveta Oculta no Fundo do Form) ---
+        systemFields: [
+            { name: 'id', label: 'UUID do Cliente', type: 'text' },
+            // O Resumo da IA é readonly aqui. Só o motor de IA ou o backend alteram isso.
+            { name: 'aiSummary', label: 'Resumo da Inteligência Artificial', type: 'textarea' },
+            { name: 'createdAt', label: 'Data de Cadastro', type: 'text' },
+            { name: 'updatedAt', label: 'Última Atualização', type: 'text' }
+        ]
+
+    }), []);
+
+    // =========================================================================
+    // 🔌 ROTEAMENTO DE AÇÕES (Unindo Leitura e Escrita CQRS)
+    // =========================================================================
+    const crudHooks: CrudHooks<Client, ClientFormInput> = {
+        data: clients,
+        isLoading: loadingRead || writing,
+        error: readError || writeError,
+        onCreate: createClient as any,
+        onUpdate: updateClient as any,
+        onDelete: deleteClient,
+        onRefresh: refreshData
+    };
+
+    return (
+        <div className="h-full w-full animate-fade-in">
+            <CrudLayout<Client, ClientFormInput>
+                config={config}
+                hooks={crudHooks}
+            />
+        </div>
+    );
+}
+
+
+// ===== FILE: src/core/client/schemas/clientSchema.ts =====
+
+import { z } from 'zod';
+
+/**
+ * @file clientSchema.ts
+ * @description SCHEMA DE VALIDAÇÃO DE CLIENTES (Zod)
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
+ * 1. Blindagem de Tipos: Garante que os dados do formulário respeitem o DTO do Backend.
+ * 2. Tratamento de Vazios: Uso do `.or(z.literal(''))` para permitir que campos 
+ * opcionais sejam limpos pelo usuário sem disparar falsos erros de tipagem.
+ * 3. Sanitização Silenciosa: (Opcional) Prepara o terreno para futuras máscaras de CPF/CNPJ.
+ */
+export const ClientFormSchema = z.object({
+    
+    // Identificador (Injetado automaticamente no modo Edição)
+    id: z.string().optional(),
+    
+    // =========================================================================
+    // 👤 DADOS PRINCIPAIS
+    // =========================================================================
+    name: z.string()
+        .min(3, 'O nome do cliente deve ter no mínimo 3 caracteres.')
+        .max(100, 'O nome excedeu o limite de 100 caracteres.'),
+    
+    document: z.string()
+        .optional()
+        .transform(val => val ? val.replace(/\D/g, '') : val), // Limpa pontos e traços (se houver)
+
+    // =========================================================================
+    // 📞 CONTATO
+    // =========================================================================
+    email: z.string()
+        .email('Por favor, insira um endereço de e-mail válido.')
+        .optional()
+        .or(z.literal('')), // Permite que o campo inicie ou fique vazio sem quebrar a validação
+        
+    phone: z.string()
+        .optional()
+        .or(z.literal('')),
+
+    // =========================================================================
+    // 📝 INFORMAÇÕES AUXILIARES
+    // =========================================================================
+    userNotes: z.string()
+        .max(2000, 'As observações não podem ultrapassar 2000 caracteres.')
+        .optional()
+        .or(z.literal('')),
+
+    // =========================================================================
+    // ⚙️ CONTROLE DE SISTEMA
+    // =========================================================================
+    isActive: z.boolean().default(true),
+
+    // Campos de Auditoria (Apenas leitura)
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+
+}).transform((data) => {
+    // 🪄 TRANSFORMAÇÃO DE SAÍDA (O Roteador Final)
+    // Limpamos strings vazias transformando-as em undefined, garantindo que o 
+    // Backend receba um Payload enxuto (UpdateClientDto / CreateClientDto).
+    return {
+        ...data,
+        document: data.document === '' ? undefined : data.document,
+        email: data.email === '' ? undefined : data.email,
+        phone: data.phone === '' ? undefined : data.phone,
+        userNotes: data.userNotes === '' ? undefined : data.userNotes,
+    };
+});
+
+/**
+ * @type ClientFormInput
+ * @description Tipagem inferida automaticamente a partir do Schema Zod.
+ * Usada para tipar o CrudLayout e o React Hook Form.
+ */
+export type ClientFormInput = z.input<typeof ClientFormSchema>;
+
+
+// ===== FILE: src/core/client/types/client.ts =====
+
+// src/core/types/client.ts
+
+export enum AddressType {
+    MAIN = 'MAIN',
+    BILLING = 'BILLING',
+    SHIPPING = 'SHIPPING'
+}
+
+export interface ClientAddress {
+    id: string;
+    street: string;
+    number: string;
+    complement?: string;
+    district: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    type: AddressType;
+}
+
+export interface AddressDto {
+    street: string;
+    number: string;
+    complement?: string;
+    district: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    type?: AddressType;
+}
+
+/**
+ * @interface Client
+ * @description Tipagem para a Entidade Cliente.
+ * @update Adicionado userNotes (Notas Privadas).
+ */
+export interface Client {
+    id: string;
+    tenantId: string;
+    name: string;
+    document: string | null;
+    email: string | null;
+    phone: string | null;
+    
+    // IA Memory
+    aiSummary: string | null;
+    
+    // Notas Privadas do Usuário ---
+    userNotes: string | null;
+
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+
+    addresses?: ClientAddress[];
+}
+
+/**
+ * @interface CreateClientDto
+ * @description DTO para criação.
+ */
+export interface CreateClientDto {
+    name: string;
+    document?: string; 
+    email?: string;
+    phone?: string;
+    aiSummary?: string;
+    userNotes?: string;
+
+    addresses?: AddressDto[];
+}
+
+/**
+ * @interface UpdateClientDto
+ * @description DTO para atualização.
+ */
+export interface UpdateClientDto {
+    name?: string;
+    document?: string;
+    email?: string;
+    phone?: string;
+    isActive?: boolean;
+    aiSummary?: string;
+    userNotes?: string;
+
+    addresses?: AddressDto[];
+}
+
+
 // ===== FILE: src/core/components/auth/AuthGuard.tsx =====
 
 
@@ -4271,8 +4770,8 @@ export const TenantGuard: React.FC<TenantGuardProps> = ({ children }) => {
 
 import React, { useState, useEffect } from 'react';
 import { FaMapMarkerAlt, FaExclamationTriangle, FaSave, FaStickyNote } from 'react-icons/fa';
-import { useClientMutation } from '@/core/hooks/useClientMutation';
-import { Client, AddressType } from '@/core/types/client';
+import { useClientMutation } from '@/core/client/hooks/useClientMutation';
+import { Client, AddressType } from '@/core/client/types/client';
 
 interface ClientFormProps {
     client?: Client;
@@ -4522,7 +5021,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
 
 import React from 'react';
 import { FaTimes, FaUserPlus, FaUserEdit } from 'react-icons/fa';
-import { Client } from '@/core/types/client';
+import { Client } from '@/core/client/types/client';
 import { ClientForm } from './ClientForm'; // Importa o formulário unificado
 
 interface ClientModalProps {
@@ -4618,7 +5117,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
 import React, { useState } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
-import { useClients } from '@/core/hooks/useClients';
+import { useClients } from '@/core/client/hooks/useClients';
 import { ClientModal } from '@/core/components/client/ClientModal'; 
 
 /**
@@ -4813,6 +5312,7 @@ export const ClientTablePage: React.FC = () => {
 
 'use client';
 
+import { ClientRegistry } from '@/core/client/registries/ClientRegistry';
 import { FiscalRegistry } from '@/modules/fiscal/registries/FiscalRegistry';
 import { InventoryRegistry } from '@/modules/inventory/registries/InventoryRegistry';
 import { WarehouseRegistry } from '@/modules/inventory/registries/WarehouseRegistry';
@@ -4852,13 +5352,22 @@ const RegistryPlaceholder: React.FC<{ title: string, icon: React.ReactNode }> = 
 export const CadastrosContainer: React.FC = () => {
     
     // O Estado que guarda o ID do cadastro atualmente visível na tela
-    const [activeRegistryId, setActiveRegistryId] = useState<string>('CATEGORIES');
+    const [activeRegistryId, setActiveRegistryId] = useState<string>('PRODUCTS');
 
     // =========================================================================
     // 🗺️ O MAPA DE NAVEGAÇÃO (Menu Lateral)
     // Agrupamento lógico por Módulos (Bounded Contexts do DDD).
     // =========================================================================
     const menuGroups = useMemo(() => [
+        {
+            module: 'CRM & Vendas',
+            icon: <FaChartLine />,
+            items: [
+                { id: 'CLIENTS', label: 'Clientes' },
+                { id: 'DEAL', label: 'Deals' },
+                { id: 'PIPELINE', label: 'Pipelines' },
+            ]
+        },
         {
             module: 'Produtos & Estoque',
             icon: <FaBoxOpen />,
@@ -4870,19 +5379,10 @@ export const CadastrosContainer: React.FC = () => {
             ]
         },
         {
-            module: 'CRM & Vendas',
-            icon: <FaChartLine />,
-            items: [
-                { id: 'LOSS_REASONS', label: 'Motivos de Perda' },
-                { id: 'LEAD_SOURCES', label: 'Origens de Lead' },
-            ]
-        },
-        {
             module: 'Fiscal & Tributário',
             icon: <FaFileInvoiceDollar />,
             items: [
                 { id: 'FISCAL_GROUPS', label: 'Grupos Fiscais' },
-                { id: 'TAX_RULES', label: 'Regras de Imposto' },
             ]
         },
         {
@@ -4900,23 +5400,16 @@ export const CadastrosContainer: React.FC = () => {
     // =========================================================================
     const registryComponents: Record<string, React.ReactNode> = {
         // MÓDULO: PRODUTOS
-        // 'CATEGORIES': <CategoryRegistry />, // <- Descomente isso quando o CategoryRegistry estiver pronto!
         'PRODUCTS': < ProductRegistry/>,
         'CATEGORIES': <CategoryRegistry />,
         'WAREHOUSES': <WarehouseRegistry />,
         'INVENTORY': <InventoryRegistry />,
         
-        // 'CATEGORIES': <RegistryPlaceholder title="Categorias de Produto" icon={<FaTags />} />,
-        'BRANDS': <RegistryPlaceholder title="Marcas / Fabricantes" icon={<FaBoxOpen />} />,
-        'UNITS': <RegistryPlaceholder title="Unidades de Medida" icon={<FaBalanceScale />} />,
-        
         // MÓDULO: CRM
-        'LOSS_REASONS': <RegistryPlaceholder title="Motivos de Perda" icon={<FaChartLine />} />,
-        'LEAD_SOURCES': <RegistryPlaceholder title="Origens de Lead" icon={<FaDatabase />} />,
-
+        'CLIENTS': <ClientRegistry/>,
+        
         // MÓDULO: FISCAL
         'FISCAL_GROUPS': <FiscalRegistry />,
-        'TAX_RULES': <RegistryPlaceholder title="Regras de Imposto" icon={<FaFileInvoiceDollar />} />,
 
         // MÓDULO: SISTEMA
         'USERS': <RegistryPlaceholder title="Usuários & Permissões" icon={<FaCogs />} />,
@@ -5850,168 +6343,6 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
         </div>
     );
 };
-
-
-// ===== FILE: src/core/hooks/useClientMutation.ts =====
-
-
-import { useState } from 'react';
-import { api } from '@/core/services/api';
-import { Client, CreateClientDto, UpdateClientDto } from '@/core/types/client';
-
-/**
- * @function useClientMutation
- * @description Hook de mutação para gerenciar as operações de escrita (C/U/D) sobre Clientes.
- * Porquê: Centraliza o tratamento de loading e erros de API.
- */
-export function useClientMutation() {
-    
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    /**
-     * @method createClient
-     * @description Envia uma requisição POST para criar um novo Cliente.
-     * Inclui a checagem de ACL (limite de clientes).
-     */
-    const createClient = async (data: CreateClientDto): Promise<Client> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            // Rota POST /client implementada no Backend
-            const response = await api.post('/client', data);
-            return response.data as Client;
-        } catch (err: any) {
-            // Captura erros de ACL (403/422) ou Conflito (409) do Backend.
-            const errorMessage = err.response?.data?.message || 'Falha ao criar o Cliente.';
-            setError(errorMessage);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    /**
-     * @method updateClient
-     * @description Envia requisição PATCH para atualizar dados parciais do cliente.
-     * @param id UUID do cliente.
-     * @param data Objeto com os campos a serem alterados.
-     */
-    const updateClient = async (id: string, data: UpdateClientDto): Promise<Client> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const response = await api.patch(`/client/${id}`, data);
-            return response.data as Client;
-        } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Falha ao atualizar o Cliente.';
-            setError(errorMessage);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    /**
-     * @method deleteClient
-     * @description Executa um "Soft Delete" (Desativação) via PATCH.
-     * @param id UUID do cliente.
-     */
-    const deleteClient = async (id: string): Promise<void> => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            // Porquê: O Backend espera um PATCH com isActive: false para desativar.
-            // Isso mantém o histórico (interações, vendas) intacto.
-            await api.patch(`/client/${id}`, { isActive: false });
-        } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Falha ao desativar o Cliente.';
-            setError(errorMessage);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return { createClient,
-                updateClient,
-                deleteClient,
-                isLoading,
-                error
-            };
-}
-
-
-// ===== FILE: src/core/hooks/useClients.ts =====
-
-// src/core/hooks/useClients.ts
-
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '@/core/services/api';
-import { Client } from '@/core/types/client';
-
-/**
- * @function useClients
- * @description Hook inteligente para gerenciamento de Clientes.
- * @update Adicionado 'externalTrigger' para permitir recarga forçada por componentes pais.
- */
-export function useClients(externalTrigger: number = 0) {
-    const [clients, setClients] = useState<Client[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    // --- ESTADO DE BUSCA ---
-    const [searchTerm, setSearchTerm] = useState('');
-    const [debouncedTerm, setDebouncedTerm] = useState('');
-
-    // 1. EFEITO DE DEBOUNCE
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedTerm(searchTerm);
-        }, 500); 
-
-        return () => {
-            clearTimeout(timer); 
-        };
-    }, [searchTerm]);
-
-    // 2. FUNÇÃO DE BUSCA (Memoized)
-    const fetchClients = useCallback(async () => {
-        try {
-            setIsLoading(true);
-            setError(null);
-            
-            const params = debouncedTerm ? { q: debouncedTerm } : {};
-
-            const response = await api.get('/client', { params });
-            
-            setClients(response.data as Client[]);
-            
-        } catch (err: any) {
-            console.error("Erro ao buscar clientes:", err);
-            const errorMessage = err.response?.data?.message || "Falha ao carregar lista de Clientes.";
-            setError(errorMessage);
-            
-        } finally {
-            setIsLoading(false);
-        }
-    }, [debouncedTerm]); 
-
-    // 3. DISPARO INICIAL E REATIVO
-    // IMPORTANTE: Adicionamos 'externalTrigger' aqui. Se ele mudar, o efeito roda novamente.
-    useEffect(() => {
-        fetchClients();
-    }, [fetchClients, externalTrigger]);
-
-    return { 
-        clients, 
-        isLoading, 
-        error, 
-        refreshData: fetchClients,
-        searchTerm,
-        setSearchTerm 
-    };
-}
 
 
 // ===== FILE: src/core/hooks/useFeatureMutation.ts =====
@@ -7017,97 +7348,6 @@ export interface LoginResponse {
         tenantId: string | null;
     };
     message: string; // Mensagem de sucesso
-}
-
-
-// ===== FILE: src/core/types/client.ts =====
-
-// src/core/types/client.ts
-
-export enum AddressType {
-    MAIN = 'MAIN',
-    BILLING = 'BILLING',
-    SHIPPING = 'SHIPPING'
-}
-
-export interface ClientAddress {
-    id: string;
-    street: string;
-    number: string;
-    complement?: string;
-    district: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    type: AddressType;
-}
-
-export interface AddressDto {
-    street: string;
-    number: string;
-    complement?: string;
-    district: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    type?: AddressType;
-}
-
-/**
- * @interface Client
- * @description Tipagem para a Entidade Cliente.
- * @update Adicionado userNotes (Notas Privadas).
- */
-export interface Client {
-    id: string;
-    tenantId: string;
-    name: string;
-    document: string | null;
-    email: string | null;
-    phone: string | null;
-    
-    // IA Memory
-    aiSummary: string | null;
-    
-    // Notas Privadas do Usuário ---
-    userNotes: string | null;
-
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
-
-    addresses?: ClientAddress[];
-}
-
-/**
- * @interface CreateClientDto
- * @description DTO para criação.
- */
-export interface CreateClientDto {
-    name: string;
-    document?: string; 
-    email?: string;
-    phone?: string;
-    aiSummary?: string;
-    userNotes?: string;
-
-    addresses?: AddressDto[];
-}
-
-/**
- * @interface UpdateClientDto
- * @description DTO para atualização.
- */
-export interface UpdateClientDto {
-    name?: string;
-    document?: string;
-    email?: string;
-    phone?: string;
-    isActive?: boolean;
-    aiSummary?: string;
-    userNotes?: string;
-
-    addresses?: AddressDto[];
 }
 
 
@@ -9573,7 +9813,7 @@ import {
     FaMagic, FaPlusCircle, FaStickyNote, 
     FaChevronDown, FaChevronUp
 } from 'react-icons/fa';
-import { Client, AddressType } from '@/core/types/client';
+import { Client, AddressType } from '@/core/client/types/client';
 import { ClientForm } from '@/core/components/client/ClientForm';
 
 // --- AQUI ESTÁ A MUDANÇA: Importamos o Módulo Soberano ---
@@ -9877,7 +10117,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({
 
 import React from 'react';
 import { FaBuilding, FaEnvelope, FaEdit, FaTrash, FaUndo } from 'react-icons/fa'; // Novos ícones
-import { Client } from '@/core/types/client';
+import { Client } from '@/core/client/types/client';
 
 interface ClientListItemProps {
     client: Client;
@@ -9987,12 +10227,12 @@ export const ClientListItem: React.FC<ClientListItemProps> = ({
 
 import React, { useState } from 'react';
 import { FaUser, FaPlus, FaExclamationTriangle } from 'react-icons/fa';
-import { useClients } from '@/core/hooks/useClients';
-import { Client } from '@/core/types/client';
+import { useClients } from '@/core/client/hooks/useClients';
+import { Client } from '@/core/client/types/client';
 // REMOVIDO: import { ClientModal } ... (O modal não deve mais existir aqui)
 import { ClientSearchInput } from './ClientSearchInput';
 import { ClientListItem } from './ClientListItem';
-import { useClientMutation } from '@/core/hooks/useClientMutation';
+import { useClientMutation } from '@/core/client/hooks/useClientMutation';
 
 interface ClientListWidgetProps {
     onSelectClient?: (client: Client | null) => void;
@@ -10333,7 +10573,7 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes, FaSave, FaUser, FaCalendar, FaBoxOpen, FaTrash, FaPlus, FaStream } from 'react-icons/fa';
 import { CRMDeal, DealStatus, CRMDealItem } from '@/modules/crm/types';
 import { IPipelineStage } from '../../types/pipeline.types';
-import { useClients } from '@/core/hooks/useClients';
+import { useClients } from '@/core/client/hooks/useClients';
 import { useDeals } from '../../hooks/useDeals';
 
 interface DealEditorProps {
@@ -10724,7 +10964,7 @@ export const DealEditor: React.FC<DealEditorProps> = ({
 
 import React, { useState, useEffect } from 'react';
 import { FaSave, FaPlus, FaTrash, FaBox, FaWrench, FaExclamationTriangle, FaLink } from 'react-icons/fa';
-import { useClients } from '@/core/hooks/useClients';
+import { useClients } from '@/core/client/hooks/useClients';
 import { useDeals } from '@/modules/crm/hooks/useDeals'; 
 import { DealStatus, DealItemType, CRMDeal } from '@/modules/crm/types'; 
 import { Product } from '@/modules/products/types'; 
@@ -12137,7 +12377,7 @@ import { useState } from 'react';
 import { api } from '@/core/services/api';
 import { InteractionAnalysis } from '../types';
 // IMPORTAÇÃO CORRETA: Reuso do tipo central
-import { CreateClientDto } from '@/core/types/client';
+import { CreateClientDto } from '@/core/client/types/client';
 
 export enum ClientActionType {
     LINK_EXISTING = 'LINK_EXISTING',
@@ -12315,7 +12555,7 @@ import { useFilixAI } from '@/core/ai/context/FilixAIContext'; // [IA] Hook Widg
 // --- ICONS & TYPES ---
 import { FaStream, FaColumns, FaCalendarAlt, FaFilter } from 'react-icons/fa';
 import { ConfigStage } from '../components/pipeline-manager/StageList';
-import { Client } from '@/core/types/client';
+import { Client } from '@/core/client/types/client';
 import { DashboardMode } from '../components/client-dashboard/ClientDashboard';
 import { AIContextMetadata } from '@/core/ai/types/dtos/AIChatRequest.dto';
 import { AppModules, FeatureKeys } from '@/core/ai/types/enums/AIEnums';
@@ -12810,7 +13050,7 @@ import { WhatsAppWidget } from '@/modules/crm/components/communication/WhatsAppW
 import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget';
 
 // --- TIPOS ---
-import { Client } from '@/core/types/client';
+import { Client } from '@/core/client/types/client';
 import { InteractionAnalysis } from '@/modules/crm/types';
 
 /**
@@ -12954,7 +13194,7 @@ export const CRMWorkstation: React.FC<CRMWorkstationProps> = ({
 
 // ===== FILE: src/modules/crm/types/deal.types.ts =====
 
-import { Client } from '@/core/types/client';
+import { Client } from '@/core/client/types/client';
 
 // ============================================================================
 // 1. ENUMS DE NEGÓCIO (DEALS) - Mantidos Intactos
@@ -13957,6 +14197,90 @@ export interface IUpdateTaxGroupDTO {
 }
 
 
+// ===== FILE: src/modules/inventory/hooks/useBalances.ts =====
+
+// ===== FILE: src/modules/inventory/hooks/useBalances.ts =====
+
+'use client';
+
+import { useState, useCallback, useEffect } from 'react';
+import { api } from '@/core/services/api';
+
+// ⚠️ Nota: Adicionaremos essas tipagens no `InventoryTypes.ts` no próximo passo.
+import { InventoryStock } from '../types/InventoryTypes';
+import { BalancesFilters } from '../types/InventoryFilters';
+
+/**
+ * @hook useBalances
+ * @description O Motor de Consulta de Posição de Estoque (Visão Master).
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
+ * 1. Responsabilidade Única (CQRS - Query): Este hook não salva e não deleta. 
+ * Ele apenas lê a posição atual do estoque (Fotografia do momento).
+ * 2. Prevenção de Falsos Positivos: Inicia com `isLoading = true` para que a UI 
+ * exiba o Skeleton/Spinner imediatamente, evitando a temida "piscada de tela vazia".
+ * 3. Memoização Segura: Uso de `useCallback` para evitar re-renderizações infinitas
+ * caso este hook seja consumido em listas de dependência (useEffect).
+ */
+export function useBalances() {
+    const [balances, setBalances] = useState<InventoryStock[]>([]);
+    
+    // Começamos com 'true' para garantir que o CrudTable mostre o loading na montagem inicial
+    const [isLoading, setIsLoading] = useState(true); 
+    const [error, setError] = useState<string | null>(null);
+
+    /**
+     * @method fetchBalances
+     * @description Busca a lista de saldos consolidados no backend.
+     * Suporta filtros dinâmicos para a Inteligência Artificial ou buscas refinadas.
+     * @param filters Objeto contendo parâmetros opcionais (warehouseId, variantId).
+     */
+    const fetchBalances = useCallback(async (filters?: BalancesFilters) => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            // Chamada à nova rota Master do backend que criamos juntos
+            const response = await api.get<InventoryStock[]>('/inventory/balances', {
+                params: filters
+            });
+            setBalances(response.data);
+        } catch (err: any) {
+            console.error('❌ [useBalances] Erro ao buscar saldos de estoque:', err);
+            const msg = err.response?.data?.message || 'Falha ao carregar a posição atual do estoque.';
+            setError(msg);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // =========================================================================
+    // 🚀 O GATILHO DE IGNIÇÃO AUTOMÁTICO
+    // Dispara a busca global de saldos assim que o módulo de Inventário é montado.
+    // =========================================================================
+    useEffect(() => {
+        fetchBalances();
+    }, [fetchBalances]);
+
+    /**
+     * @method clearBalances
+     * @description Utilitário de Limpeza. Ideal para desmontagem de componentes 
+     * complexos, prevenindo vazamento de memória (Memory Leaks).
+     */
+    const clearBalances = useCallback(() => {
+        setBalances([]);
+        setError(null);
+    }, []);
+
+    return {
+        balances,
+        isLoading,
+        error,
+        fetchBalances,
+        clearBalances
+    };
+}
+
+
 // ===== FILE: src/modules/inventory/hooks/useStockMovementMutation.ts =====
 
 'use client';
@@ -14023,32 +14347,38 @@ export function useStockMovementMutation() {
 
 // ===== FILE: src/modules/inventory/hooks/useStockMovements.ts =====
 
-// ===== FILE: src/modules/inventory/hooks/useStockMovements.ts =====
-
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
 import { api } from '@/core/services/api';
-import { InventoryTransaction, MovementFilter } from '../types/InventoryTypes';
+import { InventoryTransaction } from '../types/InventoryTypes';
+import { KardexFilters } from '../types/InventoryFilters'; // 👈 Importação da nova "Casa dos Filtros"
 
 /**
  * @hook useStockMovements
- * @description Hook de Leitura (Query Operations) para o Kardex.
- * CLASSE OURO: Responsabilidade Única (CQRS - Query). Focado estritamente em 
- * buscar o histórico de movimentações (global ou por produto) e expor o estado.
+ * @description Motor Analítico de Leitura (Query Operations) para o Kardex.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
+ * 1. Arquitetura CQRS (Query): Focado estritamente em buscar o histórico imutável 
+ * de movimentações (global ou por produto) e expor o estado para a UI.
+ * 2. Master-Detail Ready: Na nova arquitetura, este hook atuará como a "Visão Detail",
+ * sendo invocado dinamicamente quando o usuário clicar em um saldo específico.
  */
 export function useStockMovements() {
     const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
-    // Começamos com 'true' para garantir que a UI mostre o Skeleton Loading na montagem
+    
+    // Inicia com 'true' para garantir que a UI mostre o Skeleton Loading na montagem,
+    // oferecendo uma transição suave e eliminando "piscadas" de listas vazias.
     const [isLoading, setIsLoading] = useState(true); 
     const [error, setError] = useState<string | null>(null);
 
     /**
      * @method fetchMovements
-     * @description Busca o histórico (Kardex) no backend. Aceita filtros flexíveis.
-     * Memoizado com useCallback para ser seguro dentro do useEffect.
+     * @description O núcleo de busca do histórico (Extrato do Kardex) no backend.
+     * Agora fortemente tipado com `KardexFilters`, aceitando paginação, 
+     * range de datas, tipos de transação e IDs específicos (Produto/Depósito).
+     * @param filters Objeto flexível de filtros para a query do TypeORM.
      */
-    const fetchMovements = useCallback(async (filters?: MovementFilter) => {
+    const fetchMovements = useCallback(async (filters?: KardexFilters) => {
         setIsLoading(true);
         setError(null);
         try {
@@ -14066,8 +14396,10 @@ export function useStockMovements() {
     }, []);
 
     // =========================================================================
-    // 🚀 O GATILHO DE IGNIÇÃO AUTOMÁTICO
-    // Dispara a busca global assim que o módulo de Inventário é aberto.
+    // 🚀 O GATILHO DE IGNIÇÃO AUTOMÁTICO (Efeito Colateral Seguro)
+    // Dispara a busca global assim que o módulo/componente é montado.
+    // Na arquitetura Master-Detail, isso garante que o painel lateral já abra
+    // buscando os dados caso o componente seja renderizado condicionalmente.
     // =========================================================================
     useEffect(() => {
         fetchMovements();
@@ -14075,8 +14407,10 @@ export function useStockMovements() {
 
     /**
      * @method fetchKardex
-     * @description Mantido para retrocompatibilidade. Atalho para buscar a timeline
-     * de um produto específico.
+     * @description Facade (Fachada) mantida para retrocompatibilidade e conveniência.
+     * Um atalho limpo e semântico para buscar a timeline de uma variante específica
+     * sem precisar instanciar o objeto de filtros manualmente.
+     * @param variantId O UUID da variação do produto.
      */
     const fetchKardex = useCallback(async (variantId: string) => {
         if (!variantId) return;
@@ -14085,7 +14419,9 @@ export function useStockMovements() {
 
     /**
      * @method clearTransactions
-     * @description Limpa o estado atual (útil ao desmontar componentes ou trocar de visão).
+     * @description Utilitário de Limpeza (Garbage Collection visual). 
+     * Limpa o estado atual da lista. Vital para evitar "fantasmas" na UI 
+     * ao trocar rapidamente entre a visão detalhada de dois produtos diferentes.
      */
     const clearTransactions = useCallback(() => {
         setTransactions([]);
@@ -14273,92 +14609,204 @@ export function useWarehouses() {
 
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { FaBoxOpen, FaHistory, FaArrowUp, FaArrowDown, FaExclamationTriangle } from 'react-icons/fa';
+
+// --- Motor CRUD V4 ---
 import { CrudLayout } from '@/core/components/crud/CrudLayout';
 import { CrudConfig } from '@/core/components/crud/types';
-import { 
-    FaArrowDown, 
-    FaArrowUp 
-} from 'react-icons/fa';
 
 // --- Contratos e Validações ---
-import { InventoryTransaction, TransactionType } from '../types/InventoryTypes';
+import { InventoryStock, InventoryTransaction, TransactionType } from '../types/InventoryTypes';
 import { RegisterMovementSchema, InventoryFormInput } from '../schemas/inventorySchema';
 
 // --- Motores de Dados (CQRS Hooks) ---
+import { useBalances } from '../hooks/useBalances';
 import { useStockMovements } from '../hooks/useStockMovements';
 import { useStockMovementMutation } from '../hooks/useStockMovementMutation';
-import { useWarehouses } from '../hooks/useWarehouses'; // Para popular o Dropdown de locais
+import { useWarehouses } from '../hooks/useWarehouses';
 
 /**
- * @component InventoryRegistry (Kardex)
- * @description O Painel de Auditoria e Lançamento de Estoque.
- * CLASSE OURO: Consome hooks separados (CQRS). Bloqueia edição e exclusão 
- * nativamente para garantir a imutabilidade contábil do sistema.
+ * ============================================================================
+ * 🧩 COMPONENTE INJETÁVEL: O DASHBOARD MASTER-DETAIL
+ * Renderizado via `customRender` no topo do formulário quando um item é clicado.
+ * ============================================================================
+ */
+const StockDashboardInjection = ({ form }: { form: UseFormReturn<any> }) => {
+    // 1. Rastreamos se estamos no modo "Edição/Detail" (tem ID) ou "Novo" (sem ID)
+    const stockId = form.watch('id');
+    const variantId = form.watch('variantId');
+    const warehouseId = form.watch('warehouseId');
+
+    // 2. Isolamos o snapshot num estado para que ele não se perca 
+    // quando limparmos os campos do formulário abaixo.
+    const [snapshot, setSnapshot] = useState({
+        balance: 0,
+        reserved: 0,
+        productName: '',
+        warehouseName: ''
+    });
+
+    // 3. O Motor do Kardex (Detail)
+    const { transactions, fetchKardex, isLoading: loadingKardex } = useStockMovements();
+
+    // 4. O Efeito de Hidratação e Limpeza Segura
+    useEffect(() => {
+        if (stockId) {
+            // A. Salva os dados de saldo originais na memória do componente
+            setSnapshot({
+                balance: Number(form.getValues('quantity') || 0),
+                reserved: Number(form.getValues('reservedQuantity') || 0),
+                productName: form.getValues('variant')?.product?.name || form.getValues('variant')?.sku || 'Produto',
+                warehouseName: form.getValues('warehouse')?.name || 'Depósito'
+            });
+
+            // B. 🧹 GHOST-BUSTER: Limpa o input de quantidade!
+            // Como o CrudForm injeta o 'quantity' do saldo no formulário, precisamos limpá-lo 
+            // para que a validação exija que o usuário digite uma nova quantidade para o ajuste.
+            setTimeout(() => {
+                form.setValue('quantity', undefined as any);
+                form.setValue('type', '');
+                form.setValue('notes', '');
+            }, 50); // Timeout ínfimo apenas para esperar o reset() do RHF terminar.
+
+            // C. Dispara a busca do histórico deste produto específico
+            fetchKardex(variantId);
+        }
+    }, [stockId, variantId, fetchKardex, form]);
+
+    // Se for "Nova Movimentação" livre (sem clicar na grid), não desenha o dashboard.
+    if (!stockId) return null;
+
+    const availableBalance = snapshot.balance - snapshot.reserved;
+    const isCritical = availableBalance <= 0;
+
+    return (
+        <div className="mb-8 space-y-6 animate-fade-in">
+            {/* CABEÇALHO DO PRODUTO */}
+            <div className="flex items-center gap-4 pb-4 border-b border-gray-800">
+                <div className="p-3 bg-accent-primary/10 text-accent-primary rounded-xl">
+                    <FaBoxOpen className="w-6 h-6" />
+                </div>
+                <div>
+                    <h2 className="text-xl font-black text-white tracking-tight">{snapshot.productName}</h2>
+                    <p className="text-sm font-medium text-gray-500">{snapshot.warehouseName}</p>
+                </div>
+            </div>
+
+            {/* CARDS DE SALDO (A Tríade de Inteligência) */}
+            <div className="grid grid-cols-3 gap-4">
+                <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-800 shadow-inner">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Físico (Prateleira)</p>
+                    <p className="text-2xl font-black text-gray-200">{snapshot.balance}</p>
+                </div>
+                <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-800 shadow-inner">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Reservado (Pedidos)</p>
+                    <p className="text-2xl font-black text-yellow-500/80">{snapshot.reserved}</p>
+                </div>
+                <div className={`p-4 rounded-xl border shadow-inner ${isCritical ? 'bg-red-500/10 border-red-500/30' : 'bg-emerald-500/10 border-emerald-500/30'}`}>
+                    <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${isCritical ? 'text-red-400' : 'text-emerald-400'}`}>
+                        Saldo Disponível
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <p className={`text-2xl font-black ${isCritical ? 'text-red-400' : 'text-emerald-400'}`}>
+                            {availableBalance}
+                        </p>
+                        {isCritical && <FaExclamationTriangle className="text-red-400 w-4 h-4 animate-pulse" />}
+                    </div>
+                </div>
+            </div>
+
+            {/* KARDEX (Mini-Histórico) */}
+            <div className="bg-gray-900/30 rounded-xl border border-gray-800 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-800 bg-gray-800/20 flex items-center gap-2">
+                    <FaHistory className="text-gray-500" />
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Últimas Movimentações</h3>
+                </div>
+                
+                {loadingKardex ? (
+                    <div className="p-6 flex justify-center"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-primary"></div></div>
+                ) : transactions.length === 0 ? (
+                    <div className="p-6 text-center text-sm text-gray-500 italic">Nenhum histórico contábil encontrado.</div>
+                ) : (
+                    <ul className="divide-y divide-gray-800 max-h-48 overflow-y-auto custom-scrollbar">
+                        {transactions.slice(0, 10).map((t, i) => {
+                            const isEntry = t.type.startsWith('IN_');
+                            return (
+                                <li key={i} className="flex items-center justify-between px-4 py-3 hover:bg-gray-800/30 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <span className={`p-1.5 rounded-full ${isEntry ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                            {isEntry ? <FaArrowUp className="w-3 h-3" /> : <FaArrowDown className="w-3 h-3" />}
+                                        </span>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-semibold text-gray-300">{t.type}</span>
+                                            <span className="text-[10px] text-gray-500">{new Date(t.createdAt).toLocaleString('pt-BR')}</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-right flex flex-col">
+                                        <span className={`text-sm font-black ${isEntry ? 'text-emerald-400' : 'text-red-400'}`}>
+                                            {isEntry ? '+' : '-'}{t.quantity}
+                                        </span>
+                                        <span className="text-[10px] text-gray-500">Saldo: {t.newBalance}</span>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                )}
+            </div>
+
+            {/* SEPARADOR PARA O FORMULÁRIO NATIVO */}
+            <div className="pt-6 mt-6 border-t border-gray-800 border-dashed">
+                <h3 className="text-sm font-bold text-accent-primary mb-1 uppercase tracking-widest">Registrar Ajuste Manual</h3>
+                <p className="text-xs text-gray-500 mb-4">Preencha os campos abaixo para lançar uma nova entrada ou saída contábil para este produto.</p>
+            </div>
+        </div>
+    );
+};
+
+
+/**
+ * ============================================================================
+ * 🏭 COMPONENTE PRINCIPAL: INVENTORY REGISTRY
+ * @description O Orquestrador. O Grid exibe Saldos. O Form registra Movimentos.
+ * ============================================================================
  */
 export function InventoryRegistry() {
-    // 1. Instanciamos o motor de LEITURA (Query)
-    const { 
-        transactions, 
-        isLoading: isReading, 
-        error: readError, 
-        fetchMovements 
-    } = useStockMovements();
+    // 1. O Motor Master (A Tela Principal)
+    const { balances, isLoading: loadingBalances, fetchBalances } = useBalances();
 
-    // 2. Instanciamos o motor de ESCRITA (Command)
-    const { 
-        registerMovement, 
-        isLoading: isWriting, 
-        error: writeError 
-    } = useStockMovementMutation();
+    // 2. O Motor de Mutação (A Caneta do Contador)
+    const { registerMovement, isLoading: writing, error: writeError } = useStockMovementMutation();
 
-    // 3. Instanciamos o motor de Depósitos (apenas leitura para o select)
+    // 3. Dependências (Para selects manuais)
     const { warehouses } = useWarehouses();
 
-    // =========================================================================
-    // 🏗️ PREPARAÇÃO DE OPÇÕES (Dropdowns)
-    // =========================================================================
-    const warehouseOptions = useMemo(() => 
-        warehouses.map(w => ({ label: w.name, value: w.id })), 
-    [warehouses]);
-
+    const warehouseOptions = useMemo(() => warehouses.map(w => ({ label: w.name, value: w.id })), [warehouses]);
     const typeOptions = [
         { label: '📦 Entrada por Compra', value: TransactionType.IN_PURCHASE },
         { label: '➕ Ajuste de Entrada (Sobra)', value: TransactionType.IN_ADJUSTMENT },
-        { label: '🚚 Transferência (Entrada)', value: TransactionType.IN_TRANSFER },
         { label: '🛒 Venda (Saída)', value: TransactionType.OUT_SALE },
         { label: '➖ Ajuste de Saída (Perda)', value: TransactionType.OUT_LOSS },
         { label: '🏢 Consumo Interno', value: TransactionType.OUT_CONSUMPTION },
     ];
 
     // =========================================================================
-    // ⚙️ CONFIGURAÇÃO CLASSE OURO
+    // ⚙️ CONFIGURAÇÃO CLASSE OURO (O Manual do CrudLayout)
     // =========================================================================
-    const config: CrudConfig<InventoryTransaction, InventoryFormInput> = {
-        title: 'Movimentações de Estoque (Kardex)',
-        description: 'Histórico completo de entradas e saídas. Registre ajustes e visualize o fluxo físico (Imutável).',
+    const config: CrudConfig<InventoryStock, InventoryFormInput> = {
+        title: 'Posição de Estoque (Saldos)',
+        description: 'Visão em tempo real da prateleira. Clique em um registro para ver o histórico ou lançar ajustes.',
         schema: RegisterMovementSchema,
 
-        // --- COLUNAS DO KARDEX ---
+        // --- VISÃO MASTER (GRID DE SALDOS) ---
         columns: [
-            {
-                header: 'Data / Hora',
-                accessor: (item) => (
-                    <div className="flex flex-col">
-                        <span className="text-xs font-bold text-gray-300">
-                            {new Date(item.createdAt).toLocaleDateString()}
-                        </span>
-                        <span className="text-[10px] text-gray-500 italic">
-                            {new Date(item.createdAt).toLocaleTimeString()}
-                        </span>
-                    </div>
-                )
-            },
             {
                 header: 'Produto / SKU',
                 accessor: (item) => (
                     <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-accent-primary">
+                        <span className="text-sm font-bold text-white">
                             {item.variant?.product?.name || 'Produto não identificado'}
                         </span>
                         <span className="text-[11px] font-mono text-gray-500">
@@ -14368,124 +14816,116 @@ export function InventoryRegistry() {
                 )
             },
             {
-                header: 'Tipo',
-                accessor: (item) => {
-                    const isEntry = item.type.startsWith('IN_');
-                    return (
-                        <span className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-black uppercase tracking-tighter border ${
-                            isEntry 
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                            : 'bg-red-500/10 text-red-400 border-red-500/20'
-                        }`}>
-                            {isEntry ? <FaArrowUp /> : <FaArrowDown />}
-                            {item.type.split('_')[1]}
-                        </span>
-                    );
-                }
+                header: 'Localização',
+                accessor: (item) => (
+                    <span className="text-sm text-gray-400 font-medium">
+                        {item.warehouse?.name || 'N/A'}
+                    </span>
+                )
             },
             {
-                header: 'Quant. / Saldo',
+                header: 'Físico / Reservado',
+                accessor: (item) => (
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-gray-200">{item.quantity}</span>
+                        <span className="text-xs font-medium text-yellow-500/80" title="Reservado para pedidos">
+                            (-{item.reservedQuantity})
+                        </span>
+                    </div>
+                )
+            },
+            {
+                header: 'Disponível',
                 accessor: (item) => {
-                    const isEntry = item.type.startsWith('IN_');
+                    const available = item.quantity - item.reservedQuantity;
+                    const isCritical = available <= 0;
                     return (
-                        <div className="flex items-center gap-3">
-                            <div className="text-right">
-                                <p className={`text-sm font-bold ${isEntry ? 'text-emerald-400' : 'text-red-400'}`}>
-                                    {isEntry ? '+' : '-'}{item.quantity}
-                                </p>
-                                <p className="text-[10px] text-gray-500 italic">
-                                    Saldo: {item.newBalance}
-                                </p>
-                            </div>
-                        </div>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-black uppercase tracking-widest border ${
+                            isCritical 
+                            ? 'bg-red-500/10 text-red-400 border-red-500/20' 
+                            : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                        }`}>
+                            {available} {isCritical && <FaExclamationTriangle />}
+                        </span>
                     );
                 }
             }
         ],
 
-        // --- CAMPOS DO FORMULÁRIO (Novo Lançamento) ---
+        // --- VISÃO DETAIL (O FORMULÁRIO HÍBRIDO) ---
         fields: [
+            // O Dashboard Injetado (Só aparece no modo "Edição")
+            {
+                name: 'dashboard_view' as any,
+                label: '',
+                type: 'custom',
+                customRender: (form) => <StockDashboardInjection form={form} />
+            },
+            
+            // Os inputs nativos para registro (Ficam abaixo do Dashboard ou preenchem a tela no "Novo")
             {
                 name: 'warehouseId',
                 label: 'Depósito / Local',
                 type: 'select',
-                options: warehouseOptions
+                options: warehouseOptions,
+                // O Motor RHF permite reatividade. Se já estiver no detail, o usuário não pode mudar o depósito.
+                customRender: (form) => {
+                    const isEdit = !!form.watch('id' as any);
+                    return (
+                        <select {...form.register('warehouseId')} disabled={isEdit} className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent-primary disabled:opacity-50">
+                            <option value="">Selecione...</option>
+                            {warehouseOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                    );
+                }
             },
             {
                 name: 'variantId',
                 label: 'UUID do Produto (SKU)',
-                type: 'text', // Em uma fase futura, isso será um ComboBox de busca inteligente
-                placeholder: 'Cole o ID da variante do produto...'
-            },
-            {
-                name: 'type',
-                label: 'Natureza da Operação',
-                type: 'select',
-                options: typeOptions
-            },
-            {
-                name: 'quantity',
-                label: 'Quantidade',
-                type: 'number',
-                placeholder: 'Ex: 10'
-            },
-            {
-                name: 'unitCost',
-                label: 'Custo Unitário (Opcional)',
-                type: 'currency',
-                placeholder: '0.00'
-            },
-            {
-                name: 'documentRef',
-                label: 'Referência (NF, Pedido)',
                 type: 'text',
-                placeholder: 'Ex: NF-12345'
+                placeholder: 'Cole o ID da variante...',
+                customRender: (form) => {
+                    const isEdit = !!form.watch('id' as any);
+                    return <input type="text" {...form.register('variantId')} disabled={isEdit} placeholder="UUID do Produto" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent-primary disabled:opacity-50" />
+                }
             },
-            {
-                name: 'notes',
-                label: 'Motivo / Observação',
-                type: 'textarea',
-                placeholder: 'Justifique esta movimentação...'
-            }
-        ],
-
-        systemFields: [
-            { name: 'id', label: 'ID do Movimento', type: 'text' },
-            { name: 'createdBy', label: 'Operador', type: 'text' },
-            { name: 'previousBalance', label: 'Saldo Anterior', type: 'number' }
+            { name: 'type', label: 'Natureza da Operação', type: 'select', options: typeOptions },
+            { name: 'quantity', label: 'Quantidade do Ajuste', type: 'number', placeholder: 'Ex: 10' },
+            { name: 'notes', label: 'Motivo / Observação', type: 'textarea', placeholder: 'Justifique esta movimentação...' }
         ]
     };
 
     // =========================================================================
-    // 🔌 ROTEAMENTO DE AÇÕES (Unindo Leitura e Escrita)
+    // 🔌 ROTEAMENTO DE AÇÕES (Unindo Leitura e Escrita CQRS)
     // =========================================================================
     return (
         <div className="h-full w-full animate-fade-in">
-            <CrudLayout<InventoryTransaction, InventoryFormInput>
+            <CrudLayout<InventoryStock, InventoryFormInput>
                 config={config}
                 hooks={{
-                    data: transactions,
-                    // COMBINAÇÃO DE ESTADOS: Loading ocorre se lendo ou salvando
-                    isLoading: isReading || isWriting,
-                    // COMBINAÇÃO DE ERROS: Exibe a tarja vermelha de quem falhou
-                    error: writeError || readError,
+                    data: balances,
+                    isLoading: loadingBalances || writing,
+                    error: writeError,
+                    
+                    // 💡 O TRUQUE DE MESTRE: O "Update" falso.
+                    // Quando o usuário clica num saldo existente e tenta "Salvar" o formulário,
+                    // ele não está atualizando o saldo, ele está postando uma Nova Movimentação para aquele item.
+                    onUpdate: async (id, data) => {
+                        await registerMovement(data);
+                        fetchBalances(); // Atualiza a vitrine de saldos!
+                    },
                     
                     onCreate: async (data) => {
                         await registerMovement(data);
-                        // Como deixamos a lógica de saldo no backend, nós forçamos 
-                        // um refresh limpo do Kardex após o salvamento ser concluído.
-                        fetchMovements();
+                        fetchBalances();
                     },
                     
-                    // 💡 BLINDAGEM CONTÁBIL: Kardex não se edita nem se apaga.
-                    onUpdate: async () => {
-                        alert('⚠️ Acesso Negado: Movimentações de estoque não podem ser editadas por segurança contábil. Faça um lançamento de estorno.');
-                    },
+                    // Bloqueio imutável
                     onDelete: async () => {
-                        alert('⚠️ Acesso Negado: Movimentações de estoque não podem ser excluídas. Faça um lançamento de estorno.');
+                        alert('⚠️ Acesso Negado: Saldos não podem ser excluídos. Faça um ajuste de saída.');
                     },
                     
-                    onRefresh: fetchMovements
+                    onRefresh: fetchBalances
                 }}
             />
         </div>
@@ -14789,6 +15229,28 @@ export const UpdateWarehouseSchema = CreateWarehouseSchema.extend({
 export type WarehouseFormInput = z.infer<typeof CreateWarehouseSchema>;
 
 
+// ===== FILE: src/modules/inventory/types/InventoryFilters.ts =====
+
+// ============================================================================
+// 📑 CONTRATOS DE FILTRAGEM (Data Transfer Objects internos)
+// ============================================================================
+
+export interface KardexFilters {
+    variantId?: string;
+    warehouseId?: string;
+    type?: string;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+}
+
+export interface BalancesFilters {
+    variantId?: string;
+    warehouseId?: string;
+    limit?: number;
+}
+
+
 // ===== FILE: src/modules/inventory/types/InventoryTypes.ts =====
 
 // src/modules/inventory/types/InventoryTypes.ts
@@ -14929,6 +15391,36 @@ export interface MovementFilter {
     // ADIÇÃO NECESSÁRIA: Paginação para a Tabela
     page?: number;
     limit?: number;
+}
+
+// Adicione este bloco no seu InventoryTypes.ts
+
+/**
+ * @interface InventoryStock
+ * @description Representa a fotografia atual do saldo na prateleira.
+ * Retornado pela rota Master (/balances).
+ */
+export interface InventoryStock {
+    id: string;
+    warehouseId: string;
+    variantId: string;
+    
+    // Saldos
+    quantity: number;           // Físico na prateleira
+    reservedQuantity: number;   // Reservado (Pedidos pendentes)
+    
+    updatedAt: string;
+
+    // Relações Expandidas (Trazidas via Join pelo Backend)
+    warehouse?: Warehouse;
+    variant?: {
+        id: string;
+        sku: string;
+        name?: string;
+        product?: {
+            name: string;
+        };
+    };
 }
 
 
@@ -17981,7 +18473,7 @@ const VariantItemSchema = z.object({
     barcode: z.string().optional(),
     salePrice: z.coerce.number({ error: 'Preço inválido' }).min(0, 'Preço negativo'),
     costPrice: z.coerce.number({ error: 'Custo inválido' }).min(0).default(0),
-    attributes: z.record(z.any()).optional().default({}) // O JSONB (Cor, Tamanho, etc)
+    attributes: z.record(z.string(),z.any()).optional().default({}) // O JSONB (Cor, Tamanho, etc)
 });
 
 /**

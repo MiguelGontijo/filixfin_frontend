@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
-import { useClients } from '@/core/hooks/useClients';
+import { useClients } from '@/core/client/hooks/useClients';
 import { ClientModal } from '@/core/components/client/ClientModal'; 
 
 /**

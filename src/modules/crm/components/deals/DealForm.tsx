@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FaSave, FaPlus, FaTrash, FaBox, FaWrench, FaExclamationTriangle, FaLink } from 'react-icons/fa';
-import { useClients } from '@/core/hooks/useClients';
+import { useClients } from '@/core/client/hooks/useClients';
 import { useDeals } from '@/modules/crm/hooks/useDeals'; 
 import { DealStatus, DealItemType, CRMDeal } from '@/modules/crm/types'; 
 import { Product } from '@/modules/products/types'; 

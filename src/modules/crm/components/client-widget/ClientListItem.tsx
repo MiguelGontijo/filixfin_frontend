@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { FaBuilding, FaEnvelope, FaEdit, FaTrash, FaUndo } from 'react-icons/fa'; // Novos ícones
-import { Client } from '@/core/types/client';
+import { Client } from '@/core/client/types/client';
 
 interface ClientListItemProps {
     client: Client;

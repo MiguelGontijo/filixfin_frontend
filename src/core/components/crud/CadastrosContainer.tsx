@@ -2,6 +2,9 @@
 
 'use client';
 
+import { ClientRegistry } from '@/core/client/registries/ClientRegistry';
+import { DealRegistry } from '@/modules/crm/registries/DealRegistry';
+import { PipelineRegistry } from '@/modules/crm/registries/PipelineRegistry';
 import { FiscalRegistry } from '@/modules/fiscal/registries/FiscalRegistry';
 import { InventoryRegistry } from '@/modules/inventory/registries/InventoryRegistry';
 import { WarehouseRegistry } from '@/modules/inventory/registries/WarehouseRegistry';
@@ -52,8 +55,9 @@ export const CadastrosContainer: React.FC = () => {
             module: 'CRM & Vendas',
             icon: <FaChartLine />,
             items: [
-                { id: 'DEAL', label: 'Deals' },
-                { id: 'PIPELINE', label: 'Pipelines' },
+                { id: 'CLIENTS', label: 'Clientes' },
+                { id: 'DEALS', label: 'Deals' },
+                { id: 'PIPELINES', label: 'Pipelines' },
             ]
         },
         {
@@ -88,23 +92,18 @@ export const CadastrosContainer: React.FC = () => {
     // =========================================================================
     const registryComponents: Record<string, React.ReactNode> = {
         // MÓDULO: PRODUTOS
-        // 'CATEGORIES': <CategoryRegistry />, // <- Descomente isso quando o CategoryRegistry estiver pronto!
         'PRODUCTS': < ProductRegistry/>,
         'CATEGORIES': <CategoryRegistry />,
         'WAREHOUSES': <WarehouseRegistry />,
         'INVENTORY': <InventoryRegistry />,
         
-        // 'CATEGORIES': <RegistryPlaceholder title="Categorias de Produto" icon={<FaTags />} />,
-        'BRANDS': <RegistryPlaceholder title="Marcas / Fabricantes" icon={<FaBoxOpen />} />,
-        'UNITS': <RegistryPlaceholder title="Unidades de Medida" icon={<FaBalanceScale />} />,
-        
         // MÓDULO: CRM
-        'LOSS_REASONS': <RegistryPlaceholder title="Motivos de Perda" icon={<FaChartLine />} />,
-        'LEAD_SOURCES': <RegistryPlaceholder title="Origens de Lead" icon={<FaDatabase />} />,
-
+        'CLIENTS': <ClientRegistry/>,
+        'DEALS': <DealRegistry/>,
+        'PIPELINES': <PipelineRegistry/>,
+        
         // MÓDULO: FISCAL
         'FISCAL_GROUPS': <FiscalRegistry />,
-        'TAX_RULES': <RegistryPlaceholder title="Regras de Imposto" icon={<FaFileInvoiceDollar />} />,
 
         // MÓDULO: SISTEMA
         'USERS': <RegistryPlaceholder title="Usuários & Permissões" icon={<FaCogs />} />,

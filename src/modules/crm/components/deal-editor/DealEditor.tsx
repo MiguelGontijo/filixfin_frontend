@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes, FaSave, FaUser, FaCalendar, FaBoxOpen, FaTrash, FaPlus, FaStream } from 'react-icons/fa';
 import { CRMDeal, DealStatus, CRMDealItem } from '@/modules/crm/types';
 import { IPipelineStage } from '../../types/pipeline.types';
-import { useClients } from '@/core/hooks/useClients';
+import { useClients } from '@/core/client/hooks/useClients';
 import { useDeals } from '../../hooks/useDeals';
 
 interface DealEditorProps {

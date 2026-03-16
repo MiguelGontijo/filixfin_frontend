@@ -1,141 +1,116 @@
-// src/modules/crm/hooks/useDeals.ts
-
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/core/services/api';
-import { CRMDeal, DealStatus } from '../types';
-// Importamos tipos genéricos, assumindo que o DTO de update seja um Partial do Create ou similar
-// Ajuste conforme sua estrutura real de DTOs no frontend se tiver definido interfaces específicas
 
+// --- Contratos de Domínio (CRM) ---
+import { CRMDeal, DealStatus } from '../types';
+
+// --- Contratos Globais (Shared Kernel) ---
+import { PaginatedResponse } from '@/core/types/api';
+
+/**
+ * ============================================================================
+ * 📊 HOOK: useDeals (Padrão CQRS - Camada de Query/Leitura)
+ * @description Responsável estritamente por buscar, tipar e derivar o estado 
+ * das Oportunidades (Deals) para a UI.
+ * * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
+ * 1. Segregação CQRS: Nenhuma mutação (POST/PATCH/DELETE) existe aqui. 
+ * O hook é leve, focado na leitura e renderização.
+ * 2. Type-Safety Resiliente (Anti-Crash): Utiliza o contrato genérico 
+ * `PaginatedResponse<T>` aliado ao `CRMDeal[]`. Isso ensina o TypeScript a 
+ * lidar tanto com listas simples quanto com respostas paginadas do NestJS, 
+ * blindando o frontend contra o erro fatal `data.map is not a function`.
+ * ============================================================================
+ */
 export function useDeals(pipelineId?: string) {
     
+    // Estado principal fortemente tipado com a nossa Entidade
     const [deals, setDeals] = useState<CRMDeal[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // --- FETCHING ---
+    // ========================================================================
+    // 📡 FETCHING (Motor de Busca de Dados)
+    // ========================================================================
     const fetchDeals = useCallback(async () => {
-        // Se a lógica exigir que SÓ busque se tiver pipelineId, descomente abaixo:
-        // if (!pipelineId) return; 
-
         setIsLoading(true);
+        setError(null);
+        
         try {
-            // 2. Passamos o pipelineId como parâmetro query string (?pipelineId=...)
-            const response = await api.get<CRMDeal[]>('/crm/deals', {
+            // 💡 O CONTRATO DE OURO: 
+            // Avisamos ao Axios e ao TypeScript que o Backend pode devolver 
+            // ou a lista direta (CRMDeal[]) ou o objeto paginado (PaginatedResponse).
+            const response = await api.get<PaginatedResponse<CRMDeal> | CRMDeal[]>('/crm/deals', {
                 params: {
                     pipelineId: pipelineId 
                 }
             });
-            setDeals(response.data);
+
+            // 🛡️ A VACINA DE EXTRAÇÃO SEGURA:
+            // Como o TypeScript agora conhece a interface PaginatedResponse, 
+            // ele entende perfeitamente a leitura da propriedade '.data' abaixo.
+            const fetchedData = Array.isArray(response.data) 
+                ? response.data 
+                : response.data?.data || [];
+
+            // Salvamos apenas o Array puro no estado, protegendo a CrudTable
+            setDeals(fetchedData);
+            
         } catch (err: any) {
-            // setError(err);
-            console.error("Erro ao buscar negócios:", err);
+            console.error("❌ [useDeals] Falha na sincronização de oportunidades:", err);
+            // Extração padronizada de mensagem de erro da API
+            const msg = err.response?.data?.message || 'Não foi possível carregar a lista de oportunidades.';
+            setError(msg);
         } finally {
             setIsLoading(false);
         }
-    }, [pipelineId]); // 3. pipelineId entra na dependência (se mudar o ID, busca de novo)
+    }, [pipelineId]); // O hook reage e refaz a busca se o ID do funil mudar
 
-    // Carrega na montagem
+    // ========================================================================
+    // 🔄 CICLO DE VIDA (Lifecycle)
+    // ========================================================================
     useEffect(() => {
         fetchDeals();
     }, [fetchDeals]);
 
-    // --- ACTIONS (MUTAÇÕES) ---
+    // ========================================================================
+    // 🧮 HELPERS (Derivação de Dados em Memória)
+    // ========================================================================
 
     /**
-     * @method updateDealStatus
-     * @description Move um card de uma coluna para outra (Atualiza Stage/Status).
-     * Aplica Optimistic Update para sensação de instantaneidade.
+     * @method getDealsByStatus
+     * @description Isola os negócios por coluna (status). 
+     * Envolvido em useCallback para otimização de renderização no Kanban (evita re-renders).
      */
-    const updateDealStatus = async (dealId: string, newStageId: string, newStatus?: DealStatus) => {
-        // 1. Snapshot do estado anterior (para rollback em caso de erro)
-        const previousDeals = [...deals];
-
-        // 2. Atualização Otimista (Frontend reflete mudança na hora)
-        setDeals(currentDeals => currentDeals.map(deal => {
-            if (deal.id === dealId) {
-                return { 
-                    ...deal, 
-                    currentStageId: newStageId, // Atualiza a coluna visual (Dinâmico)
-                    status: newStatus || deal.status // Atualiza o status lógico (Compatibilidade)
-                };
-            }
-            return deal;
-        }));
-
-        // 3. Chamada API
-        try {
-            // Enviamos tanto o stageId (novo) quanto o status (legado/derivado)
-            await api.patch(`/crm/deals/${dealId}`, { 
-                currentStageId: newStageId,
-                status: newStatus
-            });
-        } catch (err) {
-            console.error("Falha ao atualizar status do deal:", err);
-            // Rollback silencioso ou com toast (aqui apenas revertemos a lista)
-            setDeals(previousDeals);
-            // Opcional: setar um erro temporário
-            alert("Não foi possível mover o card. Tente novamente.");
-        }
-    };
-
-    /**
-     * @method updateDeal
-     * @description Atualização completa dos dados do negócio (Edição via Modal).
-     */
-    const updateDeal = async (dealId: string, data: any): Promise<CRMDeal> => {
-        try {
-            const response = await api.patch<CRMDeal>(`/crm/deals/${dealId}`, data);
-            const updatedDeal = response.data;
-
-            // Atualiza a lista local com os dados novos vindos do servidor
-            setDeals(prev => prev.map(d => d.id === dealId ? updatedDeal : d));
-            
-            return updatedDeal;
-        } catch (err: any) {
-            console.error("Erro ao atualizar negócio:", err);
-            throw err;
-        }
-    };
-
-    /**
-     * @method createDeal
-     * @description Cria um novo negócio e o adiciona à lista local.
-     */
-    const createDeal = async (data: any): Promise<void> => {
-        try {
-            const response = await api.post<CRMDeal>('/crm/deals', data);
-            const newDeal = response.data;
-            
-            // Adiciona à lista local
-            setDeals(prev => [newDeal, ...prev]);
-            return;
-        } catch (err: any) {
-            console.error("Erro ao criar negócio:", err);
-            throw err;
-        }
-    };
-
-    // --- HELPERS ---
-
-    const getDealsByStatus = (status: DealStatus) => {
+    const getDealsByStatus = useCallback((status: DealStatus) => {
         return deals.filter(deal => deal.status === status);
-    };
+    }, [deals]);
 
-    const getColumnTotal = (status: DealStatus) => {
+    /**
+     * @method getColumnTotal
+     * @description Motor matemático que soma a previsão financeira de uma coluna específica.
+     */
+    const getColumnTotal = useCallback((status: DealStatus) => {
         return deals
             .filter(deal => deal.status === status)
-            .reduce((sum, deal) => sum + Number(deal.value), 0);
-    };
+            .reduce((sum, deal) => sum + Number(deal.value || 0), 0);
+    }, [deals]);
 
     return {
+        // 1. Estados Expostos
         deals,
         isLoading,
         error,
-        refreshDeals: fetchDeals,
-        updateDealStatus,
-        updateDeal, // <--- NOVO EXPORT
-        createDeal,
+        
+        // 2. Gatilhos de Sincronização
+        refreshDeals: fetchDeals, 
+        
+        // 3. Funções Derivadas (Helpers para a UI)
         getDealsByStatus,
-        getColumnTotal
+        getColumnTotal,
+
+        // 💡 4. A PONTE DO KANBAN (Optimistic UI):
+        // Expor a função nativa do setState permite que o Kanban mova os cards 
+        // visualmente na mesma hora, enquanto o `useDealMutation` salva no backend em background.
+        setDeals
     };
 }

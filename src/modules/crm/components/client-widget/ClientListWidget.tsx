@@ -2,12 +2,12 @@
 
 import React, { useState } from 'react';
 import { FaUser, FaPlus, FaExclamationTriangle } from 'react-icons/fa';
-import { useClients } from '@/core/hooks/useClients';
-import { Client } from '@/core/types/client';
+import { useClients } from '@/core/client/hooks/useClients';
+import { Client } from '@/core/client/types/client';
 // REMOVIDO: import { ClientModal } ... (O modal não deve mais existir aqui)
 import { ClientSearchInput } from './ClientSearchInput';
 import { ClientListItem } from './ClientListItem';
-import { useClientMutation } from '@/core/hooks/useClientMutation';
+import { useClientMutation } from '@/core/client/hooks/useClientMutation';
 
 interface ClientListWidgetProps {
     onSelectClient?: (client: Client | null) => void;

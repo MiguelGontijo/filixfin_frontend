@@ -1,5 +1,3 @@
-// ===== FILE: src/modules/crm/presentation/CRMContainer.tsx =====
-
 import React, { useState, useEffect, useMemo } from 'react';
 
 // --- COMPONENTES DAS VISÕES ---
@@ -15,7 +13,7 @@ import { useFilixAI } from '@/core/ai/context/FilixAIContext'; // [IA] Hook Widg
 // --- ICONS & TYPES ---
 import { FaStream, FaColumns, FaCalendarAlt, FaFilter } from 'react-icons/fa';
 import { ConfigStage } from '../components/pipeline-manager/StageList';
-import { Client } from '@/core/types/client';
+import { Client } from '@/core/client/types/client';
 import { DashboardMode } from '../components/client-dashboard/ClientDashboard';
 import { AIContextMetadata } from '@/core/ai/types/dtos/AIChatRequest.dto';
 import { AppModules, FeatureKeys } from '@/core/ai/types/enums/AIEnums';
