@@ -4,20 +4,20 @@ import { DealStatus, DealSource, DealItemType } from '../types';
 /**
  * @file dealSchema.ts
  * @description SCHEMA DE VALIDAÇÃO DE OPORTUNIDADES (Deals).
- * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
+ * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
  * 1. Motor de Precificação Automática: Na etapa de `.transform()`, o schema 
  * recalcula o valor total do Deal baseado nos itens, impedindo divergências financeiras.
  * 2. Amortecimento Estrito (Resiliência): Uso de `z.coerce` e `.catch()` para garantir que 
  * números (probabilidade, valores) não quebrem o formulário se a API enviar strings ou nulos.
- * 3. Sanitização de IDs Temporários: Garante que os itens recém-criados na interface 
- * (com IDs temporários) sejam limpos antes de bater no banco de dados.
+ * 3. Reconciliação de Estado: Garante o tráfego de UUIDs legítimos para o Backend, 
+ * permitindo que o TypeORM execute operações de UPDATE reais (Evita duplicação).
  */
 
 // ============================================================================
 // 📦 SCHEMA FILHO: ITENS DA OPORTUNIDADE (Produtos / Serviços)
 // ============================================================================
 const DealItemSchema = z.object({
-    // Obrigatório na UI para manipulação de arrays, mas limpo no transform
+    // Obrigatório na UI para manipulação de arrays e preservado no Output para o Backend
     id: z.string().optional(),
     productId: z.string().optional().nullable(),
     
@@ -67,13 +67,13 @@ export const DealFormSchema = z.object({
 
 }).transform((data) => {
     // 🪄 A MÁGICA DA TRANSFORMAÇÃO (Sanitização e Precificação)
-    // Esta etapa atua como um Middleware entre o Frontend e a API.
+    // Esta etapa atua como um Middleware inviolável entre o Frontend e a API.
 
     const hasItems = data.items && data.items.length > 0;
     
     // 🧮 Motor Matemático: Se houver itens detalhados na tabela, o valor real da 
     // oportunidade passa a ser estritamente a soma de (Qtd * Valor Unitário). 
-    // Nós ignoramos o que o usuário digitou no campo manual de "value" para evitar fraudes.
+    // A UI agora reage a isso, mas o backend continua protegido por essa re-checagem.
     const computedValue = hasItems 
         ? data.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
         : data.value;
@@ -88,9 +88,9 @@ export const DealFormSchema = z.object({
             // Garante que o subtotal da linha também vá calculado corretamente para o BD
             total: item.quantity * item.unitPrice, 
             
-            // 🧹 GHOST-BUSTER: Limpa IDs temporários do React (ex: 'temp-169823123')
-            // para que o TypeORM do Backend gere UUIDs definitivos.
-            id: item.id?.startsWith('temp-') ? undefined : item.id,
+            // 🧹 GHOST-BUSTER REFINADO: Limpa strings vazias ou IDs temporários ('temp-169823123').
+            // Preserva rigorosamente os UUIDs legítimos para que o Backend faça UPDATE em vez de INSERT.
+            id: (!item.id || item.id.startsWith('temp-')) ? undefined : item.id,
         }))
     };
 });

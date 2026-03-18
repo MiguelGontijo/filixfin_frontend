@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useEffect } from 'react';
-import { UseFormReturn, useFieldArray } from 'react-hook-form';
+import { UseFormReturn, useFieldArray, useWatch } from 'react-hook-form'; // 💡 IMPORT VITAL: useWatch para performance
 import { FaUserTie, FaDollarSign, FaTrash, FaPlus } from 'react-icons/fa';
 
 // --- Motor CRUD V4 ---
@@ -22,9 +22,10 @@ import { useDealMutation } from '../hooks/useDealMutation';
 /**
  * ============================================================================
  * 🧩 INJETOR 1: SELETOR EM CASCATA (Pipeline -> Stage)
- * @description Garante a integridade relacional na UI. O dropdown de "Etapa" 
- * só exibe as opções válidas para o "Funil" selecionado. Limpa a etapa se o 
- * funil for alterado, prevenindo relacionamentos órfãos no banco de dados.
+ * @description Garante a integridade relacional na UI.
+ * 🏆 CLASSE OURO: Removida a "Race Condition" de ciclo de vida. A etapa só é
+ * limpa via Event-Driven (intenção explícita do usuário ao trocar o funil),
+ * garantindo que o initialData do banco nunca seja sobrescrito por lentidão de rede.
  * ============================================================================
  */
 const PipelineStageSelector = ({ form, pipelines }: { form: UseFormReturn<any>, pipelines: IPipeline[] }) => {
@@ -36,23 +37,20 @@ const PipelineStageSelector = ({ form, pipelines }: { form: UseFormReturn<any>, 
         pipelines.find(p => p.id === selectedPipelineId), 
     [pipelines, selectedPipelineId]);
 
-    // 🛡️ GUARDIÃO DE ESTADO: Reseta a etapa atual se o usuário trocar o funil base
-    useEffect(() => {
-        if (activePipeline && selectedStageId) {
-            const stageExistsInNewPipeline = activePipeline.stages?.some(s => s.id === selectedStageId);
-            if (!stageExistsInNewPipeline) {
-                // shouldValidate: true avisa o Zod sobre a mudança imediatamente
-                form.setValue('currentStageId', '', { shouldValidate: true });
-            }
-        }
-    }, [selectedPipelineId, activePipeline, form, selectedStageId]);
+    // Separamos o onChange nativo do React Hook Form para injetar nosso evento intencional
+    const { onChange: onPipelineChange, ...pipelineRegister } = form.register('pipelineId');
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 p-4 bg-gray-800/30 border border-gray-700/50 rounded-xl shadow-inner">
             <div>
                 <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Funil de Vendas</label>
                 <select 
-                    {...form.register('pipelineId')}
+                    {...pipelineRegister}
+                    onChange={(e) => {
+                        onPipelineChange(e); // Mantém a sincronia original do RHF
+                        // 🎯 EVENT-DRIVEN: Só limpa a etapa se o usuário explicitamente interagir
+                        form.setValue('currentStageId', '', { shouldValidate: true, shouldDirty: true });
+                    }}
                     className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2.5 text-sm text-white focus:border-accent-primary focus:ring-1 focus:ring-accent-primary focus:outline-none transition-all"
                 >
                     <option value="">Selecione um funil...</option>
@@ -82,8 +80,9 @@ const PipelineStageSelector = ({ form, pipelines }: { form: UseFormReturn<any>, 
  * ============================================================================
  * 🧩 INJETOR 2: EDITOR DE ITENS DINÂMICO (Produtos/Serviços)
  * @description Utiliza o `useFieldArray` nativo do React Hook Form. 
- * Manipula o DOM de forma isolada, permitindo adicionar/remover linhas 
- * de orçamento com performance máxima (60 FPS).
+ * 🏆 CLASSE OURO: Implementado o padrão "Unidirectional Data Flow". O uso de 
+ * `useWatch` garante 60 FPS na digitação, e o `useEffect` blindado sincroniza
+ * o valor financeiro global instantaneamente sem causar loops de renderização.
  * ============================================================================
  */
 const DealItemsEditor = ({ form }: { form: UseFormReturn<any> }) => {
@@ -92,18 +91,43 @@ const DealItemsEditor = ({ form }: { form: UseFormReturn<any> }) => {
         name: 'items' // A chave DEVE bater exatamente com o Zod Schema
     });
 
-    // Watchers para o Motor Matemático Visual
-    const watchedItems = form.watch('items') || [];
-    const watchedManualValue = form.watch('value') || 0;
+    // 🕵️ O ESPIÃO DE ALTA PERFORMANCE: Substitui o form.watch() global.
+    // Reage apenas às mudanças DENTRO do array, mantendo o resto da tela congelada.
+    const watchedItems = useWatch({
+        control: form.control,
+        name: 'items',
+        defaultValue: []
+    });
 
-    // 🧮 MOTOR VISUAL: Exibe o cálculo ao vivo para o vendedor. 
-    // Lembrete: O Zod refaz esse cálculo no backend/transform para evitar fraudes.
+    const watchedManualValue = useWatch({
+        control: form.control,
+        name: 'value',
+        defaultValue: 0
+    });
+
+    // 🧮 MOTOR VISUAL: Calcula a matemática pura instantaneamente a cada tecla.
     const computedTotal = useMemo(() => {
-        if (watchedItems.length > 0) {
-            return watchedItems.reduce((acc: number, item: any) => acc + ((item.quantity || 0) * (item.unitPrice || 0)), 0);
-        }
-        return watchedManualValue;
+        if (!watchedItems || watchedItems.length === 0) return watchedManualValue;
+        
+        return watchedItems.reduce((acc: number, item: any) => {
+            const qty = Number(item?.quantity) || 0;
+            const price = Number(item?.unitPrice) || 0;
+            return acc + (qty * price);
+        }, 0);
     }, [watchedItems, watchedManualValue]);
+
+    // 🔄 SINCRONIA DE AUTORIDADE (O Circuit Breaker)
+    useEffect(() => {
+        if (watchedItems && watchedItems.length > 0) {
+            // Lemos o valor atual do form sem nos inscrevermos nele (evita re-render)
+            const currentFormValue = Number(form.getValues('value')) || 0;
+            
+            // A TRAVA: Só disparamos o setValue se a matemática estiver divergente da UI
+            if (currentFormValue !== computedTotal) {
+                form.setValue('value', computedTotal, { shouldValidate: true, shouldDirty: true });
+            }
+        }
+    }, [computedTotal, watchedItems, form]);
 
     return (
         <div className="mt-6 border border-gray-700/50 rounded-xl overflow-hidden bg-gray-800/20">
@@ -112,7 +136,7 @@ const DealItemsEditor = ({ form }: { form: UseFormReturn<any> }) => {
                 <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
                     <FaDollarSign className="text-accent-secondary" /> Escopo Comercial
                 </h4>
-                <div className="text-sm font-black text-green-400 drop-shadow-md">
+                <div className="text-sm font-black text-green-400 drop-shadow-md transition-all duration-200">
                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(computedTotal)}
                 </div>
             </div>
@@ -127,6 +151,10 @@ const DealItemsEditor = ({ form }: { form: UseFormReturn<any> }) => {
                 ) : (
                     fields.map((field, index) => (
                         <div key={field.id} className="flex items-center gap-2 bg-gray-900/50 p-2 rounded-lg border border-gray-700/30 group transition-all hover:border-gray-500">
+                            
+                            {/* 🛡️ GUARDIÃO DE ID: Preserva o UUID do banco invisivelmente para que o TypeORM não duplique o item no Update */}
+                            <input type="hidden" {...form.register(`items.${index}.id` as const)} />
+                            
                             <input 
                                 {...form.register(`items.${index}.description` as const)} 
                                 placeholder="Descrição do Produto/Serviço..."
@@ -135,14 +163,14 @@ const DealItemsEditor = ({ form }: { form: UseFormReturn<any> }) => {
                             <input 
                                 type="number" 
                                 step="0.01"
-                                {...form.register(`items.${index}.quantity` as const)} 
+                                {...form.register(`items.${index}.quantity` as const, { valueAsNumber: true })} 
                                 placeholder="Qtd"
                                 className="w-20 bg-transparent text-sm text-center text-gray-200 placeholder-gray-600 px-2 py-1 focus:outline-none focus:bg-gray-800 rounded transition-colors border-l border-gray-700/50"
                             />
                             <input 
                                 type="number" 
                                 step="0.01"
-                                {...form.register(`items.${index}.unitPrice` as const)} 
+                                {...form.register(`items.${index}.unitPrice` as const, { valueAsNumber: true })} 
                                 placeholder="R$ Unitário"
                                 className="w-28 bg-transparent text-sm text-right text-gray-200 placeholder-gray-600 px-2 py-1 focus:outline-none focus:bg-gray-800 rounded transition-colors border-l border-gray-700/50"
                             />
@@ -173,15 +201,38 @@ const DealItemsEditor = ({ form }: { form: UseFormReturn<any> }) => {
 
 /**
  * ============================================================================
+ * 🧱 MICRO-COMPONENTE: INPUT DE VALOR REATIVO
+ * @description Isola o input de valor global. Ao usar useWatch aqui, ele reage 
+ * à existência de itens e se bloqueia automaticamente sem renderizar a tela toda.
+ * ============================================================================
+ */
+const DealValueInput = ({ form }: { form: UseFormReturn<any> }) => {
+    const watchedItems = useWatch({ control: form.control, name: 'items', defaultValue: [] });
+    const hasItems = watchedItems && watchedItems.length > 0;
+
+    return (
+        <input
+            type="number"
+            step="0.01"
+            {...form.register('value', { valueAsNumber: true })}
+            disabled={hasItems}
+            placeholder={hasItems ? 'Calculado automaticamente pelos itens' : '0.00'}
+            className={`w-full bg-gray-900 border rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none transition-all ${
+                hasItems ? 'border-gray-700 opacity-50 cursor-not-allowed text-green-400 font-bold' : 'border-gray-600 focus:border-accent-primary focus:ring-1 focus:ring-accent-primary placeholder-gray-600'
+            }`}
+        />
+    );
+};
+
+/**
+ * ============================================================================
  * 🏭 COMPONENTE PRINCIPAL: DEAL REGISTRY (Auditoria e Gestão)
  * @description A Visão "Master Data" das oportunidades. 
- * Desenhada para o Gerente de Vendas auditar o funil inteiro de forma global.
  * ============================================================================
  */
 export function DealRegistry() {
     
     // --- 📡 Conexão de Dados (Cross-Domain) ---
-    // O Deal é o centro da teia, então precisamos dos Deals, Clientes e Funis
     const { deals, isLoading: loadingDeals, error: errorDeals, refreshDeals } = useDeals();
     const { createDeal, updateDeal } = useDealMutation();
     const { clients, isLoading: loadingClients } = useClients();
@@ -208,14 +259,19 @@ export function DealRegistry() {
             columns: [
                 {
                     header: 'Oportunidade',
-                    accessor: (item) => (
-                        <div className="flex flex-col gap-1">
-                            <span className="text-sm font-bold text-white leading-tight">{item.title}</span>
-                            <span className="text-xs text-gray-500 flex items-center gap-1.5 truncate max-w-[250px]">
-                                <FaUserTie className="opacity-60" /> {item.client?.name || 'Cliente Removido'}
-                            </span>
-                        </div>
-                    )
+                    accessor: (item) => {
+                        // 🛡️ FALLBACK INTELIGENTE: Se o objeto aninhado faltar temporariamente, 
+                        // buscamos na memória local (clients) antes de exibir "Removido".
+                        const clientInfo = item.client || clients.find(c => c.id === item.clientId);
+                        return (
+                            <div className="flex flex-col gap-1">
+                                <span className="text-sm font-bold text-white leading-tight">{item.title}</span>
+                                <span className="text-xs text-gray-500 flex items-center gap-1.5 truncate max-w-[250px]">
+                                    <FaUserTie className="opacity-60" /> {clientInfo?.name || 'Cliente Não Encontrado'}
+                                </span>
+                            </div>
+                        );
+                    }
                 },
                 {
                     header: 'Posicionamento',
@@ -226,7 +282,6 @@ export function DealRegistry() {
                             <div className="flex flex-col">
                                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{pipe?.name || 'Sem Funil Vinculado'}</span>
                                 <div className="flex items-center gap-1.5 mt-0.5">
-                                    {/* Indicador Visual Rápido da Etapa */}
                                     <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: stage?.color || '#555' }} />
                                     <span className="text-xs text-gray-300 truncate max-w-[150px]">{stage?.name || item.status}</span>
                                 </div>
@@ -237,7 +292,7 @@ export function DealRegistry() {
                 {
                     header: 'Previsão Financeira',
                     accessor: (item) => (
-                        <div className="flex flex-col items-end gap-1">
+                        <div className="flex flex-col items-start gap-1">
                             <span className="text-sm font-black text-green-400 drop-shadow-md">
                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(item.value))}
                             </span>
@@ -266,11 +321,9 @@ export function DealRegistry() {
                     customRender: (form) => <PipelineStageSelector form={form} pipelines={pipelines} />
                 },
 
-                // Agrupamento de Previsões em Linha
                 { name: 'probability', label: 'Probabilidade de Fechamento (%)', type: 'number', placeholder: '0 a 100' },
                 { name: 'expectedCloseDate', label: 'Previsão de Fechamento', type: 'date' },
                 
-                // Agrupamento de Origem/Status em Linha
                 { name: 'status', label: 'Status Lógico', type: 'select', options: statusOptions },
                 { name: 'source', label: 'Origem do Lead', type: 'select', options: sourceOptions },
                 
@@ -282,8 +335,13 @@ export function DealRegistry() {
                     customRender: (form) => <DealItemsEditor form={form} />
                 },
                 
-                // Fallback de Valor (Ignorado pelo Zod se houver itens)
-                { name: 'value', label: 'Valor Manual Global (Apenas para vendas simples)', type: 'number' },
+                // 💡 UI REATIVA (Aprimorada): Micro-componente isolado para performance.
+                { 
+                    name: 'value', 
+                    label: 'Valor Manual Global (Apenas para vendas simples)', 
+                    type: 'custom',
+                    customRender: (form) => <DealValueInput form={form} />
+                },
             ],
 
             // --- 🗄️ GAVETA DE AUDITORIA ---
@@ -303,11 +361,9 @@ export function DealRegistry() {
         isLoading: isGlobalLoading,
         error: errorDeals ? String(errorDeals) : null,
         
-        // 💡 O Zod transform() envia o payload matemático perfeitamente calculado
         onCreate: async (data) => { return createDeal(data as any); },
         onUpdate: async (id, data) => { return updateDeal(id, data as any); },
         
-        // Auditoria: Excluir negócios falsifica relatórios históricos.
         onDelete: async () => { alert('⚠️ Operação bloqueada: Oportunidades não devem ser excluídas para preservar a rastreabilidade comercial. Altere o status para "LOST" (Perdido).'); },
         
         onRefresh: refreshDeals
