@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { FaSearch, FaPlus, FaSync } from 'react-icons/fa';
 import { CrudConfig, CrudHooks } from './types';
 import { CrudTable } from './CrudTable';
-import { CrudForm } from './CrudForm';
+import { CrudForm } from './forms/CrudForm';
 import { FieldValues } from 'react-hook-form';
 
 interface CrudLayoutProps<TData extends FieldValues & { id: string }, TForm extends FieldValues> {

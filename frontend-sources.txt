@@ -13,11 +13,7 @@
 │   │   │   ├── dashboard
 │   │   │   │   ├── cadastros
 │   │   │   │   │   └── page.tsx
-│   │   │   │   ├── clients
-│   │   │   │   │   └── page.tsx
 │   │   │   │   ├── crm
-│   │   │   │   │   └── page.tsx
-│   │   │   │   ├── products
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── schedule
 │   │   │   │   │   └── page.tsx
@@ -109,6 +105,8 @@
 │   │   │   │   └── types.ts
 │   │   │   └── tenant
 │   │   │       └── TenantSelector.tsx
+│   │   ├── constants
+│   │   │   └── sysColors.ts
 │   │   ├── hooks
 │   │   │   ├── useFeatureMutation.ts
 │   │   │   ├── useFeatures.ts
@@ -129,6 +127,7 @@
 │   │   │   ├── dtos
 │   │   │   │   └── StorageUploadResponse.dto.ts
 │   │   │   ├── acl.ts
+│   │   │   ├── api.ts
 │   │   │   ├── auth.ts
 │   │   │   ├── messaging.ts
 │   │   │   ├── tenant.ts
@@ -156,6 +155,7 @@
 │   │   │   ├── hooks
 │   │   │   │   ├── useCategories.ts
 │   │   │   │   └── useCategoryMutation.ts
+│   │   │   ├── registries
 │   │   │   └── types.ts
 │   │   ├── crm
 │   │   │   ├── components
@@ -165,6 +165,7 @@
 │   │   │   │   │   ├── ClientListItem.tsx
 │   │   │   │   │   ├── ClientListWidget.tsx
 │   │   │   │   │   └── ClientSearchInput.tsx
+│   │   │   │   ├── cockpit
 │   │   │   │   ├── communication
 │   │   │   │   │   └── WhatsAppWidget.tsx
 │   │   │   │   ├── deal-editor
@@ -186,18 +187,23 @@
 │   │   │   │       ├── StageItem.tsx
 │   │   │   │       └── StageList.tsx
 │   │   │   ├── hooks
-│   │   │   │   ├── useClientTimeline.ts
+│   │   │   │   ├── useDealMutation.ts
 │   │   │   │   ├── useDeals.ts
-│   │   │   │   ├── useInteractionMutation.ts
 │   │   │   │   └── usePipelines.ts
 │   │   │   ├── presentation
+│   │   │   │   ├── CRMCockpitView.tsx
 │   │   │   │   ├── CRMContainer.tsx
 │   │   │   │   ├── CRMKanbanView.tsx
 │   │   │   │   └── CRMWorkstation.tsx
+│   │   │   ├── registries
+│   │   │   │   ├── DealRegistry.tsx
+│   │   │   │   └── PipelineRegistry.tsx
+│   │   │   ├── schemas
+│   │   │   │   ├── dealSchema.ts
+│   │   │   │   └── pipelineSchema.ts
 │   │   │   └── types
 │   │   │       ├── deal.types.ts
 │   │   │       ├── index.ts
-│   │   │       ├── interaction.types.ts
 │   │   │       ├── kanban.types.ts
 │   │   │       └── pipeline.types.ts
 │   │   ├── fiscal
@@ -569,30 +575,6 @@ export default function CadastrosContainerPage() {
 }
 
 
-// ===== FILE: src/app/[tenantId]/dashboard/clients/page.tsx =====
-
-// src/app/clients/page.tsx
-"use client";
-
-import React from 'react';
-// Importação do novo componente modularizado
-import { ClientTablePage } from '@/core/components/client/ClientTablePage'; 
-
-/**
- * @component ClientsPage
- * @description Rota de entrada para a Tabela de Clientes.
- * PORQUÊ: Simplifica a rota e usa o componente Page modularizado.
- */
-export default function ClientsPage() {
-    
-    // NOTE: O AuthGuard é aplicado no clients/layout.tsx
-    
-    return (
-        <ClientTablePage />
-    );
-}
-
-
 // ===== FILE: src/app/[tenantId]/dashboard/crm/page.tsx =====
 
 // src/app/[tenantId]/dashboard/crm/page.tsx
@@ -742,22 +724,6 @@ export default function DashboardPage() {
 
             </div>
         </AuthGuard>
-    );
-}
-
-
-// ===== FILE: src/app/[tenantId]/dashboard/products/page.tsx =====
-
-'use client';
-
-import React from 'react';
-import { ProductCatalogue } from '@/modules/products/presentation/ProductCatalogue';
-
-export default function ProductsPage() {
-    return (
-        <main className="h-full w-full overflow-hidden p-6">
-            <ProductCatalogue />
-        </main>
     );
 }
 
@@ -4766,24 +4732,33 @@ export const TenantGuard: React.FC<TenantGuardProps> = ({ children }) => {
 
 // ===== FILE: src/core/components/client/ClientForm.tsx =====
 
-// src/core/components/client/ClientForm.tsx
+// ===== FILE: src/core/components/client/ClientForm.tsx =====
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { FaMapMarkerAlt, FaExclamationTriangle, FaSave, FaStickyNote } from 'react-icons/fa';
+
 import { useClientMutation } from '@/core/client/hooks/useClientMutation';
 import { Client, AddressType } from '@/core/client/types/client';
+import { ClientFormSchema, ClientFormInput } from '@/core/client/schemas/clientSchema';
 
 interface ClientFormProps {
     client?: Client;
-    // MODIFICAÇÃO: onSuccess agora recebe o cliente salvo/atualizado
     onSuccess: (savedClient: Client) => void;
     showSubmitButton?: boolean;
 }
 
 /**
  * @component ClientForm
- * @description Formulário unificado.
- * @update Agora retorna o objeto Client no callback onSuccess para atualização imediata do estado pai.
+ * @description Formulário Headless (Puro) de Cliente.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO:
+ * 1. Single Source of Truth: Consome o `ClientFormSchema` (Zod) garantindo que as regras
+ * de validação do CRM sejam matematicamente idênticas às da tela de Master Data.
+ * 2. UX de Resiliência (Tratamento 409): Intercepta erros de "Documento Duplicado" 
+ * e acopla o erro diretamente no input do usuário, em vez de um alerta genérico.
+ * 3. HTML5 Nativo: Permite submissão externa via `form="client-edit-form"`, viabilizando
+ * layouts complexos como a Workstation do CRM.
  */
 export const ClientForm: React.FC<ClientFormProps> = ({ 
     client, 
@@ -4791,38 +4766,42 @@ export const ClientForm: React.FC<ClientFormProps> = ({
     showSubmitButton = true 
 }) => {
     
-    const { createClient, updateClient, isLoading, error } = useClientMutation();
+    const { createClient, updateClient, isLoading } = useClientMutation();
     const isEditing = !!client;
+    
+    // Estado para erros genéricos (ex: 500 do servidor)
+    const [globalError, setGlobalError] = useState<string | null>(null);
 
-    const initialFormState = {
-        name: '',
-        document: '',
-        email: '',
-        phone: '',
-        userNotes: '',
-        address: {
-            id: '',
-            street: '',
-            number: '',
-            district: '',
-            city: '',
-            state: '',
-            zipCode: ''
-        }
-    };
+    // =========================================================================
+    // 🧠 MOTOR DO FORMULÁRIO (RHF + Zod)
+    // =========================================================================
+    const {
+        register,
+        handleSubmit,
+        reset,
+        setError,
+        formState: { errors }
+    } = useForm<ClientFormInput & { address?: any }>({
+        resolver: zodResolver(ClientFormSchema as any),
+        mode: 'onChange'
+    });
 
-    const [formData, setFormData] = useState(initialFormState);
-
+    // =========================================================================
+    // 💧 HIDRATAÇÃO DOS DADOS
+    // =========================================================================
     useEffect(() => {
         if (client) {
+            // Busca o endereço principal (se houver) para popular os campos
             const mainAddress = client.addresses?.find(a => a.type === AddressType.MAIN) || client.addresses?.[0];
             
-            setFormData({
+            reset({
+                id: client.id,
                 name: client.name,
                 document: client.document || '',
                 email: client.email || '',
                 phone: client.phone || '',
                 userNotes: client.userNotes || '',
+                isActive: client.isActive,
                 address: {
                     id: mainAddress?.id || '',
                     street: mainAddress?.street || '',
@@ -4834,44 +4813,44 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                 }
             });
         } else {
-            setFormData(initialFormState);
+            // Estado virgem para criação
+            reset({
+                name: '',
+                document: '',
+                email: '',
+                phone: '',
+                userNotes: '',
+                isActive: true,
+                address: { street: '', number: '', district: '', city: '', state: '', zipCode: '' }
+            });
         }
-    }, [client]);
+    }, [client, reset]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    };
+    // =========================================================================
+    // ⚙️ HANDLER DE SUBMISSÃO E TRATAMENTO DE ERROS
+    // =========================================================================
+    const onSubmitForm = async (data: any) => {
+        setGlobalError(null);
 
-    const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData(prev => ({
-            ...prev,
-            address: {
-                ...prev.address,
-                [e.target.name]: e.target.value
-            }
-        }));
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const addressesToSend = formData.address.street.trim() ? [{
-            id: formData.address.id || undefined,
-            street: formData.address.street,
-            number: formData.address.number || 'S/N',
-            district: formData.address.district || 'Centro',
-            city: formData.address.city || 'Indefinida',
-            state: formData.address.state || 'UF',
-            zipCode: formData.address.zipCode || '00000000',
+        // Montagem do Payload (Mapeia o form plano para o DTO complexo com array de endereços)
+        const addressesToSend = data.address?.street?.trim() ? [{
+            id: data.address.id || undefined,
+            street: data.address.street,
+            number: data.address.number || 'S/N',
+            district: data.address.district || 'Centro',
+            city: data.address.city || 'Indefinida',
+            state: data.address.state || 'UF',
+            zipCode: data.address.zipCode || '00000000',
             type: AddressType.MAIN
         }] : undefined;
 
         const payload = {
-            name: formData.name,
-            document: formData.document.trim() || undefined,
-            email: formData.email.trim() || undefined,
-            phone: formData.phone.trim() || undefined,
-            userNotes: formData.userNotes || undefined,
+            name: data.name,
+            document: data.document?.trim() || undefined,
+            email: data.email?.trim() || undefined,
+            phone: data.phone?.trim() || undefined,
+            userNotes: data.userNotes?.trim() || undefined,
+            isActive: data.isActive,
             addresses: addressesToSend
         };
 
@@ -4882,58 +4861,88 @@ export const ClientForm: React.FC<ClientFormProps> = ({
             } else {
                 result = await createClient(payload);
             }
-            // Passa o resultado para o pai (atualiza a tela sem fetch extra)
             onSuccess(result);
-        } catch (err) {
-            console.error("Erro no formulário:", err);
+            
+        } catch (err: any) {
+            console.error("❌ [ClientForm] Erro ao salvar:", err);
+            
+            // 🎯 AQUI RESOLVEMOS A BOMBINHA (Erro 409 - Conflito de Documento/Email)
+            if (err.response?.status === 409) {
+                const apiMsg = err.response?.data?.message || '';
+                
+                if (apiMsg.toLowerCase().includes('documento') || apiMsg.toLowerCase().includes('cpf')) {
+                    setError('document', { type: 'manual', message: 'Este documento já está cadastrado no sistema.' });
+                } else if (apiMsg.toLowerCase().includes('email')) {
+                    setError('email', { type: 'manual', message: 'Este e-mail já pertence a outro cliente.' });
+                } else {
+                    setGlobalError(apiMsg || 'Conflito de dados (registro duplicado).');
+                }
+            } else {
+                setGlobalError(err.response?.data?.message || 'Ocorreu um erro interno ao salvar o cliente.');
+            }
         }
     };
 
+    // =========================================================================
+    // 🎨 RENDERIZAÇÃO UX/UI
+    // =========================================================================
     return (
-        <form id="client-edit-form" onSubmit={handleSubmit} className="space-y-5 animate-fade-in">
+        <form id="client-edit-form" onSubmit={handleSubmit(onSubmitForm)} className="space-y-5 animate-fade-in">
             
-            {error && (
-                <div className="p-3 bg-red-900/30 border border-red-800 text-red-300 rounded-lg text-sm flex items-center">
-                    <FaExclamationTriangle className="mr-2" />
-                    {error}
+            {globalError && (
+                <div className="p-3 bg-red-900/30 border border-red-800 text-red-300 rounded-lg text-sm flex items-center shadow-inner">
+                    <FaExclamationTriangle className="mr-2 flex-shrink-0" />
+                    <span>{globalError}</span>
                 </div>
             )}
 
             <div className="space-y-4">
+                {/* --- NOME --- */}
                 <div>
                     <label className="block text-[10px] font-bold text-accent-primary uppercase mb-1 tracking-wider">
                         Nome Completo *
                     </label>
                     <input 
-                        type="text" name="name" value={formData.name} onChange={handleChange} required
-                        className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:ring-1 focus:ring-accent-secondary focus:border-accent-secondary focus:outline-none transition placeholder-gray-600" 
+                        type="text" 
+                        {...register('name')}
+                        disabled={isLoading}
+                        className={`w-full px-3 py-2.5 bg-gray-900 border rounded-lg text-white text-sm focus:outline-none transition placeholder-gray-600 ${errors.name ? 'border-red-500 focus:ring-1 focus:ring-red-500' : 'border-gray-600 focus:ring-1 focus:ring-accent-secondary focus:border-accent-secondary'}`}
                         placeholder="Ex: João Silva ou Empresa Ltda"
                     />
+                    {errors.name && <p className="text-[10px] text-red-400 mt-1">{errors.name.message as string}</p>}
                 </div>
 
+                {/* --- CONTATO (Grid) --- */}
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">
                             E-mail
                         </label>
                         <input 
-                            type="email" name="email" value={formData.email} onChange={handleChange}
-                            className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition" 
+                            type="email" 
+                            {...register('email')}
+                            disabled={isLoading}
+                            className={`w-full px-3 py-2.5 bg-gray-900 border rounded-lg text-white text-sm focus:outline-none transition ${errors.email ? 'border-red-500 focus:ring-1 focus:ring-red-500' : 'border-gray-600 focus:border-gray-400'}`}
                             placeholder="contato@email.com"
                         />
+                        {errors.email && <p className="text-[10px] text-red-400 mt-1">{errors.email.message as string}</p>}
                     </div>
                     <div>
                         <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">
                             Telefone
                         </label>
                         <input 
-                            type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="(00) 00000-0000"
+                            type="text" 
+                            {...register('phone')}
+                            disabled={isLoading}
+                            placeholder="(00) 00000-0000"
                             className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition" 
                         />
                     </div>
                 </div>
             </div>
 
+            {/* --- ENDEREÇO PRINCIPAL --- */}
             <div className="bg-gray-800/40 p-4 rounded-xl border border-gray-700/50">
                 <label className="text-[10px] font-bold text-gray-300 uppercase mb-3 flex items-center tracking-wider">
                     <FaMapMarkerAlt className="mr-1.5 text-accent-secondary" /> Endereço Principal
@@ -4941,59 +4950,64 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                 
                 <div className="grid grid-cols-4 gap-3">
                     <div className="col-span-3">
-                        <input type="text" name="street" placeholder="Rua / Logradouro" value={formData.address.street} onChange={handleAddressChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                        <input type="text" {...register('address.street')} placeholder="Rua / Logradouro" disabled={isLoading}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none transition-colors" />
                     </div>
                     <div className="col-span-1">
-                        <input type="text" name="number" placeholder="Nº" value={formData.address.number} onChange={handleAddressChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                        <input type="text" {...register('address.number')} placeholder="Nº" disabled={isLoading}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none transition-colors" />
                     </div>
                     
                     <div className="col-span-2">
-                        <input type="text" name="district" placeholder="Bairro" value={formData.address.district} onChange={handleAddressChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                        <input type="text" {...register('address.district')} placeholder="Bairro" disabled={isLoading}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none transition-colors" />
                     </div>
                     <div className="col-span-2">
-                        <input type="text" name="city" placeholder="Cidade" value={formData.address.city} onChange={handleAddressChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                        <input type="text" {...register('address.city')} placeholder="Cidade" disabled={isLoading}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none transition-colors" />
                     </div>
                     
                     <div className="col-span-1">
-                        <input type="text" name="state" placeholder="UF" maxLength={2} value={formData.address.state} onChange={handleAddressChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white uppercase focus:border-accent-secondary focus:outline-none" />
+                        <input type="text" {...register('address.state')} placeholder="UF" maxLength={2} disabled={isLoading}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white uppercase focus:border-accent-secondary focus:outline-none transition-colors" />
                     </div>
                     <div className="col-span-3">
-                        <input type="text" name="zipCode" placeholder="CEP" value={formData.address.zipCode} onChange={handleAddressChange}
-                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none" />
+                        <input type="text" {...register('address.zipCode')} placeholder="CEP" disabled={isLoading}
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-2 text-xs text-white focus:border-accent-secondary focus:outline-none transition-colors" />
                     </div>
                 </div>
             </div>
 
+            {/* --- DOCUMENTO (CPF/CNPJ) --- */}
             <div>
                 <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">
                     CPF / CNPJ
                 </label>
                 <input 
-                    type="text" name="document" value={formData.document} onChange={handleChange}
-                    className="w-full px-3 py-2.5 bg-gray-900 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-gray-400 transition font-mono" 
+                    type="text" 
+                    {...register('document')}
+                    disabled={isLoading}
+                    className={`w-full px-3 py-2.5 bg-gray-900 border rounded-lg text-white text-sm font-mono focus:outline-none transition placeholder-gray-600 ${errors.document ? 'border-red-500 focus:ring-1 focus:ring-red-500' : 'border-gray-600 focus:border-gray-400'}`}
                     placeholder="000.000.000-00"
                 />
+                {errors.document && <p className="text-[10px] text-red-400 mt-1 font-bold animate-pulse">{errors.document.message as string}</p>}
             </div>
 
+            {/* --- ANOTAÇÕES HUMANAS --- */}
             <div className="pt-2 border-t border-gray-700/50">
                 <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2 tracking-wider flex items-center">
                     <FaStickyNote className="mr-1.5 text-yellow-500/70" /> Notas Privadas (Não lidas pela IA)
                 </label>
                 <textarea
-                    name="userNotes"
-                    value={formData.userNotes}
-                    onChange={handleChange}
+                    {...register('userNotes')}
+                    disabled={isLoading}
                     rows={4}
                     className="w-full px-3 py-2.5 bg-gray-800/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-yellow-500/50 transition placeholder-gray-600 resize-y"
                     placeholder="Digite observações internas sobre este cliente..."
                 />
             </div>
 
+            {/* BOTÃO INTERNO (Usado apenas se o modal pai não usar form="client-edit-form") */}
             {showSubmitButton && (
                 <button
                     type="submit"
@@ -5313,6 +5327,8 @@ export const ClientTablePage: React.FC = () => {
 'use client';
 
 import { ClientRegistry } from '@/core/client/registries/ClientRegistry';
+import { DealRegistry } from '@/modules/crm/registries/DealRegistry';
+import { PipelineRegistry } from '@/modules/crm/registries/PipelineRegistry';
 import { FiscalRegistry } from '@/modules/fiscal/registries/FiscalRegistry';
 import { InventoryRegistry } from '@/modules/inventory/registries/InventoryRegistry';
 import { WarehouseRegistry } from '@/modules/inventory/registries/WarehouseRegistry';
@@ -5364,8 +5380,8 @@ export const CadastrosContainer: React.FC = () => {
             icon: <FaChartLine />,
             items: [
                 { id: 'CLIENTS', label: 'Clientes' },
-                { id: 'DEAL', label: 'Deals' },
-                { id: 'PIPELINE', label: 'Pipelines' },
+                { id: 'DEALS', label: 'Deals' },
+                { id: 'PIPELINES', label: 'Pipelines' },
             ]
         },
         {
@@ -5407,6 +5423,8 @@ export const CadastrosContainer: React.FC = () => {
         
         // MÓDULO: CRM
         'CLIENTS': <ClientRegistry/>,
+        'DEALS': <DealRegistry/>,
+        'PIPELINES': <PipelineRegistry/>,
         
         // MÓDULO: FISCAL
         'FISCAL_GROUPS': <FiscalRegistry />,
@@ -6343,6 +6361,86 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
         </div>
     );
 };
+
+
+// ===== FILE: src/core/constants/sysColors.ts =====
+
+// ===== FILE: src/core/constants/sysColors.ts =====
+
+/**
+ * @file sysColors.ts
+ * @description Dicionário Central de Cores do Sistema (Shared Kernel).
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade - DDD):
+ * 1. Single Source of Truth (SSOT): Centraliza as cores permitidas na aplicação,
+ * evitando duplicação de lógicas em módulos distintos (CRM, Tarefas, Financeiro).
+ * 2. Imutabilidade e Previsibilidade: Fornece um contrato estrito (Type e Const)
+ * para que o Zod e o Banco de Dados trafeguem apenas Hexadecimais válidos e homologados.
+ * 3. Acessibilidade (a11y): Utiliza a paleta Tailwind 500, garantindo contraste 
+ * perfeito (WCAG) sobre fundos Dark (Gray-800/900).
+ */
+
+export type SysColorKey = 
+    | 'SLATE' | 'GRAY' | 'ZINC' | 'RED' | 'ORANGE' | 'AMBER' 
+    | 'YELLOW' | 'LIME' | 'GREEN' | 'EMERALD' | 'TEAL' | 'CYAN' 
+    | 'SKY' | 'BLUE' | 'INDIGO' | 'VIOLET' | 'PURPLE' | 'FUCHSIA' 
+    | 'PINK' | 'ROSE';
+
+export interface SysColor {
+    key: SysColorKey;
+    name: string;        // Nome amigável para exibição na UI (Tooltips)
+    hex: string;         // Valor canônico salvo no Banco de Dados
+    twClass: string;     // Classe utilitária do Tailwind para renderização rápida
+}
+
+/**
+ * @constant SYS_COLORS
+ * @description Array imutável contendo a paleta de 20 cores premium do sistema.
+ */
+export const SYS_COLORS: readonly SysColor[] = [
+    { key: 'SLATE',   name: 'Ardósia',     hex: '#64748b', twClass: 'bg-slate-500' },
+    { key: 'GRAY',    name: 'Cinza',       hex: '#6b7280', twClass: 'bg-gray-500' },
+    { key: 'ZINC',    name: 'Zinco',       hex: '#71717a', twClass: 'bg-zinc-500' },
+    { key: 'RED',     name: 'Vermelho',    hex: '#ef4444', twClass: 'bg-red-500' },
+    { key: 'ORANGE',  name: 'Laranja',     hex: '#f97316', twClass: 'bg-orange-500' },
+    { key: 'AMBER',   name: 'Âmbar',       hex: '#f59e0b', twClass: 'bg-amber-500' },
+    { key: 'YELLOW',  name: 'Amarelo',     hex: '#eab308', twClass: 'bg-yellow-500' },
+    { key: 'LIME',    name: 'Lima',        hex: '#84cc16', twClass: 'bg-lime-500' },
+    { key: 'GREEN',   name: 'Verde',       hex: '#22c55e', twClass: 'bg-green-500' },
+    { key: 'EMERALD', name: 'Esmeralda',   hex: '#10b981', twClass: 'bg-emerald-500' },
+    { key: 'TEAL',    name: 'Cerceta',     hex: '#14b8a6', twClass: 'bg-teal-500' },
+    { key: 'CYAN',    name: 'Ciano',       hex: '#06b6d4', twClass: 'bg-cyan-500' },
+    { key: 'SKY',     name: 'Céu',         hex: '#0ea5e9', twClass: 'bg-sky-500' },
+    { key: 'BLUE',    name: 'Azul',        hex: '#3b82f6', twClass: 'bg-blue-500' },
+    { key: 'INDIGO',  name: 'Índigo',      hex: '#6366f1', twClass: 'bg-indigo-500' },
+    { key: 'VIOLET',  name: 'Violeta',     hex: '#8b5cf6', twClass: 'bg-violet-500' },
+    { key: 'PURPLE',  name: 'Roxo',        hex: '#a855f7', twClass: 'bg-purple-500' },
+    { key: 'FUCHSIA', name: 'Fúcsia',      hex: '#d946ef', twClass: 'bg-fuchsia-500' },
+    { key: 'PINK',    name: 'Rosa',        hex: '#ec4899', twClass: 'bg-pink-500' },
+    { key: 'ROSE',    name: 'Rosa Escuro', hex: '#f43f5e', twClass: 'bg-rose-500' }
+] as const;
+
+// ============================================================================
+// 🛠️ UTILS (Funções Auxiliares)
+// ============================================================================
+
+/**
+ * @function getSysColorByHex
+ * @description Busca o objeto de cor completo a partir de um valor Hexadecimal.
+ * Útil para hidratar a UI com dados vindos da API.
+ * @param hex O valor hexadecimal (ex: '#10b981')
+ * @returns O objeto SysColor correspondente ou um fallback (SLATE) caso não exista.
+ */
+export const getSysColorByHex = (hex: string): SysColor => {
+    const normalizedHex = hex.toLowerCase().trim();
+    return SYS_COLORS.find(c => c.hex === normalizedHex) || SYS_COLORS[0];
+};
+
+/**
+ * @constant VALID_HEX_COLORS
+ * @description Array contendo apenas as strings hexadecimais permitidas.
+ * Extraído automaticamente para alimentar o validador Zod.
+ */
+export const VALID_HEX_COLORS = SYS_COLORS.map(c => c.hex) as [string, ...string[]];
 
 
 // ===== FILE: src/core/hooks/useFeatureMutation.ts =====
@@ -7323,6 +7421,53 @@ export interface UpdateFeatureDto {
     type?: 'boolean' | 'quantity';
 }
 
+
+
+// ===== FILE: src/core/types/api.ts =====
+
+// ===== FILE: src/core/types/api.types.ts =====
+
+/**
+ * @file api.types.ts
+ * @description CONTRATOS GLOBAIS DE COMUNICAÇÃO HTTP (Shared Kernel).
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
+ * 1. Single Source of Truth (SSOT): Centraliza o formato de resposta do backend NestJS.
+ * Se a API mudar o nome de 'limit' para 'perPage' no futuro, alteramos apenas aqui,
+ * e o TypeScript avisará exatamente quais telas do sistema precisam ser ajustadas.
+ * 2. Uso de Generics (<T>): Permite que qualquer módulo do sistema (CRM, Financeiro, etc.) 
+ * reutilize esta estrutura de paginação garantindo tipagem forte na propriedade 'data'.
+ */
+
+// ============================================================================
+// 📊 METADADOS DE PAGINAÇÃO
+// ============================================================================
+/**
+ * Interface que espelha o objeto "meta" devolvido pelo NestJS nas rotas paginadas.
+ */
+export interface PaginationMeta {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+}
+
+// ============================================================================
+// 📦 RESPOSTA PAGINADA (Generic Wrapper)
+// ============================================================================
+/**
+ * Interface Genérica para respostas que contêm listas grandes.
+ * @template T - O tipo de entidade que está sendo trafegada (Ex: CRMDeal, Client, Category).
+ */
+export interface PaginatedResponse<T> {
+    /** * O array contendo os registros da página atual. 
+     * O TypeScript saberá exatamente o que tem dentro deste array graças ao <T>.
+     */
+    data: T[];
+    
+    /** * Os metadados para construção de componentes de paginação (Next/Prev) na UI. 
+     */
+    meta: PaginationMeta;
+}
 
 
 // ===== FILE: src/core/types/auth.ts =====
@@ -11837,10 +11982,14 @@ export const PipelineDrawer: React.FC<PipelineDrawerProps> = ({
 
 // ===== FILE: src/modules/crm/components/pipeline-manager/StageItem.tsx =====
 
-import React, { useRef } from 'react';
+// ===== FILE: src/modules/crm/components/pipeline-manager/StageItem.tsx =====
+
+import React, { useState, useRef, useEffect } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { FaGripVertical, FaTrash } from 'react-icons/fa';
+import { FaGripVertical, FaTrash, FaCheck } from 'react-icons/fa';
+
 import { ConfigStage } from './StageList';
+import { SYS_COLORS } from '@/core/constants/sysColors'; // 👈 Importamos o nosso Shared Kernel
 
 interface StageItemProps {
     stage: ConfigStage;
@@ -11849,6 +11998,16 @@ interface StageItemProps {
     onDelete: (id: string) => void;
 }
 
+/**
+ * @component StageItem
+ * @description Representa uma única etapa (Stage) na configuração do Funil (Drag & Drop).
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise UX):
+ * 1. UI Customizada (Popover): Remove o `<input type="color">` nativo do SO,
+ * substituindo por um popover de cores curadas (Shared Kernel). Isso garante 
+ * consistência visual no Design System e previne inserção de hexadecimais inválidos.
+ * 2. Click-Outside Listener: Implementa fechamento inteligente do popover quando 
+ * o usuário clica fora da área, garantindo uma navegação fluida e sem frustrações.
+ */
 export const StageItem: React.FC<StageItemProps> = ({ 
     stage, 
     index, 
@@ -11856,8 +12015,27 @@ export const StageItem: React.FC<StageItemProps> = ({
     onDelete 
 }) => {
     
-    // Ref para acionar o input de cor nativo ao clicar na bolinha
-    const colorInputRef = useRef<HTMLInputElement>(null);
+    // --- ESTADOS DO POPOVER DE COR ---
+    const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+    const popoverRef = useRef<HTMLDivElement>(null);
+
+    // 🛡️ CLICK-OUTSIDE HOOK: Fecha a paleta de cores se o usuário clicar fora dela.
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+                setIsColorPickerOpen(false);
+            }
+        };
+
+        // Só adiciona o listener de documento se o popover estiver aberto (Otimização de Memória)
+        if (isColorPickerOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isColorPickerOpen]);
 
     return (
         <Draggable draggableId={stage.id} index={index}>
@@ -11868,8 +12046,8 @@ export const StageItem: React.FC<StageItemProps> = ({
                     className={`
                         flex items-center gap-3 p-2 rounded-lg border transition-all group
                         ${snapshot.isDragging 
-                            ? 'bg-base-dark border-accent-primary shadow-xl z-50 scale-105' 
-                            : 'bg-base-dark border-white/5 hover:border-white/10'
+                            ? 'bg-gray-800 border-accent-primary shadow-2xl z-50 scale-[1.02]' 
+                            : 'bg-gray-900 border-white/5 hover:border-white/10'
                         }
                     `}
                     style={provided.draggableProps.style}
@@ -11877,26 +12055,61 @@ export const StageItem: React.FC<StageItemProps> = ({
                     {/* 1. Drag Handle (A alça para arrastar) */}
                     <div 
                         {...provided.dragHandleProps}
-                        className="text-gray-600 hover:text-gray-300 cursor-grab active:cursor-grabbing p-1"
+                        className="text-gray-600 hover:text-gray-300 cursor-grab active:cursor-grabbing p-1 flex-shrink-0"
+                        title="Arraste para reordenar"
                     >
                         <FaGripVertical />
                     </div>
 
-                    {/* 2. Color Picker (Visual Customizado + Input Oculto) */}
-                    <div className="relative">
-                        <div 
-                            className="w-6 h-6 rounded-full cursor-pointer shadow-sm ring-1 ring-white/10 hover:scale-110 transition-transform"
+                    {/* 2. Color Picker (O Popover Curado Padrão Big Tech) */}
+                    <div className="relative flex-shrink-0" ref={popoverRef}>
+                        
+                        {/* Botão Gatilho (A Bolinha Colorida) */}
+                        <button
+                            type="button"
+                            className="w-6 h-6 rounded-full cursor-pointer shadow-sm ring-2 ring-transparent hover:ring-white/30 transition-all focus:outline-none focus:ring-accent-primary flex items-center justify-center"
                             style={{ backgroundColor: stage.color }}
-                            onClick={() => colorInputRef.current?.click()}
-                            title="Alterar cor da fase"
-                        />
-                        <input
-                            ref={colorInputRef}
-                            type="color"
-                            value={stage.color}
-                            onChange={(e) => onUpdate(stage.id, 'color', e.target.value)}
-                            className="absolute opacity-0 w-0 h-0 -z-10" // Escondido, mas funcional
-                        />
+                            onClick={() => setIsColorPickerOpen(!isColorPickerOpen)}
+                            title="Alterar cor da etapa"
+                        >
+                            {/* Opcional: Um pequeno ícone de seta ou brilho poderia ir aqui */}
+                        </button>
+
+                        {/* O Popover (A Bandeja de Cores) */}
+                        {isColorPickerOpen && (
+                            <div className="absolute z-[9999] top-10 left-0 p-3 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-56 animate-fade-in">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-700 pb-2">
+                                    Cor da Etapa
+                                </p>
+                                
+                                {/* Grid de Cores (5 colunas x 4 linhas = 20 cores) */}
+                                <div className="grid grid-cols-5 gap-2">
+                                    {SYS_COLORS.map((sysColor) => {
+                                        const isSelected = stage.color === sysColor.hex;
+                                        return (
+                                            <button
+                                                key={sysColor.key}
+                                                type="button"
+                                                onClick={() => {
+                                                    // Salva a cor exata do nosso dicionário e fecha o popover
+                                                    onUpdate(stage.id, 'color', sysColor.hex);
+                                                    setIsColorPickerOpen(false);
+                                                }}
+                                                className={`
+                                                    w-7 h-7 rounded-full flex items-center justify-center transition-transform hover:scale-110 focus:outline-none
+                                                    ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-800 shadow-lg' : 'hover:ring-2 hover:ring-white/50'}
+                                                `}
+                                                style={{ backgroundColor: sysColor.hex }}
+                                                title={sysColor.name} // Tooltip com o nome amigável (ex: "Verde Esmeralda")
+                                            >
+                                                {/* Exibe um pequeno checkmark na cor selecionada */}
+                                                {isSelected && <FaCheck className="text-white text-[10px] drop-shadow-md" />}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* 3. Input de Nome da Fase */}
@@ -11904,16 +12117,17 @@ export const StageItem: React.FC<StageItemProps> = ({
                         type="text"
                         value={stage.name}
                         onChange={(e) => onUpdate(stage.id, 'name', e.target.value)}
-                        placeholder="Nome da fase (ex: Negociação)"
-                        className="flex-1 bg-transparent text-sm text-gray-200 placeholder-gray-600 focus:outline-none font-medium"
-                        autoFocus={stage.name === ''} // Foca automático se for novo
+                        placeholder="Nome da etapa (ex: Em Negociação)"
+                        className="flex-1 bg-transparent text-sm text-gray-200 placeholder-gray-600 focus:outline-none font-bold"
+                        autoFocus={stage.name === ''} // Foca automaticamente apenas se for uma etapa recém-criada
                     />
 
                     {/* 4. Botão de Excluir */}
                     <button 
+                        type="button"
                         onClick={() => onDelete(stage.id)}
-                        className="text-gray-600 hover:text-red-500 hover:bg-red-500/10 p-2 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                        title="Remover fase"
+                        className="text-gray-600 hover:text-red-500 hover:bg-red-500/10 p-2 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 flex-shrink-0"
+                        title="Remover esta etapa"
                     >
                         <FaTrash size={12} />
                     </button>
@@ -12042,376 +12256,83 @@ export const StageList: React.FC<StageListProps> = ({ stages, onChange }) => {
 
 
 
-// ===== FILE: src/modules/crm/hooks/useClientTimeline.ts =====
+// ===== FILE: src/modules/crm/hooks/useDealMutation.ts =====
 
-import { useState, useCallback } from 'react';
-import { api } from '@/core/services/api'; // Importa o cliente HTTP que criamos
-import { 
-    CRMInteraction, 
-    InteractionType, 
-    AgentProposal 
-} from '../types';
-
-/**
- * Interface Interna (DTO):
- * Representa exatamente o JSON que o Backend envia.
- * Não exportamos isso pois a UI não deve conhecer essa estrutura "crua".
- */
-interface BackendInteractionDto {
-    id: string;
-    type: string; // O backend manda string ('NOTE', 'CALL', etc.)
-    content: string;
-    createdAt: string;
-    userId: string;
-    userName?: string;
-    
-    // O coração da inteligência: Metadados opcionais
-    aiMetadata?: {
-        manual?: boolean;       // True = Feito por humano
-        originalType?: string;  // Tipo original
-        analysis?: any;         // Análise de sentimento, tags
-        proposal?: AgentProposal; // Se a IA sugeriu uma ação (Ex: Mudar status)
-    };
-}
-
-/**
- * HOOK: useClientTimeline
- * Responsável por gerenciar todo o ciclo de vida das interações de um cliente específico.
- * * @param clientId - O ID do cliente que estamos visualizando.
- */
-export const useClientTimeline = (clientId: string) => {
-    
-    // --- ESTADOS ---
-    
-    // Lista de interações já processadas e prontas para exibir
-    const [interactions, setInteractions] = useState<CRMInteraction[]>([]);
-    
-    // Loading geral da lista (Skeleton initial)
-    const [loading, setLoading] = useState(false);
-    
-    // Loading específico do Agente (Spinner "IA pensando...")
-    const [analyzing, setAnalyzing] = useState(false);
-    
-    // Gestão simples de erro para exibir na UI
-    const [error, setError] = useState<string | null>(null);
-
-    // --- ADAPTER (PADRÃO DE PROJETO) ---
-
-    /**
-     * Função Pura que converte o dado "feio" do backend no objeto "rico" do frontend.
-     * Isso blinda seus componentes visuais de mudanças no banco de dados.
-     */
-    const adaptToFrontend = (dto: BackendInteractionDto): CRMInteraction => {
-        // 1. Normalização do Tipo: Garante que a string do banco vire um Enum válido
-        // Prioridade: Metadado > Tipo Raiz > Fallback 'NOTE'
-        const rawType = dto.aiMetadata?.originalType || dto.type || 'NOTE';
-        
-        // Verifica se o tipo existe no nosso Enum, senão vira NOTE (segurança)
-        const type = Object.values(InteractionType).includes(rawType as InteractionType)
-            ? (rawType as InteractionType)
-            : InteractionType.NOTE;
-
-        // 2. Montagem do Objeto Rico
-        return {
-            id: dto.id,
-            clientId, // Injetamos o contexto atual
-            userId: dto.userId,
-            userName: dto.userName,
-            createdAt: dto.createdAt,
-            type: type,
-            content: dto.content,
-            
-            // 3. Mapeamento de Inteligência
-            // Se não foi manual, assumimos que foi gerado/tocado pelo sistema
-            autoGenerated: !dto.aiMetadata?.manual,
-            
-            // Passamos o metadata completo para componentes avançados usarem (Ex: Cards de Proposta)
-            aiMetadata: dto.aiMetadata, 
-            
-            // Atalho para análise legada (compatibilidade)
-            aiAnalysis: dto.aiMetadata?.analysis
-        };
-    };
-
-    // --- AÇÕES (FETCH & WRITE) ---
-
-    /**
-     * Busca o histórico completo do cliente.
-     * Deve ser chamado no useEffect da página.
-     */
-    const fetchTimeline = useCallback(async () => {
-        if (!clientId) return;
-        
-        setLoading(true);
-        setError(null);
-        
-        try {
-            // GET /crm/timeline/:clientId
-            const response = await api.get<BackendInteractionDto[]>(`/crm/timeline/${clientId}`);
-            
-            // Passa cada item pelo adaptador antes de salvar no estado
-            const adapted = response.data.map(adaptToFrontend);
-            
-            setInteractions(adapted);
-        } catch (err: any) {
-            const msg = err.response?.data?.message || 'Erro ao carregar histórico.';
-            console.error('❌ Erro no fetchTimeline:', msg);
-            setError(msg);
-        } finally {
-            setLoading(false);
-        }
-    }, [clientId]);
-
-    /**
-     * Envia uma nova mensagem/nota para o Agente.
-     * * @param content O texto digitado pelo usuário
-     * @param type O canal selecionado (NOTE, CALL, WHATSAPP, etc)
-     */
-    const registerInteraction = async (content: string, type: InteractionType) => {
-        // Ativa o estado "IA Pensando"
-        setAnalyzing(true);
-        setError(null);
-
-        try {
-            // Payload estrito conforme esperado pelo DTO do Backend
-            const payload = {
-                action: 'LINK_EXISTING', // Estamos na tela do cliente, então é vínculo
-                clientId,
-                type,
-                content
-            };
-
-            // POST /crm/interactions
-            const response = await api.post<BackendInteractionDto>('/crm/interactions', payload);
-            
-            // O backend já devolve a interação criada e processada pela IA
-            const newInteraction = adaptToFrontend(response.data);
-
-            // Atualiza a lista localmente (Optimistic Update ou Append real)
-            setInteractions(prev => [newInteraction, ...prev]);
-
-            // --- PONTO DE DECISÃO DO AGENTE (HUMAN-IN-THE-LOOP) ---
-            // Se o backend devolver uma proposta, significa que a IA quer mudar algo no CRM.
-            if (response.data.aiMetadata?.proposal) {
-                console.log('🤖 PROPOSTA RECEBIDA:', response.data.aiMetadata.proposal);
-                
-                // TODO: Conectar aqui seu Modal de Confirmação.
-                // Exemplo: setPendingProposal(response.data.aiMetadata.proposal)
-                // Por enquanto, usamos alert para debug:
-                alert(`O Agente sugere: ${response.data.aiMetadata.proposal.reasoning}`);
-            }
-
-            return newInteraction;
-
-        } catch (err: any) {
-            const msg = err.response?.data?.message || 'Erro ao salvar interação.';
-            console.error('❌ Erro no registerInteraction:', msg);
-            setError(msg);
-            throw err; // Re-lança para o componente tratar se quiser
-        } finally {
-            setAnalyzing(false);
-        }
-    };
-
-    return {
-        interactions,      // A lista tratada
-        loading,           // Loading inicial
-        analyzing,         // Loading de processamento da IA
-        error,             // Erro legível para UI
-        fetchTimeline,     // Função de recarregar
-        registerInteraction // Função de enviar
-    };
-};
-
-
-// ===== FILE: src/modules/crm/hooks/useDeals.ts =====
-
-// src/modules/crm/hooks/useDeals.ts
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { api } from '@/core/services/api';
 import { CRMDeal, DealStatus } from '../types';
-// Importamos tipos genéricos, assumindo que o DTO de update seja um Partial do Create ou similar
-// Ajuste conforme sua estrutura real de DTOs no frontend se tiver definido interfaces específicas
 
-export function useDeals(pipelineId?: string) {
+/**
+ * ============================================================================
+ * 🛠️ HOOK: useDealMutation (CQRS - Command)
+ * @description Hook de Mutação exclusivo para Operações de Escrita em Oportunidades.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
+ * 1. Fail-Fast: Lança erros (throw err) imediatamente para bloquear o fechamento 
+ * prematuro de modais (CrudForm) caso a transação falhe.
+ * 2. Error Extraction: Intercepta respostas de erro HTTP (ex: 400 Bad Request do NestJS) 
+ * e formata para o motor visual exibir tarjas vermelhas elegantes.
+ * 3. Restful Alignment: Separação estrita de rotas (POST, PATCH, DELETE).
+ * ============================================================================
+ */
+export function useDealMutation() {
+    const [isLoading, setIsLoading] = useState(false);
     
-    const [deals, setDeals] = useState<CRMDeal[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    // Estado de erro capturado (O motor CrudLayout escuta ativamente isso)
     const [error, setError] = useState<string | null>(null);
 
-    // --- FETCHING ---
-    const fetchDeals = useCallback(async () => {
-        // Se a lógica exigir que SÓ busque se tiver pipelineId, descomente abaixo:
-        // if (!pipelineId) return; 
-
-        setIsLoading(true);
-        try {
-            // 2. Passamos o pipelineId como parâmetro query string (?pipelineId=...)
-            const response = await api.get<CRMDeal[]>('/crm/deals', {
-                params: {
-                    pipelineId: pipelineId 
-                }
-            });
-            setDeals(response.data);
-        } catch (err: any) {
-            // setError(err);
-            console.error("Erro ao buscar negócios:", err);
-        } finally {
-            setIsLoading(false);
+    /**
+     * @helper extractError
+     * @description Tradutor de Erros. Vasculha as camadas do Axios e do NestJS 
+     * para encontrar o real motivo da falha (ex: regras de negócio violadas).
+     */
+    const extractError = (err: any, fallbackMessage: string): string => {
+        console.error(`❌ [useDealMutation] Erro Crítico:`, err);
+        
+        // Padrão de exceção do NestJS: { message: '...', statusCode: 400 }
+        const backendMessage = err.response?.data?.message;
+        
+        // Se for um erro de validação (class-validator), o Nest retorna um array de strings
+        if (Array.isArray(backendMessage)) {
+            return backendMessage[0];
         }
-    }, [pipelineId]); // 3. pipelineId entra na dependência (se mudar o ID, busca de novo)
-
-    // Carrega na montagem
-    useEffect(() => {
-        fetchDeals();
-    }, [fetchDeals]);
-
-    // --- ACTIONS (MUTAÇÕES) ---
+        
+        return backendMessage || fallbackMessage;
+    };
 
     /**
-     * @method updateDealStatus
-     * @description Move um card de uma coluna para outra (Atualiza Stage/Status).
-     * Aplica Optimistic Update para sensação de instantaneidade.
+     * @method createDeal
+     * @description Insere uma nova Oportunidade no banco de dados.
      */
-    const updateDealStatus = async (dealId: string, newStageId: string, newStatus?: DealStatus) => {
-        // 1. Snapshot do estado anterior (para rollback em caso de erro)
-        const previousDeals = [...deals];
-
-        // 2. Atualização Otimista (Frontend reflete mudança na hora)
-        setDeals(currentDeals => currentDeals.map(deal => {
-            if (deal.id === dealId) {
-                return { 
-                    ...deal, 
-                    currentStageId: newStageId, // Atualiza a coluna visual (Dinâmico)
-                    status: newStatus || deal.status // Atualiza o status lógico (Compatibilidade)
-                };
-            }
-            return deal;
-        }));
-
-        // 3. Chamada API
+    const createDeal = async (data: Partial<CRMDeal>): Promise<CRMDeal> => {
+        setIsLoading(true);
+        setError(null);
+        
         try {
-            // Enviamos tanto o stageId (novo) quanto o status (legado/derivado)
-            await api.patch(`/crm/deals/${dealId}`, { 
-                currentStageId: newStageId,
-                status: newStatus
-            });
-        } catch (err) {
-            console.error("Falha ao atualizar status do deal:", err);
-            // Rollback silencioso ou com toast (aqui apenas revertemos a lista)
-            setDeals(previousDeals);
-            // Opcional: setar um erro temporário
-            alert("Não foi possível mover o card. Tente novamente.");
+            const response = await api.post<CRMDeal>('/crm/deals', data);
+            return response.data;
+        } catch (err: any) {
+            const msg = extractError(err, 'Falha de conexão ao tentar criar a oportunidade.');
+            setError(msg);
+            throw err; // Re-lançamos para o CrudForm saber que o form "quebrou"
+        } finally {
+            setIsLoading(false);
         }
     };
 
     /**
      * @method updateDeal
-     * @description Atualização completa dos dados do negócio (Edição via Modal).
+     * @description Atualiza parcialmente os dados de uma oportunidade (Edição Completa).
      */
-    const updateDeal = async (dealId: string, data: any): Promise<CRMDeal> => {
-        try {
-            const response = await api.patch<CRMDeal>(`/crm/deals/${dealId}`, data);
-            const updatedDeal = response.data;
-
-            // Atualiza a lista local com os dados novos vindos do servidor
-            setDeals(prev => prev.map(d => d.id === dealId ? updatedDeal : d));
-            
-            return updatedDeal;
-        } catch (err: any) {
-            console.error("Erro ao atualizar negócio:", err);
-            throw err;
-        }
-    };
-
-    /**
-     * @method createDeal
-     * @description Cria um novo negócio e o adiciona à lista local.
-     */
-    const createDeal = async (data: any): Promise<void> => {
-        try {
-            const response = await api.post<CRMDeal>('/crm/deals', data);
-            const newDeal = response.data;
-            
-            // Adiciona à lista local
-            setDeals(prev => [newDeal, ...prev]);
-            return;
-        } catch (err: any) {
-            console.error("Erro ao criar negócio:", err);
-            throw err;
-        }
-    };
-
-    // --- HELPERS ---
-
-    const getDealsByStatus = (status: DealStatus) => {
-        return deals.filter(deal => deal.status === status);
-    };
-
-    const getColumnTotal = (status: DealStatus) => {
-        return deals
-            .filter(deal => deal.status === status)
-            .reduce((sum, deal) => sum + Number(deal.value), 0);
-    };
-
-    return {
-        deals,
-        isLoading,
-        error,
-        refreshDeals: fetchDeals,
-        updateDealStatus,
-        updateDeal, // <--- NOVO EXPORT
-        createDeal,
-        getDealsByStatus,
-        getColumnTotal
-    };
-}
-
-
-// ===== FILE: src/modules/crm/hooks/useInteractionMutation.ts =====
-
-// src/modules/crm/hooks/useInteractionMutation.ts
-
-import { useState } from 'react';
-import { api } from '@/core/services/api';
-import { InteractionAnalysis } from '../types';
-// IMPORTAÇÃO CORRETA: Reuso do tipo central
-import { CreateClientDto } from '@/core/client/types/client';
-
-export enum ClientActionType {
-    LINK_EXISTING = 'LINK_EXISTING',
-    CREATE_NEW = 'CREATE_NEW'
-}
-
-// Interface do Payload específico desta rota
-export interface RegisterInteractionPayload {
-    type: 'NOTE' | 'AUDIO' | 'EMAIL' | 'MEETING';
-    content: string;
-    aiAnalysis?: InteractionAnalysis;
-    action: ClientActionType;
-    clientId?: string;       
-    // USO CORRETO: Referência ao DTO global
-    newClientData?: CreateClientDto; 
-}
-
-export function useInteractionMutation() {
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState(false);
-
-    const registerInteraction = async (payload: RegisterInteractionPayload) => {
+    const updateDeal = async (id: string, data: Partial<CRMDeal>): Promise<CRMDeal> => {
         setIsLoading(true);
         setError(null);
-        setSuccess(false);
-
+        
         try {
-            const response = await api.post('/crm/interaction', payload);
-            setSuccess(true);
+            // Utilizamos PATCH pois estamos enviando apenas o que mudou
+            const response = await api.patch<CRMDeal>(`/crm/deals/${id}`, data);
             return response.data;
         } catch (err: any) {
-            console.error("Erro ao registrar interação:", err);
-            const msg = err.response?.data?.message || "Falha ao salvar interação e dados do cliente.";
+            const msg = extractError(err, 'Falha ao atualizar os dados da oportunidade.');
             setError(msg);
             throw err;
         } finally {
@@ -12419,15 +12340,175 @@ export function useInteractionMutation() {
         }
     };
 
+    /**
+     * @method updateDealStatus
+     * @description Rota rápida exclusiva para o Kanban. Atualiza apenas o posicionamento 
+     * (Funil/Etapa) e Status sem precisar enviar o payload inteiro da Oportunidade.
+     */
+    const updateDealStatus = async (id: string, newStageId: string, newStatus?: DealStatus): Promise<CRMDeal> => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const payload = { currentStageId: newStageId, ...(newStatus && { status: newStatus }) };
+            const response = await api.patch<CRMDeal>(`/crm/deals/${id}/status`, payload);
+            return response.data;
+        } catch (err: any) {
+            const msg = extractError(err, 'Não foi possível mover a oportunidade de coluna.');
+            setError(msg);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    /**
+     * @method deleteDeal
+     * @description Exclusão da oportunidade. (Recomendado o uso de Soft Delete no Backend).
+     */
+    const deleteDeal = async (id: string): Promise<boolean> => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            await api.delete(`/crm/deals/${id}`);
+            return true;
+        } catch (err: any) {
+            const msg = extractError(err, 'Erro ao tentar inativar ou excluir a oportunidade.');
+            setError(msg);
+            throw err; 
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return {
-        registerInteraction,
+        createDeal,
+        updateDeal,
+        updateDealStatus,
+        deleteDeal,
+        isLoading,
+        error // O Motor Visual (CrudLayout) fará o binding aqui
+    };
+}
+
+
+// ===== FILE: src/modules/crm/hooks/useDeals.ts =====
+
+import { useState, useEffect, useCallback } from 'react';
+import { api } from '@/core/services/api';
+
+// --- Contratos de Domínio (CRM) ---
+import { CRMDeal, DealStatus } from '../types';
+
+// --- Contratos Globais (Shared Kernel) ---
+import { PaginatedResponse } from '@/core/types/api';
+
+/**
+ * ============================================================================
+ * 📊 HOOK: useDeals (Padrão CQRS - Camada de Query/Leitura)
+ * @description Responsável estritamente por buscar, tipar e derivar o estado 
+ * das Oportunidades (Deals) para a UI.
+ * * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
+ * 1. Segregação CQRS: Nenhuma mutação (POST/PATCH/DELETE) existe aqui. 
+ * O hook é leve, focado na leitura e renderização.
+ * 2. Type-Safety Resiliente (Anti-Crash): Utiliza o contrato genérico 
+ * `PaginatedResponse<T>` aliado ao `CRMDeal[]`. Isso ensina o TypeScript a 
+ * lidar tanto com listas simples quanto com respostas paginadas do NestJS, 
+ * blindando o frontend contra o erro fatal `data.map is not a function`.
+ * ============================================================================
+ */
+export function useDeals(pipelineId?: string) {
+    
+    // Estado principal fortemente tipado com a nossa Entidade
+    const [deals, setDeals] = useState<CRMDeal[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // ========================================================================
+    // 📡 FETCHING (Motor de Busca de Dados)
+    // ========================================================================
+    const fetchDeals = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            // 💡 O CONTRATO DE OURO: 
+            // Avisamos ao Axios e ao TypeScript que o Backend pode devolver 
+            // ou a lista direta (CRMDeal[]) ou o objeto paginado (PaginatedResponse).
+            const response = await api.get<PaginatedResponse<CRMDeal> | CRMDeal[]>('/crm/deals', {
+                params: {
+                    pipelineId: pipelineId 
+                }
+            });
+
+            // 🛡️ A VACINA DE EXTRAÇÃO SEGURA:
+            // Como o TypeScript agora conhece a interface PaginatedResponse, 
+            // ele entende perfeitamente a leitura da propriedade '.data' abaixo.
+            const fetchedData = Array.isArray(response.data) 
+                ? response.data 
+                : response.data?.data || [];
+
+            // Salvamos apenas o Array puro no estado, protegendo a CrudTable
+            setDeals(fetchedData);
+            
+        } catch (err: any) {
+            console.error("❌ [useDeals] Falha na sincronização de oportunidades:", err);
+            // Extração padronizada de mensagem de erro da API
+            const msg = err.response?.data?.message || 'Não foi possível carregar a lista de oportunidades.';
+            setError(msg);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [pipelineId]); // O hook reage e refaz a busca se o ID do funil mudar
+
+    // ========================================================================
+    // 🔄 CICLO DE VIDA (Lifecycle)
+    // ========================================================================
+    useEffect(() => {
+        fetchDeals();
+    }, [fetchDeals]);
+
+    // ========================================================================
+    // 🧮 HELPERS (Derivação de Dados em Memória)
+    // ========================================================================
+
+    /**
+     * @method getDealsByStatus
+     * @description Isola os negócios por coluna (status). 
+     * Envolvido em useCallback para otimização de renderização no Kanban (evita re-renders).
+     */
+    const getDealsByStatus = useCallback((status: DealStatus) => {
+        return deals.filter(deal => deal.status === status);
+    }, [deals]);
+
+    /**
+     * @method getColumnTotal
+     * @description Motor matemático que soma a previsão financeira de uma coluna específica.
+     */
+    const getColumnTotal = useCallback((status: DealStatus) => {
+        return deals
+            .filter(deal => deal.status === status)
+            .reduce((sum, deal) => sum + Number(deal.value || 0), 0);
+    }, [deals]);
+
+    return {
+        // 1. Estados Expostos
+        deals,
         isLoading,
         error,
-        success,
-        resetState: () => {
-            setError(null);
-            setSuccess(false);
-        }
+        
+        // 2. Gatilhos de Sincronização
+        refreshDeals: fetchDeals, 
+        
+        // 3. Funções Derivadas (Helpers para a UI)
+        getDealsByStatus,
+        getColumnTotal,
+
+        // 💡 4. A PONTE DO KANBAN (Optimistic UI):
+        // Expor a função nativa do setState permite que o Kanban mova os cards 
+        // visualmente na mesma hora, enquanto o `useDealMutation` salva no backend em background.
+        setDeals
     };
 }
 
@@ -12536,13 +12617,319 @@ export function usePipelineDetails(pipelineId: string | undefined) {
 }
 
 
-// ===== FILE: src/modules/crm/presentation/CRMContainer.tsx =====
+// ===== FILE: src/modules/crm/presentation/CRMCockpitView.tsx =====
+
+'use client';
+
+// 🏆 Gold Class: Adicionado 'useEffect' para gerenciar o ciclo de vida dos overlays
+import React, { useState, useEffect } from 'react';
+import { 
+    FaWhatsapp, 
+    FaBrain, 
+    FaRegHandshake, 
+    FaBoxOpen, 
+    FaInbox, 
+    FaTimes
+} from 'react-icons/fa';
+
+// --- Contratos e Hooks ---
+import { Client } from '@/core/client/types/client';
+import { CRMDeal } from '../types';
+
+// --- Nossos Motores V4 ---
+import { ClientListWidget } from '../components/client-widget/ClientListWidget';
+import { DealRegistry } from '../registries/DealRegistry';
+import { CockpitCentralStage } from '../components/cockpit/CockpitCentralStage';
+
+// --- Formulários Injetáveis (A Mágica da Inversão de Controle) ---
+import { ClientForm } from '@/core/components/client/ClientForm';
+import { CrudForm } from '@/core/components/crud/CrudForm'; // 👈 A nossa Impressora 3D!
+
+// --- Cartuchos e Mutações ---
+import { useDealMutation } from '../hooks/useDealMutation';
+
+interface CRMCockpitViewProps {
+    selectedClient: Client | null;
+    onSelectClient: (client: Client | null) => void;
+    onOpenNewClient: () => void;
+}
+
+type LeftTab = 'DEALS' | 'ORDERS';
+
+/**
+ * @type FormState
+ * @description Define exatamente qual formulário deve assumir o controle do Palco Central.
+ */
+type FormState = 
+    | { type: 'NONE' }
+    | { type: 'CLIENT'; data: Client }
+    | { type: 'DEAL'; data: CRMDeal | null };
+
+/**
+ * ============================================================================
+ * 🏗️ ROTEADOR ESTRUTURAL: CRMCockpitView (O Maestro do CRM)
+ * @description A planta baixa da nova Workstation. Implementa o padrão 
+ * "Holy Grail Layout" com painéis independentes e rolagens contidas.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO:
+ * 1. Injeção de Dependência Visual: Os formulários não são abertos por Modais 
+ * soltos na tela. Eles são injetados como `ReactNode` no Palco Central.
+ * 2. Interceptação Inteligente: Captura a intenção de edição vinda das listas
+ * laterais e redireciona o fluxo para o centro.
+ * ============================================================================
+ */
+export function CRMCockpitView({ 
+    selectedClient, 
+    onSelectClient, 
+    onOpenNewClient
+}: CRMCockpitViewProps) {
+    
+    // Controle da abinha inferior da Coluna Esquerda
+    const [activeLeftTab, setActiveLeftTab] = useState<LeftTab>('DEALS');
+
+    // =========================================================================
+    // 🧠 ESTADOS DE NEGÓCIO E MUTAÇÃO
+    // =========================================================================
+    const [formState, setFormState] = useState<FormState>({ type: 'NONE' });
+
+    /**
+     * 🛡️ PREVENÇÃO DE FORMULÁRIO ZUMBI (Life-cycle hook)
+     * @description Monitora a troca de cliente ativo. Se o usuário clicar em um 
+     * novo cliente na lista da esquerda enquanto um formulário estiver aberto,
+     * isso forçará o estado para 'NONE', desmontando o formulário imediatamente
+     * para evitar edição acidental em um contexto errado.
+     */
+    useEffect(() => {
+        setFormState({ type: 'NONE' });
+    }, [selectedClient?.id]);
+
+    // Carrega o "Manual de Instruções" da Oportunidade e os métodos de salvar/atualizar
+    const dealConfig = useDealConfig('standard', selectedClient?.id);
+    const { createDeal, updateDeal } = useDealMutation();
+
+    // =========================================================================
+    // ⚙️ HANDLERS (Interceptadores de Ação)
+    // =========================================================================
+    
+    /**
+     * @method handleEditClientRequest
+     * @description Abre o formulário de edição do cliente. Se o clique vier da 
+     * engrenagem na lista da esquerda (clientToEdit preenchido), nós selecionamos 
+     * o cliente primeiro e já abrimos a edição no ato.
+     * 🏆 Gold Class Fix: O uso do setTimeout(..., 0) joga a abertura do form para 
+     * o final da fila do Event Loop. Isso garante que o React atualize o visual 
+     * da lista (pintando o card) ANTES de gastar processamento renderizando o form.
+     */
+    const handleEditClientRequest = (clientToEdit?: Client) => {
+        const targetClient = clientToEdit || selectedClient;
+        if (targetClient) {
+            if (targetClient.id !== selectedClient?.id) {
+                onSelectClient(targetClient);
+            }
+            
+            setTimeout(() => {
+                setFormState({ type: 'CLIENT', data: targetClient });
+            }, 0);
+        }
+    };
+
+    /**
+     * @method handleDealFormRequest
+     * @description Chamado pelo DealRegistry (Botão + Novo ou clique no lápis da Oportunidade)
+     */
+    const handleDealFormRequest = (deal: CRMDeal | null) => {
+        setFormState({ type: 'DEAL', data: deal });
+    };
+
+    const handleCloseForm = () => {
+        setFormState({ type: 'NONE' });
+    };
+
+    // =========================================================================
+    // 🕳️ CONSTRUÇÃO DO OVERLAY (O "Buraco Negro" de Formulários)
+    // =========================================================================
+    let formOverlay: React.ReactNode = null;
+
+    if (formState.type === 'CLIENT') {
+        // 📝 INJEÇÃO 1: FORMULÁRIO DE CLIENTE (Mantendo o Legado com Elegância)
+        // 🏆 Gold Class Fix: Envolvido em uma div absolute que funciona como Backdrop.
+        // O `onClick={handleCloseForm}` no fundo garante o "Click-Outside", 
+        // e o `e.stopPropagation()` no filho impede que clicar no form o feche.
+        formOverlay = (
+            <div className="absolute inset-0 z-[9999] bg-base-dark/70 flex items-center justify-center p-6 animate-fade-in" onClick={handleCloseForm}>
+                <div onClick={(e) => e.stopPropagation()} className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl flex flex-col w-full max-w-4xl h-full max-h-[90vh] overflow-hidden animate-fade-in-up">
+                    <div className="p-6 border-b border-gray-800 bg-gray-800/30 flex justify-between items-center flex-shrink-0">
+                        <div>
+                            <h2 className="text-xl font-bold text-white tracking-tight">Editar Cliente</h2>
+                            <p className="text-xs text-gray-500 mt-1">Atualize os dados cadastrais de {formState.data.name}</p>
+                        </div>
+                        <button onClick={handleCloseForm} className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition-colors">
+                            <FaTimes className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
+                        <ClientForm 
+                            client={formState.data} 
+                            onSuccess={handleCloseForm} 
+                            showSubmitButton={false} 
+                        />
+                    </div>
+                    <div className="p-5 border-t border-gray-800 bg-gray-900/80 flex justify-end gap-3 flex-shrink-0">
+                        <button onClick={handleCloseForm} className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit" form="client-edit-form" className="px-6 py-2.5 bg-accent-secondary hover:bg-violet-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-violet-900/20 transition-all active:scale-95">
+                            Salvar Alterações
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    } else if (formState.type === 'DEAL') {
+        // 🚀 INJEÇÃO 2: FORMULÁRIO DE DEAL (A Nossa Impressora 3D V4)
+        // Usamos o presentationMode="inline" para o formulário assumir o formato de bloco
+        // e se encaixar perfeitamente no container, abandonando as animações de Drawer.
+        // 🏆 Gold Class Fix: Idêntico ao cliente, blindado por um Backdrop clicável.
+        formOverlay = (
+            <div className="absolute inset-0 z-[9999] bg-base-dark/70 flex items-center justify-center p-6 animate-fade-in" onClick={handleCloseForm}>
+                <div onClick={(e) => e.stopPropagation()} className="bg-gray-900/80 border border-gray-700/80 rounded-2xl shadow-2xl w-full max-w-5xl h-full max-h-[90vh] flex flex-col overflow-hidden animate-fade-in-up">
+                    <CrudForm<CRMDeal, any>
+                        isOpen={true}
+                        onClose={handleCloseForm}
+                        config={dealConfig}
+                        initialData={formState.data}
+                        presentationMode="inline" // 👈 A chave-mestra do Layout Agnóstico
+                        onSubmit={async (data) => {
+                            try {
+                                if (formState.data) {
+                                    await updateDeal(formState.data.id, data);
+                                } else {
+                                    await createDeal(data);
+                                }
+                                handleCloseForm();
+                                // [NOTA MENTAL]: A DealRegistry na esquerda fará o fetch atualizado assim que o form fechar, 
+                                // ou podemos chamar um emitter global de refresh posteriormente.
+                            } catch (err) {
+                                console.error("Falha na transação da Oportunidade:", err);
+                                throw err; // Repassa o erro para o CrudForm abortar o estado de 'Loading'
+                            }
+                        }}
+                    />
+                </div>
+            </div>
+        );
+    }
+
+    // =========================================================================
+    // 🖼️ RENDERIZAÇÃO DO ESQUELETO (Holy Grail Layout)
+    // =========================================================================
+    return (
+        <div className="flex flex-row h-full w-full bg-base-dark text-base-text overflow-hidden animate-fade-in font-sans">
+            
+            {/* ================================================================
+                🎛️ COLUNA 1: PAINEL DE CONTROLE (Esquerda)
+            ================================================================ */}
+            <aside className="w-[340px] flex-shrink-0 flex flex-col h-full bg-gray-900 border-r border-gray-800 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.2)]">
+                
+                {/* METADE SUPERIOR: Lista de Clientes */}
+                <div className="flex-1 min-h-0 flex flex-col border-b border-gray-800">
+                    <ClientListWidget 
+                        onSelectClient={onSelectClient}
+                        onNewClient={onOpenNewClient}
+                        onEditClient={handleEditClientRequest} // 👈 Ligado: Clicou no lápis do cliente, abre direto no centro!
+                    />
+                </div>
+
+                {/* METADE INFERIOR: Deals do Cliente */}
+                <div className="flex-1 min-h-0 flex flex-col bg-gray-900/50">
+                    <div className="flex border-b border-gray-800/80 flex-shrink-0 bg-gray-800/20">
+                        <button 
+                            onClick={() => setActiveLeftTab('DEALS')}
+                            className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 flex items-center justify-center gap-2 ${activeLeftTab === 'DEALS' ? 'border-accent-primary text-accent-primary bg-accent-primary/5' : 'border-transparent text-gray-500 hover:text-gray-300 hover:bg-gray-800'}`}
+                        >
+                            <FaRegHandshake size={14} /> Deals
+                        </button>
+                        <button 
+                            onClick={() => setActiveLeftTab('ORDERS')}
+                            className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 flex items-center justify-center gap-2 ${activeLeftTab === 'ORDERS' ? 'border-accent-primary text-accent-primary bg-accent-primary/5' : 'border-transparent text-gray-500 hover:text-gray-300 hover:bg-gray-800'}`}
+                        >
+                            <FaBoxOpen size={14} /> Pedidos
+                        </button>
+                    </div>
+
+                    <div className="flex-1 min-h-0 p-2 overflow-hidden relative">
+                        {!selectedClient ? (
+                            <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-40">
+                                <FaInbox className="text-3xl mb-3 text-gray-500" />
+                                <p className="text-xs text-gray-400 font-medium">Selecione um cliente acima para carregar as oportunidades.</p>
+                            </div>
+                        ) : (
+                            <>
+                                {activeLeftTab === 'DEALS' && (
+                                    <DealRegistry 
+                                        variant="compact" 
+                                        clientId={selectedClient.id} 
+                                        onFormRequest={handleDealFormRequest} // 👈 Ligado: Clicou no lápis ou +Novo na Deal, abre no centro!
+                                    />
+                                )}
+                                {activeLeftTab === 'ORDERS' && (
+                                    <div className="flex items-center justify-center h-full border-2 border-dashed border-gray-800 rounded-xl m-2 text-gray-600 text-xs">
+                                        Módulo de Pedidos em breve.
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
+            </aside>
+
+            {/* ================================================================
+                🎭 COLUNA 2: PALCO CENTRAL (Área Nobre)
+            ================================================================ */}
+            <main className="flex-1 min-w-0 h-full bg-base-metallic/5 relative flex flex-col">
+                
+                {/* O overlay da Inversão de Controle sendo renderizado de forma independente e isolada */}
+                {formOverlay}
+
+                {selectedClient ? (
+                    <CockpitCentralStage 
+                        client={selectedClient}
+                        formOverlay={null} // Limpamos a injeção via props, agora o overlay é renderizado acima direto no main
+                        onEditClientRequest={() => handleEditClientRequest()} 
+                    />
+                ) : (
+                    // Zero State (Nenhum cliente selecionado)
+                    <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40 animate-pulse">
+                        <FaBrain className="text-6xl mx-auto mb-4 text-gray-600" />
+                        <h2 className="text-xl font-bold text-gray-500 uppercase tracking-widest">Palco Central</h2>
+                        <p className="text-sm text-gray-600 mt-2 max-w-sm mx-auto">
+                            Selecione um cliente na lista à esquerda para ativar a Inteligência Artificial e carregar os Dossiês de Venda.
+                        </p>
+                    </div>
+                )}
+            </main>
+
+            {/* ================================================================
+                💬 COLUNA 3: PAINEL OMNICHANNEL (Direita)
+            ================================================================ */}
+            <aside className="w-16 flex-shrink-0 bg-gray-900 border-l border-gray-800 flex flex-col items-center pt-4 z-20 shadow-[-4px_0_24px_rgba(0,0,0,0.2)]">
+                <button 
+                    className="w-10 h-10 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-500 hover:text-emerald-500 hover:border-emerald-500 transition-colors shadow-sm"
+                    title="Painel de Comunicação"
+                >
+                    <FaWhatsapp size={18} />
+                </button>
+            </aside>
+
+        </div>
+    );
+}
+
 
 // ===== FILE: src/modules/crm/presentation/CRMContainer.tsx =====
 
 import React, { useState, useEffect, useMemo } from 'react';
 
-// --- COMPONENTES DAS VISÕES ---
+// --- COMPONENTES DAS VISÕES LEGADAS E ATUAIS ---
 import { CRMKanbanView } from './CRMKanbanView';
 import { CRMWorkstation } from './CRMWorkstation';
 
@@ -12553,26 +12940,44 @@ import { useAIContextInjector } from '@/core/ai/hooks/useAIContextInjector'; // 
 import { useFilixAI } from '@/core/ai/context/FilixAIContext'; // [IA] Hook Widget & Draft
 
 // --- ICONS & TYPES ---
-import { FaStream, FaColumns, FaCalendarAlt, FaFilter } from 'react-icons/fa';
+import { FaStream, FaColumns, FaCalendarAlt, FaFilter, FaRocket } from 'react-icons/fa';
 import { ConfigStage } from '../components/pipeline-manager/StageList';
 import { Client } from '@/core/client/types/client';
 import { DashboardMode } from '../components/client-dashboard/ClientDashboard';
 import { AIContextMetadata } from '@/core/ai/types/dtos/AIChatRequest.dto';
 import { AppModules, FeatureKeys } from '@/core/ai/types/enums/AIEnums';
+import { useDealMutation } from '../hooks/useDealMutation';
+import { CRMCockpitView } from './CRMCockpitView';
 
-// Definição das Views do CRM
-export type CRMViewType = 'WORKSTATION' | 'KANBAN' | 'AGENDA';
+/**
+ * @type CRMViewType
+ * @description Define as rotas internas de renderização do Módulo CRM.
+ * 🏆 CLASSE OURO: Adicionada a rota 'COCKPIT' para atuar como ambiente 
+ * de construção paralela (Padrão Strangler Fig).
+ */
+export type CRMViewType = 'WORKSTATION' | 'KANBAN' | 'AGENDA' | 'COCKPIT';
 
+/**
+ * ============================================================================
+ * 🏢 COMPONENTE: CRMContainer (O Orquestrador de Batalha)
+ * @description Container principal do módulo de vendas. Gerencia o estado global
+ * de seleção de funis, clientes e contexto de IA, distribuindo essas 
+ * informações para as sub-visualizações (Views).
+ * ============================================================================
+ */
 export const CRMContainer: React.FC = () => {
     
     // ============================================================================
-    // 1. ESTADOS DE NAVEGAÇÃO & CONFIG
+    // 1. ESTADOS DE NAVEGAÇÃO & CONFIGURAÇÃO
     // ============================================================================
+    
+    // 💡 Para facilitar o desenvolvimento, você pode mudar o estado inicial para 'COCKPIT' depois
     const [activeView, setActiveView] = useState<CRMViewType>('WORKSTATION'); 
     
-    // Configuração das Abas (Padrão Supply Chain)
+    // Configuração das Abas (Navegação de Topo)
     const tabs = [
-        { id: 'WORKSTATION', label: 'Workstation', icon: FaStream },
+        { id: 'WORKSTATION', label: 'Workstation (Legado)', icon: FaStream },
+        { id: 'COCKPIT', label: 'Cockpit 360 (V4)', icon: FaRocket }, // 👈 O Nosso Novo Canteiro de Obras
         { id: 'KANBAN', label: 'Kanban Board', icon: FaColumns },
         { id: 'AGENDA', label: 'Agenda', icon: FaCalendarAlt },
     ];
@@ -12589,16 +12994,16 @@ export const CRMContainer: React.FC = () => {
 
     // Cria o objeto de metadados dinamicamente baseado na navegação
     const aiMetadata = useMemo((): AIContextMetadata | undefined => {
-        // Se estiver na Workstation com cliente selecionado -> Contexto: CLIENTE
-        if (activeView === 'WORKSTATION' && selectedClient) {
+        // Contexto: CLIENTE (Válido para a Workstation Legada e para o futuro Cockpit)
+        if ((activeView === 'WORKSTATION' || activeView === 'COCKPIT') && selectedClient) {
             return {
                 module: AppModules.CLIENTE,
                 refId: selectedClient.id,
                 refName: selectedClient.name,
-                featureLocation: 'WORKSTATION_DETAIL'
+                featureLocation: activeView === 'COCKPIT' ? 'COCKPIT_V4' : 'WORKSTATION_DETAIL'
             };
         }
-        // Se estiver no Kanban -> Contexto: FUNIL DE VENDAS
+        // Contexto: FUNIL DE VENDAS
         if (activeView === 'KANBAN') {
             return {
                 module: AppModules.CRM, 
@@ -12607,14 +13012,14 @@ export const CRMContainer: React.FC = () => {
                 featureLocation: 'KANBAN_BOARD'
             };
         }
-        return undefined; // Sem contexto específico (Visão Geral)
+        return undefined; 
     }, [activeView, selectedClient, selectedPipelineId]);
 
     // Injeta o contexto no Cérebro Global (Monitoramento Passivo)
     useAIContextInjector(FeatureKeys.AI_SALES_MICRO, aiMetadata);
 
     // ============================================================================
-    // 3. ESTADOS DA WORKSTATION
+    // 3. ESTADOS DA WORKSTATION LEGADA
     // ============================================================================
     const [dashboardMode, setDashboardMode] = useState<DashboardMode>('VIEW');
     const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -12622,7 +13027,7 @@ export const CRMContainer: React.FC = () => {
     const [activeChatTab, setActiveChatTab] = useState<'WA' | 'TG' | 'AGENDA'>('WA');
 
     // ============================================================================
-    // 4. ESTADOS DO KANBAN & DADOS
+    // 4. ESTADOS DO KANBAN & DADOS GLOBAIS
     // ============================================================================
     const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
 
@@ -12631,9 +13036,9 @@ export const CRMContainer: React.FC = () => {
         deals, 
         isLoading: loadingDeals, 
         error: errorDeals,
-        updateDeal,
         refreshDeals 
     } = useDeals(selectedPipelineId || undefined);
+    const { updateDeal } = useDealMutation();
 
     // Seleciona o primeiro funil automaticamente ao carregar
     useEffect(() => {
@@ -12643,10 +13048,10 @@ export const CRMContainer: React.FC = () => {
     }, [pipelines, loadingPipelines, selectedPipelineId]);
 
     // ============================================================================
-    // 5. HANDLERS
+    // 5. HANDLERS (Roteamento de Eventos)
     // ============================================================================
 
-    // --- WORKSTATION ---
+    // --- WORKSTATION LEGADA ---
     const handleSelectClient = (client: Client | null) => {
         setSelectedClient(client);
         setDashboardMode('VIEW');
@@ -12685,33 +13090,24 @@ export const CRMContainer: React.FC = () => {
     };
 
     /**
-     * Ação Mágica: Aciona a IA para sugerir o funil.
-     * Não redireciona mais! Abre o widget sobre o Kanban.
+     * Ação Mágica: Aciona a IA para sugerir o funil no modo vazio do Kanban.
      */
     const handleGeneratePipelineWithAI = () => {
-        // 1. Define o Rascunho (Sugestão sem enviar automaticamente)
         setInputDraft("Sugira uma estrutura de Funil de Vendas padrão para consultoria (ex: Lead, Qualificação, Proposta...).");
-        
-        // 2. Define o Contexto de Setup (Sniper)
-        // Isso avisa a IA que estamos configurando o sistema, não vendendo
         setContext(FeatureKeys.AI_SALES_MICRO, { 
             module: AppModules.CRM, 
             refId: 'PIPELINE_CREATION', 
             refName: 'Novo Funil',
             featureLocation: 'EMPTY_STATE_SUGGESTION'
         });
-
-        // 3. Abre o Widget (Se estiver fechado)
-        // O usuário verá o chat abrir com o texto pronto para enviar/editar
         openChat();
     };
 
     // ============================================================================
-    // 6. RENDERIZAÇÃO
+    // 6. RENDERIZAÇÃO MONUMENTAL
     // ============================================================================
 
     return (
-        // BASE: Fundo Escuro Sólido (Igual Supply Chain)
         <div className="flex flex-col h-full w-full bg-base-dark text-base-text">
             
             {/* HEADER: Padrão Ouro (Título + Abas Underline) */}
@@ -12726,10 +13122,12 @@ export const CRMContainer: React.FC = () => {
                             </h1>
                             <p className="text-gray-400 text-sm mt-1 animate-fade-in">
                                 {activeView === 'WORKSTATION' 
-                                    ? 'Central de comando para gestão de clientes e interações.' 
-                                    : activeView === 'KANBAN'
-                                        ? 'Gestão visual de oportunidades e pipeline de vendas.'
-                                        : 'Calendário unificado de compromissos.'}
+                                    ? 'Central de comando para gestão de clientes e interações (Antiga).' 
+                                    : activeView === 'COCKPIT'
+                                        ? 'Nova central unificada Master-Detail de relacionamento.'
+                                        : activeView === 'KANBAN'
+                                            ? 'Gestão visual de oportunidades e pipeline de vendas.'
+                                            : 'Calendário unificado de compromissos.'}
                             </p>
                         </div>
 
@@ -12776,6 +13174,12 @@ export const CRMContainer: React.FC = () => {
                                 >
                                     <tab.icon className={`w-4 h-4 ${isActive ? 'text-accent-primary' : 'text-gray-500 group-hover:text-gray-300'}`} />
                                     <span>{tab.label}</span>
+                                    {/* Badge Beta para a aba nova */}
+                                    {tab.id === 'COCKPIT' && (
+                                        <span className="ml-2 bg-accent-primary/20 text-accent-primary text-[9px] font-black uppercase px-1.5 py-0.5 rounded border border-accent-primary/30">
+                                            Beta
+                                        </span>
+                                    )}
                                 </button>
                             );
                         })}
@@ -12786,6 +13190,7 @@ export const CRMContainer: React.FC = () => {
             {/* MAIN: Conteúdo Principal */}
             <main className="flex-1 p-6 overflow-hidden animate-fade-in relative">
                 
+                {/* --- VISÃO 1: WORKSTATION LEGADA --- */}
                 {activeView === 'WORKSTATION' && (
                     <CRMWorkstation 
                         contextClient={selectedClient}
@@ -12801,6 +13206,16 @@ export const CRMContainer: React.FC = () => {
                     />
                 )}
 
+                {/* --- VISÃO 2: O NOVO CANTEIRO DE OBRAS (Cockpit V4) --- */}
+                {activeView === 'COCKPIT' && (
+                    <CRMCockpitView 
+                        selectedClient={selectedClient}
+                        onSelectClient={handleSelectClient}
+                        onOpenNewClient={handleOpenNewClient}
+                    />
+                )}
+
+                {/* --- VISÃO 3: KANBAN --- */}
                 {activeView === 'KANBAN' && (
                     <CRMKanbanView 
                         deals={deals}
@@ -12810,17 +13225,15 @@ export const CRMContainer: React.FC = () => {
                         onRefresh={refreshDeals}
                         pipelineId={selectedPipelineId || undefined}
                         
-                        // Controle do Drawer Manual
                         isPipelineDrawerOpen={isPipelineModalOpen}
                         onPipelineDrawerClose={() => setIsPipelineModalOpen(false)}
                         onPipelineDrawerOpen={() => setIsPipelineModalOpen(true)}
                         onSavePipeline={handleSavePipeline}
-                        
-                        // Controle da IA (Agora Corrigido!)
                         onGeneratePipelineWithAI={handleGeneratePipelineWithAI}
                     />
                 )}
 
+                {/* --- VISÃO 4: AGENDA --- */}
                 {activeView === 'AGENDA' && (
                      <div className="flex h-full items-center justify-center text-gray-500 bg-gray-800/20 rounded-xl border border-dashed border-gray-700">
                         <div className="text-center">
@@ -13192,6 +13605,812 @@ export const CRMWorkstation: React.FC<CRMWorkstationProps> = ({
 };
 
 
+// ===== FILE: src/modules/crm/registries/DealRegistry.tsx =====
+
+'use client';
+
+import React, { useMemo, useEffect } from 'react';
+import { UseFormReturn, useFieldArray, useWatch } from 'react-hook-form'; // 💡 IMPORT VITAL: useWatch para performance
+import { FaUserTie, FaDollarSign, FaTrash, FaPlus } from 'react-icons/fa';
+
+// --- Motor CRUD V4 ---
+import { CrudLayout } from '@/core/components/crud/CrudLayout';
+import { CrudConfig, CrudHooks } from '@/core/components/crud/types';
+
+// --- Contratos e Tipos ---
+import { CRMDeal, DealStatus, DealSource } from '../types';
+import { DealFormSchema, DealFormInput } from '../schemas/dealSchema';
+import { IPipeline } from '../types/pipeline.types';
+
+// --- Motores de Dados (CQRS) ---
+import { useDeals } from '../hooks/useDeals';
+import { usePipelines } from '../hooks/usePipelines';
+import { useClients } from '@/core/client/hooks/useClients';
+import { useDealMutation } from '../hooks/useDealMutation';
+
+/**
+ * ============================================================================
+ * 🧩 INJETOR 1: SELETOR EM CASCATA (Pipeline -> Stage)
+ * @description Garante a integridade relacional na UI.
+ * 🏆 CLASSE OURO: Removida a "Race Condition" de ciclo de vida. A etapa só é
+ * limpa via Event-Driven (intenção explícita do usuário ao trocar o funil),
+ * garantindo que o initialData do banco nunca seja sobrescrito por lentidão de rede.
+ * ============================================================================
+ */
+const PipelineStageSelector = ({ form, pipelines }: { form: UseFormReturn<any>, pipelines: IPipeline[] }) => {
+    const selectedPipelineId = form.watch('pipelineId');
+    const selectedStageId = form.watch('currentStageId');
+
+    // Memoriza o funil ativo para extrair suas etapas sem re-processamento desnecessário
+    const activePipeline = useMemo(() => 
+        pipelines.find(p => p.id === selectedPipelineId), 
+    [pipelines, selectedPipelineId]);
+
+    // Separamos o onChange nativo do React Hook Form para injetar nosso evento intencional
+    const { onChange: onPipelineChange, ...pipelineRegister } = form.register('pipelineId');
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 p-4 bg-gray-800/30 border border-gray-700/50 rounded-xl shadow-inner">
+            <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Funil de Vendas</label>
+                <select 
+                    {...pipelineRegister}
+                    onChange={(e) => {
+                        onPipelineChange(e); // Mantém a sincronia original do RHF
+                        // 🎯 EVENT-DRIVEN: Só limpa a etapa se o usuário explicitamente interagir
+                        form.setValue('currentStageId', '', { shouldValidate: true, shouldDirty: true });
+                    }}
+                    className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2.5 text-sm text-white focus:border-accent-primary focus:ring-1 focus:ring-accent-primary focus:outline-none transition-all"
+                >
+                    <option value="">Selecione um funil...</option>
+                    {pipelines.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                </select>
+            </div>
+            <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Etapa Atual</label>
+                <select 
+                    {...form.register('currentStageId')}
+                    disabled={!selectedPipelineId}
+                    className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2.5 text-sm text-white focus:border-accent-primary focus:ring-1 focus:ring-accent-primary focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <option value="">Selecione uma etapa...</option>
+                    {activePipeline?.stages?.sort((a, b) => a.order - b.order).map(stage => (
+                        <option key={stage.id} value={stage.id}>{stage.name}</option>
+                    ))}
+                </select>
+            </div>
+        </div>
+    );
+};
+
+/**
+ * ============================================================================
+ * 🧩 INJETOR 2: EDITOR DE ITENS DINÂMICO (Produtos/Serviços)
+ * @description Utiliza o `useFieldArray` nativo do React Hook Form. 
+ * 🏆 CLASSE OURO: Implementado o padrão "Unidirectional Data Flow". O uso de 
+ * `useWatch` garante 60 FPS na digitação, e o `useEffect` blindado sincroniza
+ * o valor financeiro global instantaneamente sem causar loops de renderização.
+ * ============================================================================
+ */
+const DealItemsEditor = ({ form }: { form: UseFormReturn<any> }) => {
+    const { fields, append, remove } = useFieldArray({
+        control: form.control,
+        name: 'items' // A chave DEVE bater exatamente com o Zod Schema
+    });
+
+    // 🕵️ O ESPIÃO DE ALTA PERFORMANCE: Substitui o form.watch() global.
+    // Reage apenas às mudanças DENTRO do array, mantendo o resto da tela congelada.
+    const watchedItems = useWatch({
+        control: form.control,
+        name: 'items',
+        defaultValue: []
+    });
+
+    const watchedManualValue = useWatch({
+        control: form.control,
+        name: 'value',
+        defaultValue: 0
+    });
+
+    // 🧮 MOTOR VISUAL: Calcula a matemática pura instantaneamente a cada tecla.
+    const computedTotal = useMemo(() => {
+        if (!watchedItems || watchedItems.length === 0) return watchedManualValue;
+        
+        return watchedItems.reduce((acc: number, item: any) => {
+            const qty = Number(item?.quantity) || 0;
+            const price = Number(item?.unitPrice) || 0;
+            return acc + (qty * price);
+        }, 0);
+    }, [watchedItems, watchedManualValue]);
+
+    // 🔄 SINCRONIA DE AUTORIDADE (O Circuit Breaker)
+    useEffect(() => {
+        if (watchedItems && watchedItems.length > 0) {
+            // Lemos o valor atual do form sem nos inscrevermos nele (evita re-render)
+            const currentFormValue = Number(form.getValues('value')) || 0;
+            
+            // A TRAVA: Só disparamos o setValue se a matemática estiver divergente da UI
+            if (currentFormValue !== computedTotal) {
+                form.setValue('value', computedTotal, { shouldValidate: true, shouldDirty: true });
+            }
+        }
+    }, [computedTotal, watchedItems, form]);
+
+    return (
+        <div className="mt-6 border border-gray-700/50 rounded-xl overflow-hidden bg-gray-800/20">
+            {/* Header da Mini-Tabela */}
+            <div className="bg-gray-800/80 px-4 py-3 flex justify-between items-center border-b border-gray-700/50">
+                <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                    <FaDollarSign className="text-accent-secondary" /> Escopo Comercial
+                </h4>
+                <div className="text-sm font-black text-green-400 drop-shadow-md transition-all duration-200">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(computedTotal)}
+                </div>
+            </div>
+
+            {/* Grid de Linhas Dinâmicas */}
+            <div className="p-2 space-y-2">
+                {fields.length === 0 ? (
+                    <div className="p-4 text-center">
+                        <p className="text-xs text-gray-500 mb-1">Nenhum produto ou serviço detalhado.</p>
+                        <p className="text-[10px] text-gray-600">O valor manual global da oportunidade será utilizado.</p>
+                    </div>
+                ) : (
+                    fields.map((field, index) => (
+                        <div key={field.id} className="flex items-center gap-2 bg-gray-900/50 p-2 rounded-lg border border-gray-700/30 group transition-all hover:border-gray-500">
+                            
+                            {/* 🛡️ GUARDIÃO DE ID: Preserva o UUID do banco invisivelmente para que o TypeORM não duplique o item no Update */}
+                            <input type="hidden" {...form.register(`items.${index}.id` as const)} />
+                            
+                            <input 
+                                {...form.register(`items.${index}.description` as const)} 
+                                placeholder="Descrição do Produto/Serviço..."
+                                className="flex-1 bg-transparent text-sm text-gray-200 placeholder-gray-600 px-2 py-1 focus:outline-none focus:bg-gray-800 rounded transition-colors"
+                            />
+                            <input 
+                                type="number" 
+                                step="0.01"
+                                {...form.register(`items.${index}.quantity` as const, { valueAsNumber: true })} 
+                                placeholder="Qtd"
+                                className="w-20 bg-transparent text-sm text-center text-gray-200 placeholder-gray-600 px-2 py-1 focus:outline-none focus:bg-gray-800 rounded transition-colors border-l border-gray-700/50"
+                            />
+                            <input 
+                                type="number" 
+                                step="0.01"
+                                {...form.register(`items.${index}.unitPrice` as const, { valueAsNumber: true })} 
+                                placeholder="R$ Unitário"
+                                className="w-28 bg-transparent text-sm text-right text-gray-200 placeholder-gray-600 px-2 py-1 focus:outline-none focus:bg-gray-800 rounded transition-colors border-l border-gray-700/50"
+                            />
+                            <button 
+                                type="button" 
+                                onClick={() => remove(index)}
+                                className="p-2 text-gray-600 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                title="Remover item"
+                            >
+                                <FaTrash size={12} />
+                            </button>
+                        </div>
+                    ))
+                )}
+                
+                {/* Botão Adicionar Linha */}
+                <button 
+                    type="button"
+                    onClick={() => append({ id: `temp-${Date.now()}`, description: '', quantity: 1, unitPrice: 0, type: 'SERVICE' })}
+                    className="w-full py-2.5 mt-2 flex items-center justify-center gap-2 text-xs font-bold text-gray-500 hover:text-accent-secondary border border-dashed border-gray-700 hover:border-accent-secondary/50 rounded-lg hover:bg-gray-800/50 transition-all"
+                >
+                    <FaPlus size={10} /> Adicionar Produto / Serviço
+                </button>
+            </div>
+        </div>
+    );
+};
+
+/**
+ * ============================================================================
+ * 🧱 MICRO-COMPONENTE: INPUT DE VALOR REATIVO
+ * @description Isola o input de valor global. Ao usar useWatch aqui, ele reage 
+ * à existência de itens e se bloqueia automaticamente sem renderizar a tela toda.
+ * ============================================================================
+ */
+const DealValueInput = ({ form }: { form: UseFormReturn<any> }) => {
+    const watchedItems = useWatch({ control: form.control, name: 'items', defaultValue: [] });
+    const hasItems = watchedItems && watchedItems.length > 0;
+
+    return (
+        <input
+            type="number"
+            step="0.01"
+            {...form.register('value', { valueAsNumber: true })}
+            disabled={hasItems}
+            placeholder={hasItems ? 'Calculado automaticamente pelos itens' : '0.00'}
+            className={`w-full bg-gray-900 border rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none transition-all ${
+                hasItems ? 'border-gray-700 opacity-50 cursor-not-allowed text-green-400 font-bold' : 'border-gray-600 focus:border-accent-primary focus:ring-1 focus:ring-accent-primary placeholder-gray-600'
+            }`}
+        />
+    );
+};
+
+/**
+ * ============================================================================
+ * 🏭 COMPONENTE PRINCIPAL: DEAL REGISTRY (Auditoria e Gestão)
+ * @description A Visão "Master Data" das oportunidades. 
+ * ============================================================================
+ */
+export function DealRegistry() {
+    
+    // --- 📡 Conexão de Dados (Cross-Domain) ---
+    const { deals, isLoading: loadingDeals, error: errorDeals, refreshDeals } = useDeals();
+    const { createDeal, updateDeal } = useDealMutation();
+    const { clients, isLoading: loadingClients } = useClients();
+    const { pipelines, isLoadingPipelines } = usePipelines();
+
+    const isGlobalLoading = loadingDeals || loadingClients || isLoadingPipelines;
+
+    // =========================================================================
+    // ⚙️ CONFIGURAÇÃO CLASSE OURO (Motor Crud V4)
+    // =========================================================================
+    const config: CrudConfig<CRMDeal, DealFormInput> = useMemo(() => {
+        
+        // Mapeamentos de DTO para os Selects Nativos do CrudLayout
+        const clientOptions = clients.map(c => ({ value: c.id, label: c.name }));
+        const statusOptions = Object.values(DealStatus).map(s => ({ value: s, label: s }));
+        const sourceOptions = Object.values(DealSource).map(s => ({ value: s, label: s }));
+
+        return {
+            title: 'Gestão de Oportunidades (Deals)',
+            description: 'Auditoria central de todas as negociações da plataforma.',
+            schema: DealFormSchema as any, 
+
+            // --- 👁️ VISÃO MASTER (A Tabela do Gerente) ---
+            columns: [
+                {
+                    header: 'Oportunidade',
+                    accessor: (item) => {
+                        // 🛡️ FALLBACK INTELIGENTE: Se o objeto aninhado faltar temporariamente, 
+                        // buscamos na memória local (clients) antes de exibir "Removido".
+                        const clientInfo = item.client || clients.find(c => c.id === item.clientId);
+                        return (
+                            <div className="flex flex-col gap-1">
+                                <span className="text-sm font-bold text-white leading-tight">{item.title}</span>
+                                <span className="text-xs text-gray-500 flex items-center gap-1.5 truncate max-w-[250px]">
+                                    <FaUserTie className="opacity-60" /> {clientInfo?.name || 'Cliente Não Encontrado'}
+                                </span>
+                            </div>
+                        );
+                    }
+                },
+                {
+                    header: 'Posicionamento',
+                    accessor: (item) => {
+                        const pipe = pipelines.find(p => p.id === item.pipelineId);
+                        const stage = pipe?.stages?.find(s => s.id === item.currentStageId);
+                        return (
+                            <div className="flex flex-col">
+                                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{pipe?.name || 'Sem Funil Vinculado'}</span>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: stage?.color || '#555' }} />
+                                    <span className="text-xs text-gray-300 truncate max-w-[150px]">{stage?.name || item.status}</span>
+                                </div>
+                            </div>
+                        );
+                    }
+                },
+                {
+                    header: 'Previsão Financeira',
+                    accessor: (item) => (
+                        <div className="flex flex-col items-start gap-1">
+                            <span className="text-sm font-black text-green-400 drop-shadow-md">
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(item.value))}
+                            </span>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                                item.probability >= 70 ? 'bg-green-500/10 text-green-400 border-green-500/20' : 
+                                item.probability >= 30 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 
+                                'bg-red-500/10 text-red-400 border-red-500/20'
+                            }`}>
+                                {item.probability}% Chance
+                            </span>
+                        </div>
+                    )
+                }
+            ],
+
+            // --- 📝 VISÃO DETAIL (O Formulário de Auditoria) ---
+            fields: [
+                { name: 'title', label: 'Título da Oportunidade', type: 'text', placeholder: 'Ex: Consultoria Plena Anual' },
+                { name: 'clientId', label: 'Cliente Vinculado', type: 'select', options: clientOptions },
+                
+                // 💡 INJEÇÃO 1: Selects de Roteamento em Cascata
+                {
+                    name: 'pipeline_routing' as any,
+                    label: 'Roteamento Comercial',
+                    type: 'custom',
+                    customRender: (form) => <PipelineStageSelector form={form} pipelines={pipelines} />
+                },
+
+                { name: 'probability', label: 'Probabilidade de Fechamento (%)', type: 'number', placeholder: '0 a 100' },
+                { name: 'expectedCloseDate', label: 'Previsão de Fechamento', type: 'date' },
+                
+                { name: 'status', label: 'Status Lógico', type: 'select', options: statusOptions },
+                { name: 'source', label: 'Origem do Lead', type: 'select', options: sourceOptions },
+                
+                // 💡 INJEÇÃO 2: Tabela de Produtos/Serviços Dinâmica
+                {
+                    name: 'items_editor' as any,
+                    label: 'Precificação Detalhada',
+                    type: 'custom',
+                    customRender: (form) => <DealItemsEditor form={form} />
+                },
+                
+                // 💡 UI REATIVA (Aprimorada): Micro-componente isolado para performance.
+                { 
+                    name: 'value', 
+                    label: 'Valor Manual Global (Apenas para vendas simples)', 
+                    type: 'custom',
+                    customRender: (form) => <DealValueInput form={form} />
+                },
+            ],
+
+            // --- 🗄️ GAVETA DE AUDITORIA ---
+            systemFields: [
+                { name: 'id', label: 'UUID da Oportunidade', type: 'text' },
+                { name: 'lossReason', label: 'Motivo de Perda (Diagnóstico Churn)', type: 'textarea' },
+            ]
+
+        };
+    }, [clients, pipelines]); // Recalcula o config apenas se as listas de relacionamentos mudarem
+
+    // =========================================================================
+    // 🔌 ROTEAMENTO DE AÇÕES E BYPASS SEGURO (CQRS)
+    // =========================================================================
+    const crudHooks: CrudHooks<CRMDeal, DealFormInput> = {
+        data: deals,
+        isLoading: isGlobalLoading,
+        error: errorDeals ? String(errorDeals) : null,
+        
+        onCreate: async (data) => { return createDeal(data as any); },
+        onUpdate: async (id, data) => { return updateDeal(id, data as any); },
+        
+        onDelete: async () => { alert('⚠️ Operação bloqueada: Oportunidades não devem ser excluídas para preservar a rastreabilidade comercial. Altere o status para "LOST" (Perdido).'); },
+        
+        onRefresh: refreshDeals
+    };
+
+    return (
+        <div className="h-full w-full animate-fade-in">
+            <CrudLayout<CRMDeal, DealFormInput>
+                config={config}
+                hooks={crudHooks}
+            />
+        </div>
+    );
+}
+
+
+// ===== FILE: src/modules/crm/registries/PipelineRegistry.tsx =====
+
+'use client';
+
+import React, { useEffect, useMemo, useRef } from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { FaProjectDiagram, FaCheckCircle, FaSync } from 'react-icons/fa';
+
+// --- Motor CRUD V4 ---
+import { CrudLayout } from '@/core/components/crud/CrudLayout';
+import { CrudConfig, CrudHooks } from '@/core/components/crud/types';
+
+// --- Contratos e Tipos ---
+import { IPipeline } from '../types/pipeline.types';
+import { PipelineFormSchema, PipelineFormInput } from '../schemas/pipelineSchema';
+
+// --- Motores de Dados (CQRS) ---
+import { usePipelines, usePipelineDetails } from '../hooks/usePipelines';
+
+// --- Componentes Injetáveis ---
+import { StageList, ConfigStage } from '../components/pipeline-manager/StageList';
+
+/**
+ * ============================================================================
+ * 🧩 COMPONENTE INJETÁVEL: STAGE LOADER (O Guardião de Estado)
+ * @description Injetado no motor V4, este componente gerencia o ciclo de vida 
+ * das etapas (Stages) do funil, blindando o React Hook Form contra vazamentos.
+ * ============================================================================
+ */
+const StagesEditorInjector = ({ form }: { form: UseFormReturn<any> }) => {
+    // Escuta o ID atual para saber se estamos no modo Criação (null) ou Edição (UUID)
+    const pipelineId = form.watch('id');
+    const { pipeline, isLoadingPipeline } = usePipelineDetails(pipelineId);
+
+    // 🛡️ O GUARDIÃO: Uma referência de memória que sobrevive a re-renderizações.
+    // Usado para garantir que a injeção/limpeza ocorra apenas uma vez por transição de tela.
+    const syncRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        // Define o estado atual ('NEW_PIPELINE' ou o UUID do funil em edição)
+        const currentMode = pipelineId || 'NEW_PIPELINE';
+
+        // Só age se o usuário trocou de tela (ex: Cancelou e clicou em "Novo")
+        if (syncRef.current !== currentMode) {
+            
+            if (currentMode === 'NEW_PIPELINE') {
+                // 🧹 GHOST-BUSTER: MODO CRIAÇÃO
+                // Se entramos num form novo, força a limpeza do array para matar
+                // "fantasmas" de edições anteriores que ficaram presos na memória do RHF.
+                form.setValue('stages', [], { shouldValidate: false });
+                syncRef.current = currentMode;
+                
+            } else if (pipeline && pipeline.id === pipelineId) {
+                // 💧 HIDRATAÇÃO: MODO EDIÇÃO
+                // A API terminou de carregar o funil correto. Injetamos as etapas no formulário.
+                form.setValue('stages', pipeline.stages || [], { shouldValidate: true });
+                syncRef.current = currentMode;
+            }
+        }
+    }, [pipelineId, pipeline, form]);
+
+    const currentStages = form.watch('stages') || [];
+
+    // ⏳ LOADING STATE (Proteção contra Race Conditions)
+    // Impede que o usuário interaja com a tela enquanto o Lazy Load do Backend não trouxer as etapas.
+    if (pipelineId && isLoadingPipeline && syncRef.current !== pipelineId) {
+        return (
+            <div className="mt-4 p-8 flex flex-col items-center justify-center bg-gray-800/30 border border-gray-700/50 rounded-xl text-gray-500">
+                <FaSync className="animate-spin mb-3 text-accent-primary w-6 h-6" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Sincronizando Etapas da API...</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="mt-4 p-4 bg-gray-800/30 border border-gray-700/50 rounded-xl shadow-inner animate-fade-in">
+            <StageList 
+                // Garantimos que a tipagem bate com a interface do componente visual
+                stages={currentStages as ConfigStage[]} 
+                onChange={(newStages) => {
+                    // Quando o usuário interage (Drag & Drop), salvamos no RHF em tempo real.
+                    // shouldValidate força o Zod a reavaliar a regra .min(1) imediatamente.
+                    form.setValue('stages', newStages, { shouldValidate: true, shouldDirty: true });
+                }}
+            />
+        </div>
+    );
+};
+
+/**
+ * ============================================================================
+ * 🏭 COMPONENTE PRINCIPAL: PIPELINE REGISTRY
+ * @description O Orquestrador de Funis de Venda (Master Data).
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
+ * 1. Lazy Loading Protegido: O `StagesEditorInjector` isola a complexidade 
+ * de rede, garantindo que o form abra limpo e seja hidratado com segurança.
+ * 2. Tipagem Híbrida Segura: Utiliza bypass controlado (`as any`) nas fronteiras
+ * de envio/recepção para harmonizar o RHF com a tipagem estrita do Zod.
+ * ============================================================================
+ */
+export function PipelineRegistry() {
+    
+    // 1. O Motor de Dados (Leitura e Escrita unificados no hook CQRS)
+    const { 
+        pipelines, 
+        isLoadingPipelines, 
+        errorPipelines, 
+        createPipeline, 
+        updatePipeline, 
+        refreshPipelines 
+    } = usePipelines();
+
+    // =========================================================================
+    // ⚙️ CONFIGURAÇÃO CLASSE OURO (O Manual do CrudLayout)
+    // =========================================================================
+    const config: CrudConfig<IPipeline, PipelineFormInput> = useMemo(() => ({
+        title: 'Funis de Vendas (Pipelines)',
+        description: 'Configure as esteiras comerciais e suas respectivas etapas (Kanban).',
+        schema: PipelineFormSchema as any, // Validação rigorosa do Zod acoplada ao RHF
+
+        // --- VISÃO MASTER (GRID DE FUNIS) ---
+        columns: [
+            {
+                header: 'Nome do Funil',
+                accessor: (item) => (
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gray-800 rounded-lg border border-gray-700 text-accent-secondary flex-shrink-0">
+                            <FaProjectDiagram className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-bold text-white tracking-tight">
+                            {item.name}
+                        </span>
+                    </div>
+                )
+            },
+            {
+                header: 'Etapas (Stages)',
+                accessor: (item) => {
+                    // Fallback seguro caso o TypeORM do backend não envie as etapas na listagem master
+                    const stageCount = item.stages?.length || 0;
+                    return (
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-gray-300 bg-gray-800 px-2 py-1 rounded-md border border-gray-700">
+                                {stageCount} Etapas
+                            </span>
+                            {/* Dashboard Visual: Renderiza as cores das etapas em miniatura para fácil reconhecimento */}
+                            <div className="hidden sm:flex items-center gap-0.5">
+                                {item.stages?.slice(0, 5).map((stage, i) => (
+                                    <div key={i} className="w-2 h-4 rounded-sm shadow-sm" style={{ backgroundColor: stage.color }} title={stage.name} />
+                                ))}
+                                {stageCount > 5 && <span className="text-[10px] text-gray-500 ml-1">...</span>}
+                            </div>
+                        </div>
+                    );
+                }
+            },
+            {
+                header: 'Funil Padrão',
+                accessor: (item) => (
+                    item.isDefault ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <FaCheckCircle /> Padrão
+                        </span>
+                    ) : (
+                        <span className="text-[10px] text-gray-600 uppercase tracking-widest font-bold">Secundário</span>
+                    )
+                )
+            }
+        ],
+
+        // --- VISÃO DETAIL (O FORMULÁRIO E A INJEÇÃO DO DRAG & DROP) ---
+        fields: [
+            { name: 'name', label: 'Nome do Funil', type: 'text', placeholder: 'Ex: Vendas B2B, Retenção, Parcerias...' },
+            { name: 'isDefault', label: 'Funil Padrão (Carrega automaticamente no CRM)', type: 'boolean', trueLabel: 'Sim, é o padrão', falseLabel: 'Não' },
+            
+            // 💡 A INJEÇÃO DE CLASSE OURO (O Componente Inteligente)
+            {
+                name: 'stages' as any, 
+                label: 'Configuração das Etapas (Arraste para reordenar)',
+                type: 'custom',
+                customRender: (form) => <StagesEditorInjector form={form} />
+            }
+        ],
+
+        // --- GAVETA DE AUDITORIA (System Fields) ---
+        systemFields: [
+            { name: 'id', label: 'UUID do Funil', type: 'text' },
+            { name: 'tenantId', label: 'Tenant ID', type: 'text' },
+        ]
+
+    }), []);
+
+    // =========================================================================
+    // 🔌 ROTEAMENTO DE AÇÕES E BYPASS SEGURO DE TIPAGEM (CQRS)
+    // =========================================================================
+    const crudHooks: CrudHooks<IPipeline, PipelineFormInput> = {
+        data: pipelines,
+        isLoading: isLoadingPipelines,
+        error: errorPipelines ? String(errorPipelines) : null,
+        
+        // 💡 O React Hook Form passa o dado rigorosamente limpo e processado pelo `.transform()` do Zod.
+        // O `as any` aqui diz ao TypeScript que o Zod já garantiu a conversão para ICreatePipelineDTO.
+        onCreate: async (data) => {
+            return createPipeline(data as any);
+        },
+        
+        onUpdate: async (id, data) => {
+            return updatePipeline({ id, ...(data as any) });
+        },
+        
+        // Proteção arquitetural contra exclusão acidental. 
+        onDelete: async () => {
+            alert('⚠️ Operação bloqueada: A exclusão de funis requer desvinculação prévia de todos os negócios (Deals) associados. Use a inativação ou contate o suporte técnico.');
+        },
+        
+        onRefresh: refreshPipelines
+    };
+
+    return (
+        <div className="h-full w-full animate-fade-in">
+            <CrudLayout<IPipeline, PipelineFormInput>
+                config={config}
+                hooks={crudHooks}
+            />
+        </div>
+    );
+}
+
+
+// ===== FILE: src/modules/crm/schemas/dealSchema.ts =====
+
+import { z } from 'zod';
+import { DealStatus, DealSource, DealItemType } from '../types';
+
+/**
+ * @file dealSchema.ts
+ * @description SCHEMA DE VALIDAÇÃO DE OPORTUNIDADES (Deals).
+ * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
+ * 1. Motor de Precificação Automática: Na etapa de `.transform()`, o schema 
+ * recalcula o valor total do Deal baseado nos itens, impedindo divergências financeiras.
+ * 2. Amortecimento Estrito (Resiliência): Uso de `z.coerce` e `.catch()` para garantir que 
+ * números (probabilidade, valores) não quebrem o formulário se a API enviar strings ou nulos.
+ * 3. Reconciliação de Estado: Garante o tráfego de UUIDs legítimos para o Backend, 
+ * permitindo que o TypeORM execute operações de UPDATE reais (Evita duplicação).
+ */
+
+// ============================================================================
+// 📦 SCHEMA FILHO: ITENS DA OPORTUNIDADE (Produtos / Serviços)
+// ============================================================================
+const DealItemSchema = z.object({
+    // Obrigatório na UI para manipulação de arrays e preservado no Output para o Backend
+    id: z.string().optional(),
+    productId: z.string().optional().nullable(),
+    
+    // O '.nativeEnum' acopla perfeitamente o Zod aos Enums do TypeScript
+    type: z.nativeEnum(DealItemType).default(DealItemType.SERVICE),
+    description: z.string().min(2, 'A descrição do item é obrigatória.'),
+    
+    // 🛡️ AMORTECIMENTO DE UX: 
+    // `coerce.number` força strings vindas de inputs HTML a virarem decimais.
+    // `.catch(1)` impede que um erro de digitação zere a quantidade e quebre o cálculo.
+    quantity: z.coerce.number().min(0.01, 'A quantidade deve ser maior que zero.').catch(1),
+    unitPrice: z.coerce.number().min(0, 'O valor não pode ser negativo.').catch(0),
+});
+
+// ============================================================================
+// 💼 SCHEMA PAI: A OPORTUNIDADE (Deal)
+// ============================================================================
+export const DealFormSchema = z.object({
+    id: z.string().optional(),
+    
+    // --- Dados Básicos ---
+    title: z.string().min(3, 'O título da oportunidade é obrigatório (Ex: Contrato Anual).'),
+    clientId: z.string().min(1, 'É necessário vincular um cliente a esta oportunidade.'),
+    
+    // --- Posicionamento no Funil ---
+    pipelineId: z.string().optional(),
+    currentStageId: z.string().optional(),
+    
+    // --- Status e Origem ---
+    status: z.nativeEnum(DealStatus).default(DealStatus.NEW),
+    source: z.nativeEnum(DealSource).default(DealSource.MANUAL),
+    lossReason: z.string().optional().nullable(),
+    
+    // --- Valores e Previsões ---
+    probability: z.coerce.number().min(0).max(100).default(50).catch(50),
+    expectedCloseDate: z.string().optional().nullable(),
+    
+    // Campo isolado de valor (usado livremente APENAS se a oportunidade NÃO tiver itens)
+    value: z.coerce.number().min(0).default(0).catch(0),
+    
+    // Array de itens (Opcional, pois pode ser uma venda simples baseada apenas em "value")
+    items: z.array(DealItemSchema).default([]),
+
+    // --- Auditoria Automática ---
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+
+}).transform((data) => {
+    // 🪄 A MÁGICA DA TRANSFORMAÇÃO (Sanitização e Precificação)
+    // Esta etapa atua como um Middleware inviolável entre o Frontend e a API.
+
+    const hasItems = data.items && data.items.length > 0;
+    
+    // 🧮 Motor Matemático: Se houver itens detalhados na tabela, o valor real da 
+    // oportunidade passa a ser estritamente a soma de (Qtd * Valor Unitário). 
+    // A UI agora reage a isso, mas o backend continua protegido por essa re-checagem.
+    const computedValue = hasItems 
+        ? data.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
+        : data.value;
+
+    return {
+        ...data,
+        // Sobrescreve o valor do payload com o cálculo auditado
+        value: computedValue, 
+        
+        items: data.items.map(item => ({
+            ...item,
+            // Garante que o subtotal da linha também vá calculado corretamente para o BD
+            total: item.quantity * item.unitPrice, 
+            
+            // 🧹 GHOST-BUSTER REFINADO: Limpa strings vazias ou IDs temporários ('temp-169823123').
+            // Preserva rigorosamente os UUIDs legítimos para que o Backend faça UPDATE em vez de INSERT.
+            id: (!item.id || item.id.startsWith('temp-')) ? undefined : item.id,
+        }))
+    };
+});
+
+/**
+ * @type DealFormInput & DealFormOutput
+ * Separação das tipagens arquiteturais.
+ * Input: O formato que o React Hook Form consome (permite temp-ids).
+ * Output: O payload final sanitizado e processado para o Axios/Backend.
+ */
+export type DealFormInput = z.input<typeof DealFormSchema>;
+export type DealFormOutput = z.output<typeof DealFormSchema>;
+
+
+// ===== FILE: src/modules/crm/schemas/pipelineSchema.ts =====
+
+import { z } from 'zod';
+import { VALID_HEX_COLORS, SYS_COLORS } from '@/core/constants/sysColors'; // 👈 O Shared Kernel entra em ação
+
+/**
+ * @file pipelineSchema.ts
+ * @description SCHEMA DE VALIDAÇÃO DE FUNIS DE VENDAS (Zod)
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
+ * 1. Sanitização Automática: Usa `.transform()` para limpar 'temp-ids' 
+ * gerados pelo Drag & Drop antes de enviar o payload para a API.
+ * 2. Auto-Indexação: Recalcula matematicamente o campo `order` com base 
+ * na posição real do array, ignorando falhas de ordenação do usuário.
+ * 3. Validação Fechada (Enum): Utiliza o Shared Kernel de Cores para 
+ * garantir que apenas as 20 cores homologadas do sistema cheguem ao BD.
+ * 4. Amortecimento de UX (Resiliência): Utiliza `catch()` e `coerce` para 
+ * perdoar pequenos erros de dados vindos da UI ou da API, evitando travas.
+ */
+
+// 1. Schema do Filho (Etapa/Stage)
+const PipelineStageSchema = z.object({
+    // Obrigatório na UI para o Drag & Drop funcionar (seja UUID ou temp-id)
+    id: z.string(),
+    
+    name: z.string()
+        .min(2, 'O nome da etapa deve ter no mínimo 2 caracteres.'),
+    
+    // 💡 FIX UX: O Amortecedor de Cores
+    // Em vez de uma Regex que quebrava o form se a cor viesse vazia,
+    // agora nós checamos contra a nossa lista de 20 hexadecimais.
+    // O '.catch()' garante que, se vier algo bizarro do banco antigo,
+    // o Zod perdoa e aplica a cor primária (Ardósia) silenciosamente.
+    color: z.enum(VALID_HEX_COLORS)
+        .catch(SYS_COLORS[0].hex as any),
+    
+    // 💡 FIX UX: O Amortecedor de Ordem
+    // `coerce.number` tenta forçar strings ("1") a virarem números (1) automaticamente.
+    // O '.catch(0)' impede que um 'undefined' quebre a edição da etapa.
+    order: z.coerce.number().int().min(0).catch(0)
+});
+
+// 2. Schema do Pai (Funil/Pipeline)
+export const PipelineFormSchema = z.object({
+    id: z.string().optional(),
+    
+    name: z.string()
+        .min(3, 'O nome do funil deve ter no mínimo 3 caracteres.')
+        .max(50, 'O nome muito longo.'),
+    
+    isDefault: z.boolean().default(false),
+    
+    stages: z.array(PipelineStageSchema)
+        .min(1, 'O funil precisa ter pelo menos uma etapa.'),
+
+    // Campos de Auditoria (Apenas leitura no form)
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+}).transform((data) => {
+    // 🪄 A MÁGICA DA TRANSFORMAÇÃO (Sanitização para o Backend)
+    // O objeto que o React Hook Form enxerga é diferente do que a API recebe.
+    return {
+        ...data,
+        stages: data.stages.map((stage, index) => ({
+            name: stage.name,
+            color: stage.color,
+            order: index, // Força a ordem exata do array visual, garantindo integridade
+            
+            // 🧹 GHOST-BUSTER:
+            // Se for um 'temp-id' gerado pelo botão "+ Adicionar Fase", 
+            // enviamos undefined para que o banco de dados gere um UUID real.
+            id: stage.id.startsWith('temp-') ? undefined : stage.id,
+        }))
+    };
+});
+
+/**
+ * @type PipelineFormInput & PipelineFormOutput
+ * Como usamos .transform(), o Input (Formulário) e Output (Payload API) são diferentes.
+ * O CrudLayout e o RHF usam o Input. O axios (API) usa o Output.
+ */
+export type PipelineFormInput = z.input<typeof PipelineFormSchema>;
+export type PipelineFormOutput = z.output<typeof PipelineFormSchema>;
+
+
 // ===== FILE: src/modules/crm/types/deal.types.ts =====
 
 import { Client } from '@/core/client/types/client';
@@ -13281,146 +14500,8 @@ export interface CRMDeal {
 // ===== FILE: src/modules/crm/types/index.ts =====
 
 export * from './deal.types';
-export * from './interaction.types';
 export * from './pipeline.types';
 export * from './kanban.types';
-
-
-// ===== FILE: src/modules/crm/types/interaction.types.ts =====
-
-// ============================================================================
-// 1. ENUMS DE INTERAÇÃO (Alinhado com Backend AIInteraction)
-// ============================================================================
-
-export enum InteractionType {
-    CALL = 'CALL',           // Ícone: Telefone
-    MEETING = 'MEETING',     // Ícone: Calendário/Pessoas
-    EMAIL = 'EMAIL',         // Ícone: Envelope
-    NOTE = 'NOTE',           // Ícone: Nota Adesiva
-    WHATSAPP = 'WHATSAPP',   // Ícone: Logo Zap (NOVO)
-    AUDIO = 'AUDIO'          // Mantido para compatibilidade visual
-}
-
-// ============================================================================
-// 2. ESTRUTURAS DO AGENTE INTELIGENTE (NOVO - OPÇÃO B)
-// ============================================================================
-
-/**
- * Define o tipo de ação que o Agente está sugerindo realizar.
- */
-export type AgentActionType = 
-    | 'UPDATE_CLIENT_DATA'   // Ex: Mudar telefone, email
-    | 'UPDATE_DEAL_STAGE'    // Ex: Mover de Negociação para Ganho
-    | 'SCHEDULE_TASK'        // Ex: Criar lembrete na agenda
-    | 'LOG_RISK'             // Ex: Marcar cliente como risco de Churn
-    | 'NONE';                // Apenas registrar a nota
-
-/**
- * A estrutura da "Proposta" que aparece na tela para o usuário confirmar.
- * Isso habilita o fluxo Human-in-the-Loop.
- */
-export interface AgentProposal {
-    id: string;              // ID temporário para controle da UI
-    confidence: number;      // 0.0 a 1.0 (Para exibir alertas se a confiança for baixa)
-    
-    // O Racional: Por que a IA está sugerindo isso?
-    reasoning: string;       // Ex: "O cliente mencionou explicitamente que o orçamento foi aprovado."
-    
-    // A Ação Sugerida
-    action: AgentActionType;
-    
-    // Payload Dinâmico (Dados da mudança)
-    data: {
-        targetEntity: 'CLIENT' | 'DEAL' | 'TASK';
-        targetId?: string;    // ID do Cliente ou Deal alvo
-        
-        // Mudanças propostas (Para diff visual: De -> Para)
-        changes?: Array<{
-            field: string;    // Ex: 'temperature', 'status'
-            label: string;    // Nome amigável para exibir na tela (Ex: "Temperatura")
-            oldValue?: any;
-            newValue: any;
-        }>;
-    };
-}
-
-// ============================================================================
-// 3. ESTRUTURAS DE ANÁLISE DE DADOS (EXPANDIDO)
-// ============================================================================
-
-export interface ExtractedAddress {
-    street: string | null;
-    number: string | null;
-    complement: string | null;
-    district: string | null;
-    city: string | null;
-    state: string | null;
-    zipCode: string | null;
-    type: "MAIN" | "BILLING" | "SHIPPING" | null;
-}
-
-/**
- * Metadados ricos gerados pela IA.
- * Agora vive dentro de `aiMetadata` na interação principal.
- */
-export interface InteractionAnalysis {
-    summary: string;
-    sentiment: "POSITIVE" | "NEUTRAL" | "NEGATIVE" | "TENSE";
-    tags: string[];
-    actionItems: string[]; // Tarefas sugeridas
-    
-    // Probabilidade calculada para o Deal (0-100)
-    dealProbability?: number;
-    
-    // Dados extraídos do texto (Entidades)
-    extractedIdentity?: {
-        personName: string | null;
-        companyName: string | null;
-        email: string | null;
-        phone: string | null;
-        extractedAddresses?: ExtractedAddress[];
-        intentType: "NEW_BUSINESS" | "SUPPORT" | "FOLLOW_UP" | "UNKNOWN" | "CHURN_RISK";
-    };
-}
-
-// ============================================================================
-// 4. ENTIDADES PRINCIPAIS (INTERAÇÃO UNIFICADA)
-// ============================================================================
-
-/**
- * Representa uma interação na Timeline.
- * Adaptada para receber os dados do novo Backend (ai_interactions).
- */
-export interface CRMInteraction {
-    id: string;
-    tenantId?: string; // Opcional no front
-    clientId?: string; // Opcional no front pois já estamos no contexto do cliente
-    
-    type: InteractionType;
-    content: string; // O texto principal (Input ou Output da IA)
-    
-    createdAt: string; // ISO Date
-    userId: string;
-    userName?: string; // Nome/Email de quem criou
-
-    // --- NOVOS CAMPOS DE INTELIGÊNCIA ---
-    
-    // Se true, foi gerado automaticamente pelo sistema/IA
-    autoGenerated?: boolean; 
-    
-    // Container flexível para os metadados vindos do banco
-    aiMetadata?: {
-        manual?: boolean;
-        originalType?: string;
-        analysis?: InteractionAnalysis; // A análise detalhada (Sentimento, Tags)
-        proposal?: AgentProposal;       // Se houver uma proposta pendente vinculada a esta nota
-        mediaUrl?: string;              // Para áudios transcritos
-    };
-
-    // Mantido para compatibilidade imediata com componentes antigos
-    // (Idealmente, o componente deve ler de aiMetadata.analysis)
-    aiAnalysis?: InteractionAnalysis; 
-}
 
 
 // ===== FILE: src/modules/crm/types/kanban.types.ts =====

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
-// --- COMPONENTES DAS VISÕES ---
+// --- COMPONENTES DAS VISÕES LEGADAS E ATUAIS ---
 import { CRMKanbanView } from './CRMKanbanView';
 import { CRMWorkstation } from './CRMWorkstation';
 
@@ -11,26 +11,44 @@ import { useAIContextInjector } from '@/core/ai/hooks/useAIContextInjector'; // 
 import { useFilixAI } from '@/core/ai/context/FilixAIContext'; // [IA] Hook Widget & Draft
 
 // --- ICONS & TYPES ---
-import { FaStream, FaColumns, FaCalendarAlt, FaFilter } from 'react-icons/fa';
+import { FaStream, FaColumns, FaCalendarAlt, FaFilter, FaRocket } from 'react-icons/fa';
 import { ConfigStage } from '../components/pipeline-manager/StageList';
 import { Client } from '@/core/client/types/client';
 import { DashboardMode } from '../components/client-dashboard/ClientDashboard';
 import { AIContextMetadata } from '@/core/ai/types/dtos/AIChatRequest.dto';
 import { AppModules, FeatureKeys } from '@/core/ai/types/enums/AIEnums';
+import { useDealMutation } from '../hooks/useDealMutation';
+import { CRMCockpitView } from './CRMCockpitView';
 
-// Definição das Views do CRM
-export type CRMViewType = 'WORKSTATION' | 'KANBAN' | 'AGENDA';
+/**
+ * @type CRMViewType
+ * @description Define as rotas internas de renderização do Módulo CRM.
+ * 🏆 CLASSE OURO: Adicionada a rota 'COCKPIT' para atuar como ambiente 
+ * de construção paralela (Padrão Strangler Fig).
+ */
+export type CRMViewType = 'WORKSTATION' | 'KANBAN' | 'AGENDA' | 'COCKPIT';
 
+/**
+ * ============================================================================
+ * 🏢 COMPONENTE: CRMContainer (O Orquestrador de Batalha)
+ * @description Container principal do módulo de vendas. Gerencia o estado global
+ * de seleção de funis, clientes e contexto de IA, distribuindo essas 
+ * informações para as sub-visualizações (Views).
+ * ============================================================================
+ */
 export const CRMContainer: React.FC = () => {
     
     // ============================================================================
-    // 1. ESTADOS DE NAVEGAÇÃO & CONFIG
+    // 1. ESTADOS DE NAVEGAÇÃO & CONFIGURAÇÃO
     // ============================================================================
+    
+    // 💡 Para facilitar o desenvolvimento, você pode mudar o estado inicial para 'COCKPIT' depois
     const [activeView, setActiveView] = useState<CRMViewType>('WORKSTATION'); 
     
-    // Configuração das Abas (Padrão Supply Chain)
+    // Configuração das Abas (Navegação de Topo)
     const tabs = [
-        { id: 'WORKSTATION', label: 'Workstation', icon: FaStream },
+        { id: 'WORKSTATION', label: 'Workstation (Legado)', icon: FaStream },
+        { id: 'COCKPIT', label: 'Cockpit 360 (V4)', icon: FaRocket }, // 👈 O Nosso Novo Canteiro de Obras
         { id: 'KANBAN', label: 'Kanban Board', icon: FaColumns },
         { id: 'AGENDA', label: 'Agenda', icon: FaCalendarAlt },
     ];
@@ -47,16 +65,16 @@ export const CRMContainer: React.FC = () => {
 
     // Cria o objeto de metadados dinamicamente baseado na navegação
     const aiMetadata = useMemo((): AIContextMetadata | undefined => {
-        // Se estiver na Workstation com cliente selecionado -> Contexto: CLIENTE
-        if (activeView === 'WORKSTATION' && selectedClient) {
+        // Contexto: CLIENTE (Válido para a Workstation Legada e para o futuro Cockpit)
+        if ((activeView === 'WORKSTATION' || activeView === 'COCKPIT') && selectedClient) {
             return {
                 module: AppModules.CLIENTE,
                 refId: selectedClient.id,
                 refName: selectedClient.name,
-                featureLocation: 'WORKSTATION_DETAIL'
+                featureLocation: activeView === 'COCKPIT' ? 'COCKPIT_V4' : 'WORKSTATION_DETAIL'
             };
         }
-        // Se estiver no Kanban -> Contexto: FUNIL DE VENDAS
+        // Contexto: FUNIL DE VENDAS
         if (activeView === 'KANBAN') {
             return {
                 module: AppModules.CRM, 
@@ -65,14 +83,14 @@ export const CRMContainer: React.FC = () => {
                 featureLocation: 'KANBAN_BOARD'
             };
         }
-        return undefined; // Sem contexto específico (Visão Geral)
+        return undefined; 
     }, [activeView, selectedClient, selectedPipelineId]);
 
     // Injeta o contexto no Cérebro Global (Monitoramento Passivo)
     useAIContextInjector(FeatureKeys.AI_SALES_MICRO, aiMetadata);
 
     // ============================================================================
-    // 3. ESTADOS DA WORKSTATION
+    // 3. ESTADOS DA WORKSTATION LEGADA
     // ============================================================================
     const [dashboardMode, setDashboardMode] = useState<DashboardMode>('VIEW');
     const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -80,7 +98,7 @@ export const CRMContainer: React.FC = () => {
     const [activeChatTab, setActiveChatTab] = useState<'WA' | 'TG' | 'AGENDA'>('WA');
 
     // ============================================================================
-    // 4. ESTADOS DO KANBAN & DADOS
+    // 4. ESTADOS DO KANBAN & DADOS GLOBAIS
     // ============================================================================
     const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
 
@@ -89,9 +107,9 @@ export const CRMContainer: React.FC = () => {
         deals, 
         isLoading: loadingDeals, 
         error: errorDeals,
-        updateDeal,
         refreshDeals 
     } = useDeals(selectedPipelineId || undefined);
+    const { updateDeal } = useDealMutation();
 
     // Seleciona o primeiro funil automaticamente ao carregar
     useEffect(() => {
@@ -101,10 +119,10 @@ export const CRMContainer: React.FC = () => {
     }, [pipelines, loadingPipelines, selectedPipelineId]);
 
     // ============================================================================
-    // 5. HANDLERS
+    // 5. HANDLERS (Roteamento de Eventos)
     // ============================================================================
 
-    // --- WORKSTATION ---
+    // --- WORKSTATION LEGADA ---
     const handleSelectClient = (client: Client | null) => {
         setSelectedClient(client);
         setDashboardMode('VIEW');
@@ -143,33 +161,24 @@ export const CRMContainer: React.FC = () => {
     };
 
     /**
-     * Ação Mágica: Aciona a IA para sugerir o funil.
-     * Não redireciona mais! Abre o widget sobre o Kanban.
+     * Ação Mágica: Aciona a IA para sugerir o funil no modo vazio do Kanban.
      */
     const handleGeneratePipelineWithAI = () => {
-        // 1. Define o Rascunho (Sugestão sem enviar automaticamente)
         setInputDraft("Sugira uma estrutura de Funil de Vendas padrão para consultoria (ex: Lead, Qualificação, Proposta...).");
-        
-        // 2. Define o Contexto de Setup (Sniper)
-        // Isso avisa a IA que estamos configurando o sistema, não vendendo
         setContext(FeatureKeys.AI_SALES_MICRO, { 
             module: AppModules.CRM, 
             refId: 'PIPELINE_CREATION', 
             refName: 'Novo Funil',
             featureLocation: 'EMPTY_STATE_SUGGESTION'
         });
-
-        // 3. Abre o Widget (Se estiver fechado)
-        // O usuário verá o chat abrir com o texto pronto para enviar/editar
         openChat();
     };
 
     // ============================================================================
-    // 6. RENDERIZAÇÃO
+    // 6. RENDERIZAÇÃO MONUMENTAL
     // ============================================================================
 
     return (
-        // BASE: Fundo Escuro Sólido (Igual Supply Chain)
         <div className="flex flex-col h-full w-full bg-base-dark text-base-text">
             
             {/* HEADER: Padrão Ouro (Título + Abas Underline) */}
@@ -184,10 +193,12 @@ export const CRMContainer: React.FC = () => {
                             </h1>
                             <p className="text-gray-400 text-sm mt-1 animate-fade-in">
                                 {activeView === 'WORKSTATION' 
-                                    ? 'Central de comando para gestão de clientes e interações.' 
-                                    : activeView === 'KANBAN'
-                                        ? 'Gestão visual de oportunidades e pipeline de vendas.'
-                                        : 'Calendário unificado de compromissos.'}
+                                    ? 'Central de comando para gestão de clientes e interações (Antiga).' 
+                                    : activeView === 'COCKPIT'
+                                        ? 'Nova central unificada Master-Detail de relacionamento.'
+                                        : activeView === 'KANBAN'
+                                            ? 'Gestão visual de oportunidades e pipeline de vendas.'
+                                            : 'Calendário unificado de compromissos.'}
                             </p>
                         </div>
 
@@ -234,6 +245,12 @@ export const CRMContainer: React.FC = () => {
                                 >
                                     <tab.icon className={`w-4 h-4 ${isActive ? 'text-accent-primary' : 'text-gray-500 group-hover:text-gray-300'}`} />
                                     <span>{tab.label}</span>
+                                    {/* Badge Beta para a aba nova */}
+                                    {tab.id === 'COCKPIT' && (
+                                        <span className="ml-2 bg-accent-primary/20 text-accent-primary text-[9px] font-black uppercase px-1.5 py-0.5 rounded border border-accent-primary/30">
+                                            Beta
+                                        </span>
+                                    )}
                                 </button>
                             );
                         })}
@@ -244,6 +261,7 @@ export const CRMContainer: React.FC = () => {
             {/* MAIN: Conteúdo Principal */}
             <main className="flex-1 p-6 overflow-hidden animate-fade-in relative">
                 
+                {/* --- VISÃO 1: WORKSTATION LEGADA --- */}
                 {activeView === 'WORKSTATION' && (
                     <CRMWorkstation 
                         contextClient={selectedClient}
@@ -259,6 +277,16 @@ export const CRMContainer: React.FC = () => {
                     />
                 )}
 
+                {/* --- VISÃO 2: O NOVO CANTEIRO DE OBRAS (Cockpit V4) --- */}
+                {activeView === 'COCKPIT' && (
+                    <CRMCockpitView 
+                        selectedClient={selectedClient}
+                        onSelectClient={handleSelectClient}
+                        onOpenNewClient={handleOpenNewClient}
+                    />
+                )}
+
+                {/* --- VISÃO 3: KANBAN --- */}
                 {activeView === 'KANBAN' && (
                     <CRMKanbanView 
                         deals={deals}
@@ -268,17 +296,15 @@ export const CRMContainer: React.FC = () => {
                         onRefresh={refreshDeals}
                         pipelineId={selectedPipelineId || undefined}
                         
-                        // Controle do Drawer Manual
                         isPipelineDrawerOpen={isPipelineModalOpen}
                         onPipelineDrawerClose={() => setIsPipelineModalOpen(false)}
                         onPipelineDrawerOpen={() => setIsPipelineModalOpen(true)}
                         onSavePipeline={handleSavePipeline}
-                        
-                        // Controle da IA (Agora Corrigido!)
                         onGeneratePipelineWithAI={handleGeneratePipelineWithAI}
                     />
                 )}
 
+                {/* --- VISÃO 4: AGENDA --- */}
                 {activeView === 'AGENDA' && (
                      <div className="flex h-full items-center justify-center text-gray-500 bg-gray-800/20 rounded-xl border border-dashed border-gray-700">
                         <div className="text-center">
