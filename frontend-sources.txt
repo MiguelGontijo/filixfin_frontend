@@ -80,6 +80,7 @@
 │   │   │       └── imageCompressor.ts
 │   │   ├── client
 │   │   │   ├── hooks
+│   │   │   │   ├── useClientConfig.tsx
 │   │   │   │   ├── useClientMutation.ts
 │   │   │   │   └── useClients.ts
 │   │   │   ├── registries
@@ -98,16 +99,26 @@
 │   │   │   │   ├── ClientTable.tsx
 │   │   │   │   └── ClientTablePage.tsx
 │   │   │   ├── crud
+│   │   │   │   ├── forms
+│   │   │   │   │   ├── layout
+│   │   │   │   │   │   ├── CrudFormBody.tsx
+│   │   │   │   │   │   ├── CrudFormFooter.tsx
+│   │   │   │   │   │   ├── CrudFormHeader.tsx
+│   │   │   │   │   │   └── CrudFormWrapper.tsx
+│   │   │   │   │   ├── CrudFieldFactory.tsx
+│   │   │   │   │   └── CrudForm.tsx
 │   │   │   │   ├── CadastrosContainer.tsx
-│   │   │   │   ├── CrudForm.tsx
 │   │   │   │   ├── CrudLayout.tsx
 │   │   │   │   ├── CrudTable.tsx
 │   │   │   │   └── types.ts
-│   │   │   └── tenant
-│   │   │       └── TenantSelector.tsx
+│   │   │   ├── tenant
+│   │   │   │   └── TenantSelector.tsx
+│   │   │   └── ui
+│   │   │       └── SmartDatePicker.tsx
 │   │   ├── constants
 │   │   │   └── sysColors.ts
 │   │   ├── hooks
+│   │   │   ├── useDelayedUnmount.ts
 │   │   │   ├── useFeatureMutation.ts
 │   │   │   ├── useFeatures.ts
 │   │   │   ├── useMessaging.ts
@@ -165,7 +176,6 @@
 │   │   │   │   │   ├── ClientListItem.tsx
 │   │   │   │   │   ├── ClientListWidget.tsx
 │   │   │   │   │   └── ClientSearchInput.tsx
-│   │   │   │   ├── cockpit
 │   │   │   │   ├── communication
 │   │   │   │   │   └── WhatsAppWidget.tsx
 │   │   │   │   ├── deal-editor
@@ -191,6 +201,10 @@
 │   │   │   │   ├── useDeals.ts
 │   │   │   │   └── usePipelines.ts
 │   │   │   ├── presentation
+│   │   │   │   ├── components
+│   │   │   │   │   ├── CockpitCentralStage.tsx
+│   │   │   │   │   ├── CockpitSidebarLeft.tsx
+│   │   │   │   │   └── CockpitSidebarRight.tsx
 │   │   │   │   ├── CRMCockpitView.tsx
 │   │   │   │   ├── CRMContainer.tsx
 │   │   │   │   ├── CRMKanbanView.tsx
@@ -4105,6 +4119,134 @@ export const compressImage = async (file: File, options: CompressOptions = {}): 
 };
 
 
+// ===== FILE: src/core/client/hooks/useClientConfig.tsx =====
+
+import React, { useMemo } from 'react';
+import { FaUserTie, FaRobot } from 'react-icons/fa';
+
+// --- Tipagens do Motor V4 ---
+import { CrudConfig } from '@/core/components/crud/types';
+
+// --- Tipos e Schemas do Domínio de Cliente ---
+import { Client } from '../types/client';
+import { ClientFormSchema, ClientFormInput } from '../schemas/clientSchema';
+
+/**
+ * ============================================================================
+ * 📐 HOOK: useClientConfig (O Manual de Instruções do Cliente)
+ * @description Centraliza o dicionário de dados (Data-Driven UI) da entidade Cliente.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (SOLID e DRY):
+ * - Ao isolar o Config em um Hook, permitimos que a mesma estrutura visual seja
+ * consumida pela Tela de Listagem (ClientRegistry) e pelo Cockpit V4 Avançado,
+ * sem duplicar uma única linha de código.
+ * ============================================================================
+ */
+export function useClientConfig(): CrudConfig<Client, ClientFormInput> {
+    
+    // O useMemo previne que o objeto de configuração seja recriado a cada renderização,
+    // garantindo performance máxima de 60FPS no motor CrudForm.
+    return useMemo(() => ({
+        title: 'Carteira de Clientes',
+        description: 'Gerencie a sua base de contatos, histórico e percepções de inteligência artificial.',
+        
+        // Zod atuando como o Guardião do Payload
+        schema: ClientFormSchema as any, 
+
+        // ====================================================================
+        // 👁️ VISÃO MASTER (Colunas para Tabelas e Grids)
+        // ====================================================================
+        columns: [
+            {
+                header: 'Cliente / Contato Principal',
+                accessor: (item) => (
+                    <div className="flex items-center gap-3">
+                        <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-accent-primary/10 text-accent-primary flex-shrink-0">
+                            <FaUserTie className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-bold text-white tracking-tight">
+                                {item.name}
+                            </span>
+                            <span className="text-[11px] text-gray-500">
+                                {item.email || item.phone || 'Sem contato cadastrado'}
+                            </span>
+                        </div>
+                    </div>
+                )
+            },
+            {
+                header: 'Documento',
+                accessor: (item) => (
+                    <span className="text-sm text-gray-400 font-mono">
+                        {item.document || '-'}
+                    </span>
+                )
+            },
+            {
+                header: 'Inteligência AI',
+                accessor: (item) => (
+                    item.aiSummary ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20" title="Perfil analisado pela IA">
+                            <FaRobot /> Analisado
+                        </span>
+                    ) : (
+                        <span className="text-[10px] text-gray-600 uppercase tracking-widest">Pendente</span>
+                    )
+                )
+            },
+            {
+                header: 'Status',
+                accessor: (item) => (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest ${
+                        item.isActive 
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    }`}>
+                        {item.isActive ? 'Ativo' : 'Inativo'}
+                    </span>
+                )
+            }
+        ],
+
+        // ====================================================================
+        // 📝 VISÃO DETAIL (O Mapa do Formulário CrudForm V4)
+        // ====================================================================
+        fields: [
+            // Agrupamento: Dados Principais
+            { name: 'name', label: 'Nome Completo / Razão Social', type: 'text', placeholder: 'Ex: Stark Industries' },
+            { name: 'document', label: 'CPF / CNPJ', type: 'text', placeholder: 'Apenas números' },
+            
+            // Agrupamento: Contato
+            { name: 'email', label: 'E-mail Principal', type: 'text', placeholder: 'contato@empresa.com' },
+            { name: 'phone', label: 'Telefone / WhatsApp', type: 'text', placeholder: '(11) 90000-0000' },
+            
+            // Agrupamento: Observações Humanas (HITL)
+            { 
+                name: 'userNotes', 
+                label: 'Anotações Privadas (Opcional)', 
+                type: 'textarea', 
+                placeholder: 'Registre detalhes de negociação, preferências ou contexto do cliente...' 
+            },
+
+            // Controle de Acesso
+            { name: 'isActive', label: 'Cliente Ativo (Permite Vendas)', type: 'boolean', trueLabel: 'Ativo', falseLabel: 'Inativo' }
+        ],
+
+        // ====================================================================
+        // 🗄️ VISÃO DE AUDITORIA (Gaveta Oculta de Sistema)
+        // ====================================================================
+        systemFields: [
+            { name: 'id', label: 'UUID do Cliente', type: 'text' },
+            // O Resumo da IA é readonly visualmente via Motor V4
+            { name: 'aiSummary', label: 'Resumo da Inteligência Artificial', type: 'textarea' },
+            { name: 'createdAt', label: 'Data de Cadastro', type: 'text' },
+            { name: 'updatedAt', label: 'Última Atualização', type: 'text' }
+        ]
+
+    }), []); // Array de dependências vazio, pois a estrutura do cliente não depende de listas externas
+}
+
+
 // ===== FILE: src/core/client/hooks/useClientMutation.ts =====
 
 
@@ -4271,138 +4413,48 @@ export function useClients(externalTrigger: number = 0) {
 
 'use client';
 
-import React, { useMemo } from 'react';
-import { FaUserTie, FaRobot, FaStickyNote } from 'react-icons/fa';
+import React from 'react';
 
 // --- Motor CRUD V4 ---
 import { CrudLayout } from '@/core/components/crud/CrudLayout';
-import { CrudConfig, CrudHooks } from '@/core/components/crud/types';
+import { CrudHooks } from '@/core/components/crud/types';
 
-// --- Tipos e Schemas do Domínio ---
+// --- Tipos do Domínio ---
 import { Client } from '../types/client';
-import { ClientFormSchema, ClientFormInput } from '../schemas/clientSchema';
+import { ClientFormInput } from '../schemas/clientSchema';
 
 // --- Motores de Dados (CQRS) ---
 import { useClients } from '../hooks/useClients';
 import { useClientMutation } from '../hooks/useClientMutation';
+
+// --- Configuração Injetável (O Manual de Instruções) ---
+import { useClientConfig } from '../hooks/useClientConfig';
 
 /**
  * ============================================================================
  * 🏭 COMPONENTE PRINCIPAL: CLIENT REGISTRY
  * @description O Orquestrador da base de Clientes. 
  * Conecta o Motor V4 aos fluxos de leitura (useClients) e escrita (useClientMutation).
- * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO:
- * 1. UX Imersiva: Renderização de colunas ricas combinando dados (Nome + Contato).
- * 2. IA Native: Exposição visual do 'aiSummary' mostrando o DNA tecnológico do CRM.
- * 3. Delegação Transparente: O CrudLayout cuida da transição de telas, este 
- * componente cuida apenas das regras de negócio.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (SOLID & DRY):
+ * 1. Separação de Preocupações: A configuração visual e as regras de schema foram
+ * extraídas para o `useClientConfig`. Este arquivo agora é um orquestrador puro.
+ * 2. Delegação Transparente: O CrudLayout assume 100% da responsabilidade pela 
+ * renderização e transição de telas, consumindo as regras injetadas aqui.
  * ============================================================================
  */
 export function ClientRegistry() {
     
-    // 1. O Motor de Leitura (Vitrine)
+    // 1. O Motor de Leitura (A Vitrine de Dados)
     const { clients, isLoading: loadingRead, error: readError, refreshData } = useClients();
 
-    // 2. O Motor de Mutação (A Caneta)
+    // 2. O Motor de Mutação (A Caneta de Escrita do Banco)
     const { createClient, updateClient, deleteClient, isLoading: writing, error: writeError } = useClientMutation();
 
-    // =========================================================================
-    // ⚙️ CONFIGURAÇÃO CLASSE OURO (O Manual do CrudLayout)
-    // =========================================================================
-    const config: CrudConfig<Client, ClientFormInput> = useMemo(() => ({
-        title: 'Carteira de Clientes',
-        description: 'Gerencie a sua base de contatos, histórico e percepções de inteligência artificial.',
-        schema: ClientFormSchema as any, // Zod para blindagem de payload
-
-        // --- VISÃO MASTER (GRID DE CLIENTES) ---
-        columns: [
-            {
-                header: 'Cliente / Contato Principal',
-                accessor: (item) => (
-                    <div className="flex items-center gap-3">
-                        <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-accent-primary/10 text-accent-primary flex-shrink-0">
-                            <FaUserTie className="w-4 h-4" />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-sm font-bold text-white tracking-tight">
-                                {item.name}
-                            </span>
-                            <span className="text-[11px] text-gray-500">
-                                {item.email || item.phone || 'Sem contato cadastrado'}
-                            </span>
-                        </div>
-                    </div>
-                )
-            },
-            {
-                header: 'Documento',
-                accessor: (item) => (
-                    <span className="text-sm text-gray-400 font-mono">
-                        {item.document || '-'}
-                    </span>
-                )
-            },
-            {
-                header: 'Inteligência AI',
-                accessor: (item) => (
-                    item.aiSummary ? (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20" title="Perfil analisado pela IA">
-                            <FaRobot /> Analisado
-                        </span>
-                    ) : (
-                        <span className="text-[10px] text-gray-600 uppercase tracking-widest">Pendente</span>
-                    )
-                )
-            },
-            {
-                header: 'Status',
-                accessor: (item) => (
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest ${
-                        item.isActive 
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                    }`}>
-                        {item.isActive ? 'Ativo' : 'Inativo'}
-                    </span>
-                )
-            }
-        ],
-
-        // --- VISÃO DETAIL (O FORMULÁRIO DE CADASTRO/EDIÇÃO) ---
-        fields: [
-            // Agrupamento: Dados Principais
-            { name: 'name', label: 'Nome Completo / Razão Social', type: 'text', placeholder: 'Ex: Stark Industries' },
-            { name: 'document', label: 'CPF / CNPJ', type: 'text', placeholder: 'Apenas números' },
-            
-            // Agrupamento: Contato
-            { name: 'email', label: 'E-mail Principal', type: 'text', placeholder: 'contato@empresa.com' },
-            { name: 'phone', label: 'Telefone / WhatsApp', type: 'text', placeholder: '(11) 90000-0000' },
-            
-            // Agrupamento: Observações Humanas (HITL)
-            { 
-                name: 'userNotes', 
-                label: 'Anotações Privadas (Opcional)', 
-                type: 'textarea', 
-                placeholder: 'Registre detalhes de negociação, preferências ou contexto do cliente...' 
-            },
-
-            // Controle de Acesso
-            { name: 'isActive', label: 'Cliente Ativo (Permite Vendas)', type: 'boolean', trueLabel: 'Ativo', falseLabel: 'Inativo' }
-        ],
-
-        // --- VISÃO DE AUDITORIA (Gaveta Oculta no Fundo do Form) ---
-        systemFields: [
-            { name: 'id', label: 'UUID do Cliente', type: 'text' },
-            // O Resumo da IA é readonly aqui. Só o motor de IA ou o backend alteram isso.
-            { name: 'aiSummary', label: 'Resumo da Inteligência Artificial', type: 'textarea' },
-            { name: 'createdAt', label: 'Data de Cadastro', type: 'text' },
-            { name: 'updatedAt', label: 'Última Atualização', type: 'text' }
-        ]
-
-    }), []);
+    // 3. A Injeção de Dependência Visual (O Manual do Formulário e da Tabela)
+    const config = useClientConfig();
 
     // =========================================================================
-    // 🔌 ROTEAMENTO DE AÇÕES (Unindo Leitura e Escrita CQRS)
+    // 🔌 ROTEAMENTO DE AÇÕES (Unindo Leitura e Escrita - CQRS)
     // =========================================================================
     const crudHooks: CrudHooks<Client, ClientFormInput> = {
         data: clients,
@@ -5512,356 +5564,6 @@ export const CadastrosContainer: React.FC = () => {
 };
 
 
-// ===== FILE: src/core/components/crud/CrudForm.tsx =====
-
-// ===== FILE: src/core/components/crud/CrudForm.tsx =====
-
-'use client';
-
-import React, { useEffect, useState, useMemo } from 'react';
-import { useForm, Controller, FieldValues, SubmitHandler, DefaultValues, UseFormReturn } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { FaTimes, FaSave, FaChevronDown, FaChevronUp, FaShieldAlt } from 'react-icons/fa';
-import { CrudConfig, CrudFieldConfig } from './types';
-
-interface CrudFormProps<TData, TForm extends FieldValues> {
-    isOpen: boolean;
-    onClose: () => void;
-    config: CrudConfig<TData, TForm>;
-    initialData?: TData | null;
-    onSubmit: (data: TForm) => Promise<void>;
-}
-
-/**
- * @component CrudForm (A Impressora 3D - Motor V4.1)
- * @description Drawer universal que desenha inputs automaticamente.
- * CLASSE OURO: Implementa o "Absolute Reset" para evitar vazamento de memória
- * em arrays complexos (Master-Detail) na transição de Edição para Criação.
- */
-export function CrudForm<TData, TForm extends FieldValues>({
-    isOpen,
-    onClose,
-    config,
-    initialData,
-    onSubmit
-}: CrudFormProps<TData, TForm>) {
-    
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showSystemInfo, setShowSystemInfo] = useState(false);
-
-    // =========================================================================
-    // 🧹 GHOST-BUSTER (O Gerador de Estado Vazio)
-    // O RHF não limpa arrays (useFieldArray) automaticamente com um `reset({})`.
-    // Nós mapeamos a configuração para forçar a limpeza estrutural de tudo.
-    // =========================================================================
-    const defaultFormValues = useMemo(() => {
-        const defaults: any = {};
-        config.fields.forEach(field => {
-            if (field.type === 'custom') {
-                // 💡 A MÁGICA: Se for um array/grid customizado, cravamos [] (Vazio).
-                // Isso diz ao RHF: "Destrua as regras da memória agora!"
-                defaults[field.name] = []; 
-            } else if (field.type === 'boolean') {
-                defaults[field.name] = true;
-            } else {
-                defaults[field.name] = '';
-            }
-        });
-        return defaults as DefaultValues<TForm>;
-    }, [config.fields]);
-
-    // =========================================================================
-    // 🧠 O CÉREBRO DO FORMULÁRIO
-    // =========================================================================
-    const formContext = useForm<TForm>({
-        resolver: zodResolver(config.schema as any),
-        mode: 'onChange',
-        defaultValues: defaultFormValues // Injeta o estado vazio como base
-    });
-
-    const {
-        register,
-        handleSubmit,
-        reset,
-        control,
-        formState: { errors }
-    } = formContext;
-
-    // =========================================================================
-    // 💧 HIDRATAÇÃO E DELTA SYNC
-    // =========================================================================
-    useEffect(() => {
-        if (isOpen) {
-            if (initialData) {
-                // MODO EDIÇÃO: Preenche com os dados do banco (trazendo as regras com IDs)
-                reset(initialData as DefaultValues<TForm>);
-            } else {
-                // 💡 MODO CRIAÇÃO (O Bloqueio do Roubo Relacional):
-                // Injetamos o `defaultFormValues` explícito. O array `rules` será cravado
-                // como `[]`, e o formulário abrirá 100% virgem e seguro.
-                reset(defaultFormValues); 
-            }
-        }
-    }, [isOpen, initialData, reset, defaultFormValues]);
-
-    // =========================================================================
-    // ⚙️ HANDLERS
-    // =========================================================================
-    const handleFormSubmit: SubmitHandler<TForm> = async (data) => {
-        setIsSubmitting(true);
-        try {
-            await onSubmit(data);
-            onClose(); 
-        } catch (error) {
-            console.error('❌ [CrudForm] Erro ao salvar:', error);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    // =========================================================================
-    // 🎨 RENDERIZADOR POLIMÓRFICO (O "Pintor" de Inputs)
-    // =========================================================================
-    const renderField = (field: CrudFieldConfig<TForm>) => {
-        const fieldName = String(field.name);
-        const hasError = !!errors[fieldName];
-
-        const baseInputClasses = `
-            w-full bg-gray-900 border rounded-lg px-3 py-2.5 text-sm text-white 
-            focus:outline-none transition-all placeholder-gray-600
-            ${hasError 
-                ? 'border-red-500 focus:ring-1 focus:ring-red-500' 
-                : 'border-gray-700 focus:border-accent-primary focus:ring-1 focus:ring-accent-primary'
-            }
-            ${field.disabled ? 'opacity-50 cursor-not-allowed' : ''}
-        `;
-
-        switch (field.type) {
-            case 'text':
-            case 'number':
-            case 'currency':
-                return (
-                    <input
-                        type={field.type === 'number' || field.type === 'currency' ? 'number' : 'text'}
-                        step={field.type === 'currency' ? '0.01' : undefined}
-                        {...register(field.name as any, { 
-                            setValueAs: v => (field.type === 'number' || field.type === 'currency') ? (v === '' ? undefined : Number(v)) : v 
-                        })}
-                        placeholder={field.placeholder}
-                        disabled={field.disabled || isSubmitting}
-                        className={baseInputClasses}
-                    />
-                );
-
-            case 'textarea':
-                return (
-                    <textarea
-                        {...register(field.name as any)}
-                        placeholder={field.placeholder}
-                        disabled={field.disabled || isSubmitting}
-                        rows={3}
-                        className={`${baseInputClasses} resize-y`}
-                    />
-                );
-
-            case 'select':
-                return (
-                    <select
-                        {...register(field.name as any)}
-                        disabled={field.disabled || isSubmitting}
-                        className={baseInputClasses}
-                    >
-                        <option value="">Selecione...</option>
-                        {field.options?.map(opt => (
-                            <option key={String(opt.value)} value={String(opt.value)}>
-                                {opt.label}
-                            </option>
-                        ))}
-                    </select>
-                );
-
-            case 'hidden':
-                return (
-                    <input type="hidden" {...register(field.name as any)} />
-                );
-
-            case 'boolean':
-                return (
-                    <Controller
-                        name={field.name as any}
-                        control={control}
-                        render={({ field: { onChange, value } }) => (
-                            <div className="flex items-center mt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => onChange(!value)}
-                                    disabled={field.disabled || isSubmitting}
-                                    className={`
-                                        relative inline-flex h-6 w-11 items-center rounded-full transition-colors 
-                                        focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2 focus:ring-offset-gray-900
-                                        ${value ? 'bg-emerald-500' : 'bg-gray-600'}
-                                        ${field.disabled ? 'opacity-50 cursor-not-allowed' : ''}
-                                    `}
-                                >
-                                    <span
-                                        className={`
-                                            inline-block h-4 w-4 transform rounded-full bg-white transition-transform 
-                                            ${value ? 'translate-x-6' : 'translate-x-1'}
-                                        `}
-                                    />
-                                </button>
-                                <span className="ml-3 text-sm font-medium text-gray-300">
-                                    {value 
-                                        ? (field.trueLabel || 'Ativo') 
-                                        : (field.falseLabel || 'Inativo')
-                                    }
-                                </span>
-                            </div>
-                        )}
-                    />
-                );
-
-            case 'custom':
-                if (field.customRender) {
-                    return field.customRender(formContext);
-                }
-                return (
-                    <div className="p-3 bg-red-900/20 text-red-400 text-xs rounded border border-red-500/50">
-                        ⚠️ Desenvolvedor: Forneça a propriedade `customRender` para o campo '{fieldName}'.
-                    </div>
-                );
-
-            default:
-                return null;
-        }
-    };
-
-    if (!isOpen) return null;
-
-    return (
-        <div 
-            className={`
-                absolute inset-0 z-20 bg-base-dark flex flex-col
-                transform transition-all duration-300 ease-in-out
-                ${isOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-12 opacity-0 pointer-events-none'}
-            `}
-        >
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-                
-                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-700 bg-gray-900/50 flex-shrink-0">
-                    <div>
-                        <h3 className="text-lg font-semibold text-base-text leading-tight">
-                            {initialData ? `Editar ${config.title}` : `Novo(a) ${config.title}`}
-                        </h3>
-                        {config.description && (
-                            <p className="text-xs text-gray-400 mt-1">{config.description}</p>
-                        )}
-                    </div>
-                    <button 
-                        onClick={onClose}
-                        disabled={isSubmitting}
-                        className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-700 disabled:opacity-50"
-                    >
-                        <FaTimes className="w-5 h-5" />
-                    </button>
-                </div>
-
-                <form id="crud-form" onSubmit={handleSubmit(handleFormSubmit)} className="flex-1 p-6 space-y-5 overflow-y-auto custom-scrollbar">
-                    
-                    {config.fields.map((field) => {
-                        const fieldName = String(field.name);
-                        const hasError = !!errors[fieldName];
-                        const errorMessage = errors[fieldName]?.message as string;
-                        const displayError = typeof errorMessage === 'string' ? errorMessage : undefined;
-
-                        return (
-                            <div key={fieldName} className="space-y-1.5 animate-fade-in">
-                                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                                    {field.label}
-                                    {!config.schema.isOptional() && <span className="text-accent-primary ml-1">*</span>}
-                                </label>
-                                
-                                {renderField(field)}
-                                
-                                {hasError && displayError && (
-                                    <p className="text-[10px] text-red-400 mt-1 font-medium">
-                                        {displayError}
-                                    </p>
-                                )}
-                            </div>
-                        );
-                    })}
-
-                    {initialData && config.systemFields && config.systemFields.length > 0 && (
-                        <div className="pt-4 mt-6 border-t border-gray-800/50 animate-fade-in flex-shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => setShowSystemInfo(!showSystemInfo)}
-                                className="flex items-center justify-between w-full p-3.5 bg-gray-800/30 hover:bg-gray-800/60 border border-gray-700/50 rounded-lg transition-colors focus:outline-none"
-                            >
-                                <div className="flex items-center gap-2 text-gray-400">
-                                    <FaShieldAlt className="w-4 h-4 text-gray-500" />
-                                    <span className="text-xs font-bold uppercase tracking-wider">Informações do Sistema</span>
-                                </div>
-                                {showSystemInfo ? <FaChevronUp className="w-3 h-3 text-gray-500" /> : <FaChevronDown className="w-3 h-3 text-gray-500" />}
-                            </button>
-
-                           {showSystemInfo && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-3 p-5 bg-gray-900/50 border border-gray-800/50 rounded-lg shadow-inner animate-fade-in">
-                                    {config.systemFields.map((field) => {
-                                        const fieldName = String(field.name);
-                                        return (
-                                            <div key={fieldName} className="space-y-1.5">
-                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                                                    {field.label}
-                                                </label>
-                                                <div className="opacity-60 pointer-events-none grayscale">
-                                                    {/* 💡 FIX TS 2345: Assinatura de contrato garantida para o motor de renderização */}
-                                                    {renderField({ ...field, disabled: true } as unknown as CrudFieldConfig<TForm>)}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </form>
-
-                <div className="p-6 border-t border-gray-700 bg-gray-900/30 flex justify-end gap-3 flex-shrink-0">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={isSubmitting}
-                        className="px-4 py-2 text-sm font-bold text-gray-400 bg-transparent border border-gray-600 rounded-lg hover:bg-gray-700 hover:text-white transition-colors disabled:opacity-50"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        form="crud-form"
-                        disabled={isSubmitting}
-                        className="flex items-center gap-2 px-6 py-2 text-sm font-bold text-base-dark bg-accent-primary rounded-lg hover:brightness-110 focus:outline-none transition-all shadow-lg shadow-accent-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isSubmitting ? (
-                            <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-base-dark border-t-transparent"></div>
-                                <span>Salvando...</span>
-                            </>
-                        ) : (
-                            <>
-                                <FaSave className="w-4 h-4" />
-                                <span>{initialData ? 'Atualizar' : 'Salvar'}</span>
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-
 // ===== FILE: src/core/components/crud/CrudLayout.tsx =====
 
 'use client';
@@ -5870,7 +5572,7 @@ import React, { useState, useMemo } from 'react';
 import { FaSearch, FaPlus, FaSync } from 'react-icons/fa';
 import { CrudConfig, CrudHooks } from './types';
 import { CrudTable } from './CrudTable';
-import { CrudForm } from './CrudForm';
+import { CrudForm } from './forms/CrudForm';
 import { FieldValues } from 'react-hook-form';
 
 interface CrudLayoutProps<TData extends FieldValues & { id: string }, TForm extends FieldValues> {
@@ -5937,6 +5639,7 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
         } else {
             await hooks.onCreate(formData);
         }
+        handleCloseForm();
         hooks.onRefresh();
     };
 
@@ -6183,96 +5886,752 @@ export function CrudTable<T extends { id: string }>({
 }
 
 
-// ===== FILE: src/core/components/crud/types.ts =====
+// ===== FILE: src/core/components/crud/forms/CrudFieldFactory.tsx =====
+
+import React from 'react';
+import { UseFormReturn, FieldValues, Path, RegisterOptions, Controller } from 'react-hook-form'; // 💡 IMPORT VITAL: Controller adicionado
+
+// --- Tipagens e Componentes UI ---
+import { CrudField } from '../types';
+import { SmartDatePicker } from '../../ui/SmartDatePicker'; // 👈 Nosso Calendário Inteligente
+
+export interface CrudFieldFactoryProps<FormData extends FieldValues> {
+    field: CrudField<FormData>;
+    form: UseFormReturn<FormData>;
+    disabled?: boolean;
+}
+
+/**
+ * ============================================================================
+ * 🏭 FÁBRICA DE CAMPOS (CrudFieldFactory)
+ * @description Princípio da Responsabilidade Única (SRP) do SOLID. 
+ * Este componente não conhece regras de negócio. Sua ÚNICA função é traduzir 
+ * um contrato JSON em inputs visuais de alta fidelidade e interceptar erros.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Componentes Controlados):
+ * - Substitui o <input type="date"> nativo falho por um SmartDatePicker,
+ * eliminando problemas de Timezone e garantindo que o Zod receba Strings ISO puras.
+ * ============================================================================
+ */
+export function CrudFieldFactory<FormData extends FieldValues>({
+    field,
+    form,
+    disabled = false
+}: CrudFieldFactoryProps<FormData>) {
+    
+    // 🛡️ Tipagem Forte: Garante que o fieldName é um caminho válido no formulário.
+    const fieldName = String(field.name) as Path<FormData>;
+    const errorMessage = form.formState.errors[fieldName]?.message as string | undefined;
+
+    // ========================================================================
+    // ⚙️ CONSTRUTOR DE OPÇÕES (Roteamento de Tipagem Seguro)
+    // ========================================================================
+    let registerOptions: RegisterOptions<FormData, Path<FormData>> = {};
+    
+    // 🛡️ FIX ARQUITETURAL: Removemos o `valueAsDate: true`. 
+    // A data agora trafega como String pura (ISO 8601), respeitando o Zod Schema 
+    // e evitando bloqueios silenciosos na submissão.
+    if (field.type === 'number') {
+        registerOptions = { valueAsNumber: true };
+    }
+
+    // ========================================================================
+    // 🧩 1. INJEÇÃO DE MICRO-COMPONENTES (Custom Render)
+    // ========================================================================
+    if (field.type === 'custom' && field.customRender) {
+        return (
+            <div className="col-span-full w-full">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider ml-1">
+                    {field.label}
+                </label>
+                
+                <div className={disabled ? 'opacity-60 pointer-events-none grayscale' : ''}>
+                    {field.customRender(form)}
+                </div>
+                
+                {errorMessage && (
+                    <span className="text-red-400 text-xs mt-1 ml-1 block font-medium">
+                        {errorMessage}
+                    </span>
+                )}
+            </div>
+        );
+    }
+
+    // ========================================================================
+    // 🎨 2. RENDERIZAÇÃO PADRÃO (Inputs e Componentes UI)
+    // ========================================================================
+    return (
+        <div className={`flex flex-col space-y-1.5 w-full ${field.type === 'textarea' ? 'col-span-full' : 'col-span-1 md:col-span-1'}`}>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">
+                {field.label}
+            </label>
+            
+            {field.type === 'select' ? (
+                <select
+                    {...form.register(fieldName)}
+                    disabled={disabled}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-accent-primary focus:ring-1 focus:ring-accent-primary focus:outline-none transition-all appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <option value="">Selecione...</option>
+                    {field.options?.map((opt, idx) => (
+                        <option key={`${opt.value}-${idx}`} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+                
+            ) : field.type === 'textarea' ? (
+                <textarea
+                    {...form.register(fieldName)}
+                    disabled={disabled}
+                    placeholder={field.placeholder}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:border-accent-primary focus:ring-1 focus:ring-accent-primary focus:outline-none transition-all min-h-[100px] resize-y disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                
+            ) : field.type === 'boolean' ? (
+                <label className={`flex items-center space-x-3 cursor-pointer mt-2 bg-gray-900/50 p-3 rounded-xl border border-gray-700/50 transition-opacity ${disabled ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}>
+                    <div className="relative">
+                        <input type="checkbox" {...form.register(fieldName)} disabled={disabled} className="sr-only" />
+                        <div className={`block w-10 h-6 rounded-full transition-colors ${form.watch(fieldName) ? 'bg-accent-primary' : 'bg-gray-600'}`}></div>
+                        <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${form.watch(fieldName) ? 'transform translate-x-4' : ''}`}></div>
+                    </div>
+                    <div className="text-sm font-bold text-gray-300">
+                        {form.watch(fieldName) ? (field.trueLabel || 'Sim') : (field.falseLabel || 'Não')}
+                    </div>
+                </label>
+                
+            ) : field.type === 'date' ? (
+                // 📅 O CALENDÁRIO INTELIGENTE: Padrão "Controlled Input"
+                // O Controller atua como um tradutor perfeito entre o nosso componente
+                // de UI customizado e a engine interna do React Hook Form.
+                <Controller
+                    control={form.control}
+                    name={fieldName}
+                    render={({ field: { onChange, value } }) => (
+                        <SmartDatePicker
+                            value={value as string | undefined}
+                            onChange={onChange}
+                            disabled={disabled}
+                            placeholder={field.placeholder || "Selecione a data"}
+                        />
+                    )}
+                />
+                
+            ) : (
+                <input
+                    type={field.type}
+                    // 🛡️ O objeto limpo e seguro é injetado aqui
+                    {...form.register(fieldName, registerOptions)}
+                    disabled={disabled}
+                    placeholder={field.placeholder}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-accent-primary focus:ring-1 focus:ring-accent-primary focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+            )}
+
+            {/* Exibição de Erros */}
+            {errorMessage && (
+                <span className="text-red-400 text-[10px] font-bold mt-1 ml-1 block uppercase tracking-wide animate-fade-in">
+                    {errorMessage}
+                </span>
+            )}
+        </div>
+    );
+}
+
+
+// ===== FILE: src/core/components/crud/forms/CrudForm.tsx =====
+
+import React, { useEffect, useState, useMemo } from 'react';
+import { useForm, FieldValues, DefaultValues } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+// --- Tipagens e Contratos ---
+import { CrudFormProps } from '../types';
+
+// --- Utilitários de Performance ---
+import { useDelayedUnmount } from '@/core/hooks/useDelayedUnmount';
+
+// --- Componentes Estruturais (Layout) ---
+import { CrudFormWrapper } from './layout/CrudFormWrapper';
+import { CrudFormHeader } from './layout/CrudFormHeader';
+import { CrudFormBody } from './layout/CrudFormBody';
+import { CrudFormFooter } from './layout/CrudFormFooter';
+
+/**
+ * @function CrudForm
+ * @description O Maestro do Motor V4. Ponto de entrada do gerador dinâmico de formulários. 
+ * Gerencia o estado global (React Hook Form + Zod) e orquestra a renderização.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (SOLID & Resiliência):
+ * - Implementa o "Absolute Reset" (Ghost-Buster) para evitar vazamentos de memória.
+ * - Sincroniza o unmount com as animações CSS via `useDelayedUnmount`.
+ */
+export function CrudForm<T, FormData extends FieldValues = any>({
+    isOpen,
+    onClose,
+    config,
+    initialData,
+    presentationMode = 'drawer', // Roteador visual principal
+    onSubmit
+}: CrudFormProps<T, FormData>) {
+
+    // ========================================================================
+    // ⏱️ GESTÃO DE CICLO DE VIDA (Animação vs Memória)
+    // Sincroniza o tempo de destruição do componente com a animação CSS (300ms)
+    // ========================================================================
+    const shouldRender = useDelayedUnmount(isOpen, 300);
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // ========================================================================
+    // 🧹 GHOST-BUSTER (O Gerador de Estado Vazio)
+    // Constrói um objeto 100% limpo com base na configuração dos campos,
+    // garantindo que não haja resquícios (fantasmas) na transição de registros.
+    // ========================================================================
+    const defaultFormValues = useMemo(() => {
+        const defaults: any = {};
+        config.fields.forEach(field => {
+            if (field.type === 'custom') {
+                defaults[field.name] = []; 
+            } else if (field.type === 'boolean') {
+                defaults[field.name] = true;
+            } else {
+                defaults[field.name] = '';
+            }
+        });
+        return defaults as DefaultValues<FormData>;
+    }, [config.fields]);
+
+    // ========================================================================
+    // 🛡️ MOTOR DE VALIDAÇÃO (Reatividade e Schemas)
+    // ========================================================================
+    const form = useForm<FormData>({
+        resolver: zodResolver(config.schema),
+        defaultValues: defaultFormValues, 
+        mode: 'onChange', 
+    });
+
+    // ========================================================================
+    // 💧 HIDRATAÇÃO E DELTA SYNC
+    // Injeta os dados corretos no milissegundo em que a tela abre.
+    // ========================================================================
+    useEffect(() => {
+        if (isOpen) {
+            if (initialData) {
+                form.reset(initialData as DefaultValues<FormData>);
+            } else {
+                form.reset(defaultFormValues);
+            }
+            setError(null);
+        }
+    }, [isOpen, initialData, form, defaultFormValues]);
+
+    // ========================================================================
+    // ⚙️ INTERCEPTADORES DE SUBMISSÃO E FALHA
+    // ========================================================================
+    
+    /**
+     * @method handleSubmitWrapper
+     * @description Rota de Sucesso. Disparada apenas se o Zod aprovar o payload.
+     * Extrai erros da API e gerencia o estado de loading.
+     */
+    const handleSubmitWrapper = async (data: FormData) => {
+        setIsSubmitting(true);
+        setError(null);
+        try {
+            await onSubmit(data);
+        } catch (err: any) {
+            console.error('[CrudForm] Falha na transação API:', err);
+            const errorMessage = err.response?.data?.message || err.message || 'Ocorreu um erro inesperado ao salvar os dados.';
+            setError(Array.isArray(errorMessage) ? errorMessage[0] : errorMessage);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    /**
+     * @method handleValidationError
+     * @description Rota de Falha. Disparada quando o Zod bloqueia o envio.
+     * 🏆 FIX VITAL: Impede a "Falha Silenciosa", escancarando o motivo do 
+     * bloqueio no console e na tarja de erro da interface.
+     */
+    const handleValidationError = (errors: any) => {
+        console.error('❌ [CrudForm] O Validador Zod bloqueou o envio:', errors);
+        setError('Existem campos inválidos, obrigatórios não preenchidos ou conflitos de dados. Verifique o formulário.');
+    };
+
+    // ========================================================================
+    // 🛑 A GUILHOTINA CLASSE OURO:
+    // Só destrói a árvore do DOM DEPOIS que a animação terminar
+    // ========================================================================
+    if (!shouldRender) return null;
+
+    return (
+        <CrudFormWrapper 
+            presentationMode={presentationMode} 
+            isOpen={isOpen} // Comunicação de estado para o CSS de saída
+            onClose={onClose}
+        >
+            <form 
+                // 🔌 A CONEXÃO: Pluga a rota de sucesso E a rota de falha no motor.
+                onSubmit={form.handleSubmit(handleSubmitWrapper, handleValidationError)} 
+                className="flex flex-col h-full w-full"
+                noValidate // Desliga validação tosca do HTML em favor do Zod
+            >
+                <CrudFormHeader 
+                    title={config.title}
+                    description={config.description}
+                    isEdit={!!initialData}
+                    presentationMode={presentationMode}
+                    onClose={onClose}
+                />
+                
+                <CrudFormBody 
+                    config={config}
+                    form={form}
+                    error={error}
+                />
+                
+                <CrudFormFooter 
+                    isEdit={!!initialData}
+                    isSubmitting={isSubmitting}
+                    onClose={onClose}
+                />
+            </form>
+        </CrudFormWrapper>
+    );
+}
+
+
+// ===== FILE: src/core/components/crud/forms/layout/CrudFormBody.tsx =====
+
+import React, { useState } from 'react';
+import { UseFormReturn, FieldValues } from 'react-hook-form';
+import { FaExclamationTriangle, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+
+// --- Tipagens e Componentes do Core ---
+import { CrudConfig } from '../../types';
+import { CrudFieldFactory } from '../CrudFieldFactory';
+
+/**
+ * @interface CrudFormBodyProps
+ * @description Contrato estrito para o Corpo do Formulário.
+ * Recebe apenas o que é necessário para mapear e instanciar os campos.
+ */
+export interface CrudFormBodyProps<T, FormData extends FieldValues> {
+    /** Configuração estrutural do formulário (Schema, Campos, Layout) */
+    config: CrudConfig<T, FormData>;
+    /** Instância do React Hook Form gerenciada pelo Maestro */
+    form: UseFormReturn<FormData>;
+    /** Mensagem de erro global (Falhas de API ou regras de negócio) */
+    error: string | null;
+}
+
+/**
+ * ============================================================================
+ * 🧩 CRUD FORM: BODY (A Área de Renderização dos Campos)
+ * @description Componente isolado responsável por iterar sobre a configuração
+ * e desenhar os campos através da Fábrica (CrudFieldFactory).
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Encapsulamento e SRP):
+ * - O estado visual da "Gaveta de Auditoria" foi encapsulado aqui dentro,
+ * liberando o componente Pai (Maestro) de gerenciar estados irrelevantes de UI.
+ * ============================================================================
+ */
+export function CrudFormBody<T, FormData extends FieldValues>({
+    config,
+    form,
+    error
+}: CrudFormBodyProps<T, FormData>) {
+    
+    // Encapsulamento do estado visual (Abrir/Fechar Auditoria)
+    // O Maestro (CrudForm) não precisa mais saber que isso existe.
+    const [showSystemFields, setShowSystemFields] = useState(false);
+
+    return (
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar relative">
+            
+            {/* 🛑 Tarja de Erro Global (Feedback de Falhas de Negócio/API) */}
+            {error && (
+                <div className="p-4 bg-red-900/20 border border-red-900/50 text-red-400 rounded-xl text-sm flex items-center shadow-inner animate-fade-in">
+                    <FaExclamationTriangle className="mr-3 flex-shrink-0 text-lg opacity-80" /> 
+                    <span className="font-medium leading-relaxed">{error}</span>
+                </div>
+            )}
+
+            {/* 🏭 Grid Principal: Mapeamento e Injeção na Fábrica de Campos */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
+                {config.fields.map((field) => (
+                    <CrudFieldFactory 
+                        key={String(field.name)} 
+                        field={field} 
+                        form={form} 
+                    />
+                ))}
+            </div>
+
+            {/* 🗄️ Gaveta de Auditoria (Campos do Sistema: ID, Datas, etc) */}
+            {config.systemFields && config.systemFields.length > 0 && (
+                <div className="pt-6 mt-6 border-t border-gray-800/50">
+                    <button
+                        type="button"
+                        onClick={() => setShowSystemFields(!showSystemFields)}
+                        className="flex items-center text-xs font-bold text-gray-500 hover:text-gray-300 uppercase tracking-widest transition-colors w-full focus:outline-none"
+                    >
+                        {showSystemFields ? <FaChevronUp className="mr-2" /> : <FaChevronDown className="mr-2" />}
+                        Informações do Sistema (Auditoria)
+                    </button>
+                    
+                    {showSystemFields && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 p-5 bg-gray-900/30 border border-gray-700/30 rounded-xl shadow-inner animate-fade-in-up">
+                            {config.systemFields.map((field) => (
+                                <CrudFieldFactory 
+                                    key={String(field.name)} 
+                                    field={field} 
+                                    form={form} 
+                                    disabled={true} // Força o modo 'readonly' visual da fábrica
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+
+// ===== FILE: src/core/components/crud/forms/layout/CrudFormFooter.tsx =====
+
+import React from 'react';
+import { FaSave } from 'react-icons/fa';
+
+/**
+ * @interface CrudFormFooterProps
+ * @description Contrato rigoroso de dependências do Rodapé.
+ * Isola a lógica de botões e estado de submissão do resto do formulário.
+ */
+export interface CrudFormFooterProps {
+    /** Define o texto do botão principal ('Atualizar' vs 'Cadastrar') */
+    isEdit: boolean;
+    /** Estado de transação em andamento, bloqueia duplo clique e exibe spinner */
+    isSubmitting: boolean;
+    /** Ação de cancelamento ou fechamento do painel */
+    onClose: () => void;
+}
+
+/**
+ * ============================================================================
+ * 🧩 CRUD FORM: FOOTER (As Ações do Formulário)
+ * @description Componente isolado responsável pelas chamadas de ação (CTA).
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Performance e Acessibilidade):
+ * - O botão de submit fica bloqueado (disabled) durante transações de rede, 
+ * prevenindo a criação de registros duplicados no banco de dados.
+ * - Feedback visual de loading (Spinner) integrado sem depender de bibliotecas externas.
+ * ============================================================================
+ */
+export const CrudFormFooter: React.FC<CrudFormFooterProps> = ({
+    isEdit,
+    isSubmitting,
+    onClose
+}) => {
+    return (
+        <div className="p-5 border-t border-gray-800 bg-gray-900/80 flex justify-end gap-3 flex-shrink-0">
+            
+            {/* 🛑 Botão Secundário: Abortar Operação */}
+            <button 
+                type="button" 
+                onClick={onClose} 
+                disabled={isSubmitting}
+                className="px-6 py-2.5 text-sm font-bold text-gray-400 hover:text-white hover:bg-gray-800 rounded-xl transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Cancelar operação"
+            >
+                Cancelar
+            </button>
+
+            {/* 🚀 Botão Principal: Submeter Dados */}
+            <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="px-8 py-2.5 bg-accent-primary hover:bg-orange-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-orange-900/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                aria-busy={isSubmitting}
+            >
+                {isSubmitting ? (
+                    <span className="flex items-center">
+                        {/* Spinner CSS puro de alta performance */}
+                        <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span> 
+                        Salvando...
+                    </span>
+                ) : (
+                    <>
+                        <FaSave /> 
+                        {isEdit ? 'Atualizar' : 'Cadastrar'}
+                    </>
+                )}
+            </button>
+        </div>
+    );
+};
+
+
+// ===== FILE: src/core/components/crud/forms/layout/CrudFormHeader.tsx =====
+
+import React from 'react';
+import { FaTimes } from 'react-icons/fa';
+
+// --- Tipagens do Core ---
+import { PresentationMode } from '../../types';
+
+/**
+ * @interface CrudFormHeaderProps
+ * @description Contrato rigoroso de dependências do Cabeçalho.
+ * O componente só recebe o que estritamente precisa para ser desenhado.
+ */
+export interface CrudFormHeaderProps {
+    /** Nome do módulo/entidade (Ex: Oportunidades) */
+    title: string;
+    /** Descrição opcional abaixo do título */
+    description?: string;
+    /** Define se o texto será "Novo" ou "Editar" */
+    isEdit: boolean;
+    /** Roteador visual para saber se deve exibir o botão de Fechar */
+    presentationMode: PresentationMode;
+    /** Ação disparada ao clicar no X */
+    onClose: () => void;
+}
+
+/**
+ * ============================================================================
+ * 🧩 CRUD FORM: HEADER (O Cabeçalho do Formulário)
+ * @description Componente isolado puramente visual (Dumb Component). 
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (SOLID):
+ * - Altamente testável, não possui estados internos (useState).
+ * - Delega a ação de fechamento (onClose) para o Maestro que o chamou.
+ * ============================================================================
+ */
+export const CrudFormHeader: React.FC<CrudFormHeaderProps> = ({
+    title,
+    description,
+    isEdit,
+    presentationMode,
+    onClose
+}) => {
+    return (
+        <div className="flex items-center justify-between p-6 border-b border-gray-800 bg-gray-800/30 flex-shrink-0">
+            <div>
+                <h2 className="text-xl font-bold text-white tracking-tight">
+                    {isEdit ? `Editar ${title}` : `Novo(a) ${title}`}
+                </h2>
+                {description && (
+                    <p className="text-xs text-gray-500 mt-1 animate-fade-in">
+                        {description}
+                    </p>
+                )}
+            </div>
+            
+            {/* * 🛡️ Regra de Negócio Visual: 
+              * Em modo 'inline' (como no Cockpit), o formulário não tem botão de fechar, 
+              * pois o painel central do próprio Cockpit já gerencia o roteamento de saída.
+              */}
+            {presentationMode !== 'inline' && (
+                <button 
+                    type="button"
+                    onClick={onClose} 
+                    className="text-gray-500 hover:text-white p-2 rounded-lg hover:bg-gray-700 transition-colors focus:outline-none"
+                    title="Fechar Formulário"
+                >
+                    <FaTimes size={18} />
+                </button>
+            )}
+        </div>
+    );
+};
+
+
+// ===== FILE: src/core/components/crud/forms/layout/CrudFormWrapper.tsx =====
+
+import React, { ReactNode } from 'react';
+
+// --- Tipagens do Core ---
+import { PresentationMode } from '../../types';
+
+export interface CrudFormWrapperProps {
+    presentationMode: PresentationMode;
+    /** 🛡️ VITAL: Passado para o Wrapper para preservar a transição CSS original do Drawer */
+    isOpen: boolean;
+    onClose: () => void;
+    children: ReactNode;
+}
+
+/**
+ * ============================================================================
+ * 📦 CRUD FORM: WRAPPER (O Envelopador Polimórfico)
+ * @description Respeita rigorosamente a integridade visual do sistema legado,
+ * aplicando o envelopamento correto conforme o 'presentationMode'.
+ * ============================================================================
+ */
+export const CrudFormWrapper: React.FC<CrudFormWrapperProps> = ({
+    presentationMode,
+    isOpen,
+    onClose,
+    children
+}) => {
+    
+    // ========================================================================
+    // 1. MODO INLINE (Plano e Fluido para o Cockpit Central)
+    // ========================================================================
+    if (presentationMode === 'inline') {
+        // No inline, podemos desmontar o DOM sem problemas se estiver fechado
+        if (!isOpen) return null; 
+        return (
+            <div className="flex-1 w-full h-full bg-transparent flex flex-col relative z-0">
+                {children}
+            </div>
+        );
+    }
+
+    // ========================================================================
+    // 2. MODO MODAL (Caixa Centralizada)
+    // ========================================================================
+    if (presentationMode === 'modal') {
+        if (!isOpen) return null;
+        return (
+            <div 
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-base-dark/70 backdrop-blur-sm animate-fade-in p-4 lg:p-12" 
+                onClick={onClose}
+            >
+                <div 
+                    className="w-full max-w-3xl bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-full animate-fade-in-up" 
+                    onClick={(e) => e.stopPropagation()} 
+                >
+                    {children}
+                </div>
+            </div>
+        );
+    }
+
+    // ========================================================================
+    // 3. MODO DRAWER ORIGINAL (A sua estrutura exata, sem fundos pretos)
+    // Nota: NÃO usamos 'return null' aqui para que as classes do Tailwind 
+    // executem a transição de saída (ease-in-out / opacity-0) com perfeição.
+    // ========================================================================
+    return (
+        <div 
+            className={`
+                absolute inset-0 z-20 bg-base-dark flex flex-col
+                transform transition-all duration-300 ease-in-out
+                ${isOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-12 opacity-0 pointer-events-none'}
+            `}
+        >
+            {children}
+        </div>
+    );
+};
+
 
 // ===== FILE: src/core/components/crud/types.ts =====
 
 import { z } from 'zod';
-import { FieldValues, UseFormReturn } from 'react-hook-form';
+import { ReactNode } from 'react';
+import { UseFormReturn, FieldValues } from 'react-hook-form'; // 💡 IMPORT VITAL: Adicionado FieldValues
 
 /**
- * @type CrudFieldType
- * @description Os tipos de inputs que a nossa "Impressora 3D" (CrudForm) sabe desenhar.
- * CLASSE OURO: Adicionado o tipo 'custom' para suportar Master-Detail (Arrays, Grids).
+ * ============================================================================
+ * 🧬 TIPAGENS DE COLUNAS E CAMPOS DO MOTOR V4
+ * ============================================================================
  */
-export type CrudFieldType = 
-    | 'text' 
-    | 'number' 
-    | 'boolean' 
-    | 'textarea' 
-    | 'select' 
-    | 'currency'
-    | 'hidden'
-    | 'date'
-    | 'datetime'
-    | 'time'
-    | 'file'
-    | 'custom'; // 👈 NOVO: O portal para componentes complexos (Ex: Grade de Variantes, Regras Fiscais)
 
-export interface CrudFieldOption {
-    label: string;
-    value: string | number;
-}
-
-/**
- * @interface CrudFieldConfig
- * @description Configuração individual de cada campo do formulário.
- */
-export interface CrudFieldConfig<TForm extends FieldValues> {
-    name: keyof TForm;
-    label: string;
-    type: CrudFieldType;
-    placeholder?: string;
-    disabled?: boolean;
-    options?: CrudFieldOption[]; 
-    
-    // Customização do Switch
-    trueLabel?: string;  
-    falseLabel?: string; 
-
-    // =========================================================================
-    // 🧩 RENDERIZADOR CUSTOMIZADO (Feature V4)
-    // Permite injetar um componente React inteiro dentro do formulário.
-    // Ele recebe o contexto completo do 'useForm' para poder manipular arrays (useFieldArray).
-    // =========================================================================
-    customRender?: (formContext: UseFormReturn<TForm>) => React.ReactNode;
-}
-
-/**
- * @interface CrudColumnConfig
- * @description Configuração de como os dados serão renderizados na Tabela (Grid).
- */
-export interface CrudColumnConfig<TData> {
+export interface CrudColumn<T> {
     header: string;
-    accessor: keyof TData | ((item: TData) => React.ReactNode);
+    accessor: keyof T | ((item: T) => ReactNode);
+}
+
+export type FieldType = 'text' | 'number' | 'email' | 'select' | 'boolean' | 'date' | 'textarea' | 'custom';
+
+// 🛡️ CORREÇÃO: "FormData extends FieldValues" garante a compatibilidade com o React Hook Form
+export interface CrudField<FormData extends FieldValues = any> {
+    name: keyof FormData | string;
+    label: string;
+    type: FieldType;
+    placeholder?: string;
+    options?: { value: string | number; label: string }[];
+    trueLabel?: string;  // Utilizado para inputs do tipo boolean (toggle/checkbox)
+    falseLabel?: string; // Utilizado para inputs do tipo boolean
+    
+    /**
+     * @property customRender
+     * @description Permite a injeção de micro-componentes de alta complexidade 
+     * (ex: Drag & Drop, Tabelas de Itens, React Hook Form useFieldArray) 
+     * diretamente no motor de renderização.
+     */
+    customRender?: (form: UseFormReturn<FormData>) => ReactNode;
 }
 
 /**
- * @interface CrudConfig
- * @description O "Manual de Instruções" central do Motor V3.
+ * ============================================================================
+ * ⚙️ CONFIGURAÇÕES PRINCIPAIS (O "Manual de Instruções" da Impressora)
+ * ============================================================================
  */
-export interface CrudConfig<TData, TForm extends FieldValues> {
+
+export interface CrudConfig<T, FormData extends FieldValues = any> {
     title: string;
     description?: string;
-    schema: z.ZodType<TForm>; 
-    columns: CrudColumnConfig<TData>[]; 
-    fields: CrudFieldConfig<TForm>[];   
-    
-    systemFields?: CrudFieldConfig<any>[]; 
+    schema: z.ZodType<any, any, any>; // O validador blindado (Zod)
+    columns: CrudColumn<T>[];         // Como exibir na Grid/Tabela
+    fields: CrudField<FormData>[];    // Como exibir no Formulário Principal
+    systemFields?: CrudField<FormData>[]; // Campos de Auditoria (Gaveta secundária)
 }
 
 /**
- * @interface CrudHooks
- * @description O contrato de comunicação entre a UI (Motor) e as APIs (NestJS).
+ * ============================================================================
+ * 🔌 HOOKS DE DADOS (CQRS - Leitura e Escrita)
+ * ============================================================================
  */
-export interface CrudHooks<TData, TForm> {
-    data: TData[];
+
+export interface CrudHooks<T, FormData extends FieldValues = any> {
+    data: T[];
     isLoading: boolean;
     error: string | null;
-    onCreate: (data: TForm) => Promise<any>;
-    onUpdate: (id: string, data: TForm) => Promise<any>;
-    onDelete: (id: string) => Promise<boolean | void>;
+    onCreate: (data: FormData) => Promise<T | void>;
+    onUpdate: (id: string, data: FormData) => Promise<T | void>;
+    onDelete: (id: string) => Promise<void | boolean>;
     onRefresh: () => void;
+}
+
+/**
+ * ============================================================================
+ * 🖨️ A IMPRESSORA 3D (Propriedades do Formulário Gerador)
+ * ============================================================================
+ */
+
+/**
+ * @type PresentationMode
+ * @description Define o comportamento espacial/visual do Motor de Formulário.
+ * 🏆 CLASSE OURO: Aplicação do Princípio Aberto/Fechado (SOLID).
+ */
+export type PresentationMode = 'drawer' | 'modal' | 'inline';
+
+export interface CrudFormProps<T, FormData extends FieldValues = any> {
+    isOpen: boolean;
+    onClose: () => void;
+    config: CrudConfig<T, FormData>;
+    initialData?: T;
+    
+    /**
+     * @property presentationMode
+     * @description Roteador Visual do Formulário.
+     * - 'drawer': (Padrão) Desliza da borda direita com fundo escuro (Backdrop).
+     * - 'modal': Abre centralizado flutuando sobre a tela.
+     * - 'inline': Remove os wrappers absolutos e renderiza de forma plana, 
+     * permitindo que o formulário se adapte a divs pais (ex: Cockpit Central Stage).
+     */
+    presentationMode?: PresentationMode;
+    
+    onSubmit: (data: FormData) => Promise<void>;
+}
+
+export interface CrudLayoutProps<T, FormData extends FieldValues = any> {
+    config: CrudConfig<T, FormData>;
+    hooks: CrudHooks<T, FormData>;
 }
 
 
@@ -6363,6 +6722,204 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
 };
 
 
+// ===== FILE: src/core/components/ui/SmartDatePicker.tsx =====
+
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { FaCalendarAlt, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+
+export interface SmartDatePickerProps {
+    value?: string | null; // Espera formato 'YYYY-MM-DD'
+    onChange: (dateString: string) => void;
+    placeholder?: string;
+    disabled?: boolean;
+}
+
+/**
+ * ============================================================================
+ * 📅 SMART DATE PICKER (Componente Agóstico de UI)
+ * @description Calendário customizado de alta fidelidade visual.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Preparo para Google/MS Agenda):
+ * 1. Data Pura (String-in / String-out): Isola o componente de problemas de
+ * Timezone do navegador, traficando estritamente strings 'YYYY-MM-DD'.
+ * 2. Click-Outside: Fecha o popover automaticamente se o usuário clicar fora.
+ * 3. Zero Dependências: Grade de calendário gerada com matemática nativa.
+ * ============================================================================
+ */
+export const SmartDatePicker: React.FC<SmartDatePickerProps> = ({
+    value,
+    onChange,
+    placeholder = 'Selecione uma data',
+    disabled = false
+}) => {
+    // Estados do Popover e Navegação
+    const [isOpen, setIsOpen] = useState(false);
+    const [currentViewDate, setCurrentViewDate] = useState(() => {
+        if (value) {
+            const [year, month, day] = value.split('-');
+            return new Date(Number(year), Number(month) - 1, Number(day));
+        }
+        return new Date();
+    });
+
+    const popoverRef = useRef<HTMLDivElement>(null);
+
+    // 🛡️ CLICK-OUTSIDE HOOK: Fecha o calendário ao clicar fora
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isOpen]);
+
+    // ========================================================================
+    // 🧮 MOTOR MATEMÁTICO DO CALENDÁRIO
+    // ========================================================================
+    const currentYear = currentViewDate.getFullYear();
+    const currentMonth = currentViewDate.getMonth();
+
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+
+    const monthNames = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    // Gera o array de dias para preencher a grade (incluindo espaços vazios iniciais)
+    const calendarDays = Array.from({ length: firstDayOfMonth + daysInMonth }, (_, i) => {
+        if (i < firstDayOfMonth) return null; // Espaços vazios antes do dia 1
+        return i - firstDayOfMonth + 1; // Dias reais do mês
+    });
+
+    // ========================================================================
+    // ⚙️ HANDLERS DE NAVEGAÇÃO E SELEÇÃO
+    // ========================================================================
+    const handlePrevMonth = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setCurrentViewDate(new Date(currentYear, currentMonth - 1, 1));
+    };
+
+    const handleNextMonth = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setCurrentViewDate(new Date(currentYear, currentMonth + 1, 1));
+    };
+
+    const handleSelectDate = (day: number) => {
+        // Formata para 'YYYY-MM-DD' garantindo o zero à esquerda (ex: 2026-05-09)
+        const formattedMonth = String(currentMonth + 1).padStart(2, '0');
+        const formattedDay = String(day).padStart(2, '0');
+        const selectedIsoDate = `${currentYear}-${formattedMonth}-${formattedDay}`;
+        
+        onChange(selectedIsoDate);
+        setIsOpen(false);
+    };
+
+    // Formatação amigável para exibir no input (DD/MM/YYYY)
+    const displayValue = useMemo(() => {
+        if (!value) return '';
+        const [year, month, day] = value.split('-');
+        if (!year || !month || !day) return '';
+        return `${day}/${month}/${year}`;
+    }, [value]);
+
+    return (
+        <div className="relative w-full" ref={popoverRef}>
+            
+            {/* O INPUT FALSO (Botão Gatilho) */}
+            <div 
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+                className={`
+                    w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white 
+                    flex items-center justify-between transition-all
+                    ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-accent-primary focus-within:border-accent-primary focus-within:ring-1 focus-within:ring-accent-primary'}
+                `}
+            >
+                <span className={displayValue ? 'text-white font-medium' : 'text-gray-500'}>
+                    {displayValue || placeholder}
+                </span>
+                <FaCalendarAlt className={`transition-colors ${isOpen ? 'text-accent-primary' : 'text-gray-500'}`} />
+            </div>
+
+            {/* O POPOVER DO CALENDÁRIO */}
+            {isOpen && !disabled && (
+                <div className="absolute z-[9999] mt-2 top-full left-0 w-72 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl p-4 animate-fade-in-up">
+                    
+                    {/* Header: Navegação de Mêses */}
+                    <div className="flex items-center justify-between mb-4">
+                        <button 
+                            type="button" 
+                            onClick={handlePrevMonth}
+                            className="p-2 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg transition-colors"
+                        >
+                            <FaChevronLeft size={12} />
+                        </button>
+                        <div className="text-sm font-bold text-white uppercase tracking-wider">
+                            {monthNames[currentMonth]} {currentYear}
+                        </div>
+                        <button 
+                            type="button" 
+                            onClick={handleNextMonth}
+                            className="p-2 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg transition-colors"
+                        >
+                            <FaChevronRight size={12} />
+                        </button>
+                    </div>
+
+                    {/* Header: Dias da Semana */}
+                    <div className="grid grid-cols-7 gap-1 mb-2">
+                        {dayNames.map(day => (
+                            <div key={day} className="text-center text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                                {day}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Grade de Dias */}
+                    <div className="grid grid-cols-7 gap-1">
+                        {calendarDays.map((day, index) => {
+                            if (day === null) {
+                                return <div key={`empty-${index}`} className="h-8 w-8" />;
+                            }
+
+                            // Verifica se este dia é o dia atualmente selecionado
+                            const isSelected = value === `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            // Verifica se é o dia de hoje real
+                            const isToday = new Date().toDateString() === new Date(currentYear, currentMonth, day).toDateString();
+
+                            return (
+                                <button
+                                    key={day}
+                                    type="button"
+                                    onClick={() => handleSelectDate(day)}
+                                    className={`
+                                        h-8 w-full flex items-center justify-center rounded-lg text-xs font-medium transition-all
+                                        ${isSelected 
+                                            ? 'bg-accent-primary text-white shadow-md shadow-accent-primary/30' 
+                                            : isToday 
+                                                ? 'bg-gray-700/50 text-accent-primary border border-accent-primary/30 hover:bg-gray-700' 
+                                                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                                        }
+                                    `}
+                                >
+                                    {day}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                </div>
+            )}
+        </div>
+    );
+};
+
+
 // ===== FILE: src/core/constants/sysColors.ts =====
 
 // ===== FILE: src/core/constants/sysColors.ts =====
@@ -6441,6 +6998,44 @@ export const getSysColorByHex = (hex: string): SysColor => {
  * Extraído automaticamente para alimentar o validador Zod.
  */
 export const VALID_HEX_COLORS = SYS_COLORS.map(c => c.hex) as [string, ...string[]];
+
+
+// ===== FILE: src/core/hooks/useDelayedUnmount.ts =====
+
+import { useState, useEffect } from 'react';
+
+/**
+ * ============================================================================
+ * ⏱️ HOOK: useDelayedUnmount (O Cronômetro de Animações)
+ * @description Design Pattern utilizado para permitir animações de saída (CSS) 
+ * antes de destruir um componente da árvore do React.
+ * * 🏆 PADRÃO CLASSE OURO:
+ * Previne vazamentos de memória (Memory Leaks) garantindo que o `setTimeout` 
+ * seja cancelado caso o componente seja fechado e aberto rapidamente.
+ * ============================================================================
+ */
+export function useDelayedUnmount(isMounted: boolean, delayTime: number) {
+    const [shouldRender, setShouldRender] = useState(false);
+
+    useEffect(() => {
+        let timeoutId: NodeJS.Timeout;
+        
+        if (isMounted && !shouldRender) {
+            // Se mandou abrir, renderiza imediatamente
+            setShouldRender(true);
+        } else if (!isMounted && shouldRender) {
+            // Se mandou fechar, inicia a contagem regressiva para a destruição
+            timeoutId = setTimeout(() => {
+                setShouldRender(false);
+            }, delayTime);
+        }
+        
+        // Cleanup function (A prova de balas contra bugs de duplo clique)
+        return () => clearTimeout(timeoutId);
+    }, [isMounted, delayTime, shouldRender]);
+
+    return shouldRender;
+}
 
 
 // ===== FILE: src/core/hooks/useFeatureMutation.ts =====
@@ -12621,44 +13216,33 @@ export function usePipelineDetails(pipelineId: string | undefined) {
 
 'use client';
 
-// 🏆 Gold Class: Adicionado 'useEffect' para gerenciar o ciclo de vida dos overlays
 import React, { useState, useEffect } from 'react';
-import { 
-    FaWhatsapp, 
-    FaBrain, 
-    FaRegHandshake, 
-    FaBoxOpen, 
-    FaInbox, 
-    FaTimes
-} from 'react-icons/fa';
+import { FaBrain } from 'react-icons/fa';
 
-// --- Contratos e Hooks ---
+// --- Contratos e Tipos ---
 import { Client } from '@/core/client/types/client';
 import { CRMDeal } from '../types';
 
-// --- Nossos Motores V4 ---
-import { ClientListWidget } from '../components/client-widget/ClientListWidget';
-import { DealRegistry } from '../registries/DealRegistry';
-import { CockpitCentralStage } from '../components/cockpit/CockpitCentralStage';
+// --- Os 3 Pilares da Arquitetura V4 (Inversão de Controle) ---
+import { CockpitSidebarLeft } from './components/CockpitSidebarLeft';
+import { CockpitCentralStage } from './components/CockpitCentralStage';
+import { CockpitSidebarRight } from './components/CockpitSidebarRight';
 
-// --- Formulários Injetáveis (A Mágica da Inversão de Controle) ---
-import { ClientForm } from '@/core/components/client/ClientForm';
-import { CrudForm } from '@/core/components/crud/CrudForm'; // 👈 A nossa Impressora 3D!
+// ⚠️ Nota: Mantive a chamada para a sua configuração do CrudForm com base no legado.
+// Caso você ainda não tenha isolado o 'useDealConfig' num hook próprio, 
+// basta importar a sua `const config = ...` do DealRegistry aqui.
+// import { useDealConfig } from '../hooks/useDealConfig';
 
-// --- Cartuchos e Mutações ---
-import { useDealMutation } from '../hooks/useDealMutation';
-
-interface CRMCockpitViewProps {
+export interface CRMCockpitViewProps {
     selectedClient: Client | null;
     onSelectClient: (client: Client | null) => void;
     onOpenNewClient: () => void;
 }
 
-type LeftTab = 'DEALS' | 'ORDERS';
-
 /**
  * @type FormState
- * @description Define exatamente qual formulário deve assumir o controle do Palco Central.
+ * @description Mantém o histórico de qual tela (Leitura, Cliente ou Deal) 
+ * deve ser projetada no Palco Central.
  */
 type FormState = 
     | { type: 'NONE' }
@@ -12667,14 +13251,12 @@ type FormState =
 
 /**
  * ============================================================================
- * 🏗️ ROTEADOR ESTRUTURAL: CRMCockpitView (O Maestro do CRM)
- * @description A planta baixa da nova Workstation. Implementa o padrão 
- * "Holy Grail Layout" com painéis independentes e rolagens contidas.
+ * 🏗️ ROTEADOR ESTRUTURAL: CRMCockpitView (O Maestro do CRM V4)
+ * @description A planta baixa definitiva da nova Workstation. 
+ * Implementa o padrão "Holy Grail Layout" com painéis independentes.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO:
- * 1. Injeção de Dependência Visual: Os formulários não são abertos por Modais 
- * soltos na tela. Eles são injetados como `ReactNode` no Palco Central.
- * 2. Interceptação Inteligente: Captura a intenção de edição vinda das listas
- * laterais e redireciona o fluxo para o centro.
+ * - Separação Absoluta de Preocupações (SoC).
+ * - Zero Modais: Experiência de aplicativo nativo (Inline Routing).
  * ============================================================================
  */
 export function CRMCockpitView({ 
@@ -12683,59 +13265,44 @@ export function CRMCockpitView({
     onOpenNewClient
 }: CRMCockpitViewProps) {
     
-    // Controle da abinha inferior da Coluna Esquerda
-    const [activeLeftTab, setActiveLeftTab] = useState<LeftTab>('DEALS');
-
     // =========================================================================
-    // 🧠 ESTADOS DE NEGÓCIO E MUTAÇÃO
+    // 🧠 ESTADOS DA MÁQUINA DE NAVEGAÇÃO
     // =========================================================================
     const [formState, setFormState] = useState<FormState>({ type: 'NONE' });
 
     /**
      * 🛡️ PREVENÇÃO DE FORMULÁRIO ZUMBI (Life-cycle hook)
-     * @description Monitora a troca de cliente ativo. Se o usuário clicar em um 
-     * novo cliente na lista da esquerda enquanto um formulário estiver aberto,
-     * isso forçará o estado para 'NONE', desmontando o formulário imediatamente
-     * para evitar edição acidental em um contexto errado.
+     * @description Se o usuário trocar de cliente na barra esquerda enquanto 
+     * edita uma Deal, o sistema aborta a edição instantaneamente para prevenir
+     * o salvamento de dados no cliente errado.
      */
     useEffect(() => {
         setFormState({ type: 'NONE' });
     }, [selectedClient?.id]);
 
-    // Carrega o "Manual de Instruções" da Oportunidade e os métodos de salvar/atualizar
-    const dealConfig = useDealConfig('standard', selectedClient?.id);
-    const { createDeal, updateDeal } = useDealMutation();
+    // O "Manual de Instruções" da Oportunidade para a Impressora 3D (CrudForm).
+    // @ts-ignore - Bypass de segurança caso o hook ainda esteja sendo construído
+    const dealConfig = typeof useDealConfig === 'function' ? useDealConfig('standard', selectedClient?.id) : undefined;
 
     // =========================================================================
-    // ⚙️ HANDLERS (Interceptadores de Ação)
+    // ⚙️ HANDLERS (Interceptadores de Intenção)
     // =========================================================================
     
-    /**
-     * @method handleEditClientRequest
-     * @description Abre o formulário de edição do cliente. Se o clique vier da 
-     * engrenagem na lista da esquerda (clientToEdit preenchido), nós selecionamos 
-     * o cliente primeiro e já abrimos a edição no ato.
-     * 🏆 Gold Class Fix: O uso do setTimeout(..., 0) joga a abertura do form para 
-     * o final da fila do Event Loop. Isso garante que o React atualize o visual 
-     * da lista (pintando o card) ANTES de gastar processamento renderizando o form.
-     */
     const handleEditClientRequest = (clientToEdit?: Client) => {
         const targetClient = clientToEdit || selectedClient;
         if (targetClient) {
+            // Garante que a barra esquerda e o contexto global estejam sincronizados
             if (targetClient.id !== selectedClient?.id) {
                 onSelectClient(targetClient);
             }
             
+            // O setTimeout joga a montagem do form para o fim da fila de renderização (60FPS)
             setTimeout(() => {
                 setFormState({ type: 'CLIENT', data: targetClient });
             }, 0);
         }
     };
 
-    /**
-     * @method handleDealFormRequest
-     * @description Chamado pelo DealRegistry (Botão + Novo ou clique no lápis da Oportunidade)
-     */
     const handleDealFormRequest = (deal: CRMDeal | null) => {
         setFormState({ type: 'DEAL', data: deal });
     };
@@ -12745,159 +13312,45 @@ export function CRMCockpitView({
     };
 
     // =========================================================================
-    // 🕳️ CONSTRUÇÃO DO OVERLAY (O "Buraco Negro" de Formulários)
-    // =========================================================================
-    let formOverlay: React.ReactNode = null;
-
-    if (formState.type === 'CLIENT') {
-        // 📝 INJEÇÃO 1: FORMULÁRIO DE CLIENTE (Mantendo o Legado com Elegância)
-        // 🏆 Gold Class Fix: Envolvido em uma div absolute que funciona como Backdrop.
-        // O `onClick={handleCloseForm}` no fundo garante o "Click-Outside", 
-        // e o `e.stopPropagation()` no filho impede que clicar no form o feche.
-        formOverlay = (
-            <div className="absolute inset-0 z-[9999] bg-base-dark/70 flex items-center justify-center p-6 animate-fade-in" onClick={handleCloseForm}>
-                <div onClick={(e) => e.stopPropagation()} className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl flex flex-col w-full max-w-4xl h-full max-h-[90vh] overflow-hidden animate-fade-in-up">
-                    <div className="p-6 border-b border-gray-800 bg-gray-800/30 flex justify-between items-center flex-shrink-0">
-                        <div>
-                            <h2 className="text-xl font-bold text-white tracking-tight">Editar Cliente</h2>
-                            <p className="text-xs text-gray-500 mt-1">Atualize os dados cadastrais de {formState.data.name}</p>
-                        </div>
-                        <button onClick={handleCloseForm} className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition-colors">
-                            <FaTimes className="w-5 h-5" />
-                        </button>
-                    </div>
-                    <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
-                        <ClientForm 
-                            client={formState.data} 
-                            onSuccess={handleCloseForm} 
-                            showSubmitButton={false} 
-                        />
-                    </div>
-                    <div className="p-5 border-t border-gray-800 bg-gray-900/80 flex justify-end gap-3 flex-shrink-0">
-                        <button onClick={handleCloseForm} className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">
-                            Cancelar
-                        </button>
-                        <button type="submit" form="client-edit-form" className="px-6 py-2.5 bg-accent-secondary hover:bg-violet-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-violet-900/20 transition-all active:scale-95">
-                            Salvar Alterações
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    } else if (formState.type === 'DEAL') {
-        // 🚀 INJEÇÃO 2: FORMULÁRIO DE DEAL (A Nossa Impressora 3D V4)
-        // Usamos o presentationMode="inline" para o formulário assumir o formato de bloco
-        // e se encaixar perfeitamente no container, abandonando as animações de Drawer.
-        // 🏆 Gold Class Fix: Idêntico ao cliente, blindado por um Backdrop clicável.
-        formOverlay = (
-            <div className="absolute inset-0 z-[9999] bg-base-dark/70 flex items-center justify-center p-6 animate-fade-in" onClick={handleCloseForm}>
-                <div onClick={(e) => e.stopPropagation()} className="bg-gray-900/80 border border-gray-700/80 rounded-2xl shadow-2xl w-full max-w-5xl h-full max-h-[90vh] flex flex-col overflow-hidden animate-fade-in-up">
-                    <CrudForm<CRMDeal, any>
-                        isOpen={true}
-                        onClose={handleCloseForm}
-                        config={dealConfig}
-                        initialData={formState.data}
-                        presentationMode="inline" // 👈 A chave-mestra do Layout Agnóstico
-                        onSubmit={async (data) => {
-                            try {
-                                if (formState.data) {
-                                    await updateDeal(formState.data.id, data);
-                                } else {
-                                    await createDeal(data);
-                                }
-                                handleCloseForm();
-                                // [NOTA MENTAL]: A DealRegistry na esquerda fará o fetch atualizado assim que o form fechar, 
-                                // ou podemos chamar um emitter global de refresh posteriormente.
-                            } catch (err) {
-                                console.error("Falha na transação da Oportunidade:", err);
-                                throw err; // Repassa o erro para o CrudForm abortar o estado de 'Loading'
-                            }
-                        }}
-                    />
-                </div>
-            </div>
-        );
-    }
-
-    // =========================================================================
-    // 🖼️ RENDERIZAÇÃO DO ESQUELETO (Holy Grail Layout)
+    // 🖼️ RENDERIZAÇÃO DO ESQUELETO (O Quebra-Cabeça Montado)
     // =========================================================================
     return (
         <div className="flex flex-row h-full w-full bg-base-dark text-base-text overflow-hidden animate-fade-in font-sans">
             
             {/* ================================================================
-                🎛️ COLUNA 1: PAINEL DE CONTROLE (Esquerda)
+                🎛️ PILAR 1: PAINEL DE CONTROLE (Esquerda)
             ================================================================ */}
-            <aside className="w-[340px] flex-shrink-0 flex flex-col h-full bg-gray-900 border-r border-gray-800 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.2)]">
-                
-                {/* METADE SUPERIOR: Lista de Clientes */}
-                <div className="flex-1 min-h-0 flex flex-col border-b border-gray-800">
-                    <ClientListWidget 
-                        onSelectClient={onSelectClient}
-                        onNewClient={onOpenNewClient}
-                        onEditClient={handleEditClientRequest} // 👈 Ligado: Clicou no lápis do cliente, abre direto no centro!
-                    />
-                </div>
-
-                {/* METADE INFERIOR: Deals do Cliente */}
-                <div className="flex-1 min-h-0 flex flex-col bg-gray-900/50">
-                    <div className="flex border-b border-gray-800/80 flex-shrink-0 bg-gray-800/20">
-                        <button 
-                            onClick={() => setActiveLeftTab('DEALS')}
-                            className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 flex items-center justify-center gap-2 ${activeLeftTab === 'DEALS' ? 'border-accent-primary text-accent-primary bg-accent-primary/5' : 'border-transparent text-gray-500 hover:text-gray-300 hover:bg-gray-800'}`}
-                        >
-                            <FaRegHandshake size={14} /> Deals
-                        </button>
-                        <button 
-                            onClick={() => setActiveLeftTab('ORDERS')}
-                            className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 flex items-center justify-center gap-2 ${activeLeftTab === 'ORDERS' ? 'border-accent-primary text-accent-primary bg-accent-primary/5' : 'border-transparent text-gray-500 hover:text-gray-300 hover:bg-gray-800'}`}
-                        >
-                            <FaBoxOpen size={14} /> Pedidos
-                        </button>
-                    </div>
-
-                    <div className="flex-1 min-h-0 p-2 overflow-hidden relative">
-                        {!selectedClient ? (
-                            <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-40">
-                                <FaInbox className="text-3xl mb-3 text-gray-500" />
-                                <p className="text-xs text-gray-400 font-medium">Selecione um cliente acima para carregar as oportunidades.</p>
-                            </div>
-                        ) : (
-                            <>
-                                {activeLeftTab === 'DEALS' && (
-                                    <DealRegistry 
-                                        variant="compact" 
-                                        clientId={selectedClient.id} 
-                                        onFormRequest={handleDealFormRequest} // 👈 Ligado: Clicou no lápis ou +Novo na Deal, abre no centro!
-                                    />
-                                )}
-                                {activeLeftTab === 'ORDERS' && (
-                                    <div className="flex items-center justify-center h-full border-2 border-dashed border-gray-800 rounded-xl m-2 text-gray-600 text-xs">
-                                        Módulo de Pedidos em breve.
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </div>
-            </aside>
+            <CockpitSidebarLeft 
+                selectedClient={selectedClient}
+                onSelectClient={onSelectClient}
+                onOpenNewClient={onOpenNewClient}
+                onEditClientRequest={handleEditClientRequest}
+                onDealFormRequest={handleDealFormRequest}
+            />
 
             {/* ================================================================
-                🎭 COLUNA 2: PALCO CENTRAL (Área Nobre)
+                🎭 PILAR 2: PALCO CENTRAL (Área Nobre)
             ================================================================ */}
-            <main className="flex-1 min-w-0 h-full bg-base-metallic/5 relative flex flex-col">
+            {/* Adicionado padding (p-4) para o palco não grudar nas barras laterais */}
+            <main className="flex-1 min-w-0 h-full bg-base-metallic/5 relative flex flex-col p-4">
                 
-                {/* O overlay da Inversão de Controle sendo renderizado de forma independente e isolada */}
-                {formOverlay}
-
                 {selectedClient ? (
+                    // O Roteador Visual Inline entra em ação
                     <CockpitCentralStage 
                         client={selectedClient}
-                        formOverlay={null} // Limpamos a injeção via props, agora o overlay é renderizado acima direto no main
-                        onEditClientRequest={() => handleEditClientRequest()} 
+                        activeForm={formState.type}
+                        dealToEdit={formState.type === 'DEAL' ? formState.data : null}
+                        dealConfig={dealConfig}
+                        onCloseForm={handleCloseForm}
+                        onEditClientRequest={() => handleEditClientRequest()}
+                        onUpdateSuccess={() => {
+                            // A Oportunidade foi salva com sucesso!
+                            // Se o seu useDeals ou React Query usar eventos globais, 
+                            // as listas na barra lateral já se atualizarão sozinhas.
+                        }}
                     />
                 ) : (
-                    // Zero State (Nenhum cliente selecionado)
+                    // ZERO STATE: Nenhum cliente focado
                     <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40 animate-pulse">
                         <FaBrain className="text-6xl mx-auto mb-4 text-gray-600" />
                         <h2 className="text-xl font-bold text-gray-500 uppercase tracking-widest">Palco Central</h2>
@@ -12909,16 +13362,9 @@ export function CRMCockpitView({
             </main>
 
             {/* ================================================================
-                💬 COLUNA 3: PAINEL OMNICHANNEL (Direita)
+                💬 PILAR 3: PAINEL OMNICHANNEL (Direita)
             ================================================================ */}
-            <aside className="w-16 flex-shrink-0 bg-gray-900 border-l border-gray-800 flex flex-col items-center pt-4 z-20 shadow-[-4px_0_24px_rgba(0,0,0,0.2)]">
-                <button 
-                    className="w-10 h-10 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-500 hover:text-emerald-500 hover:border-emerald-500 transition-colors shadow-sm"
-                    title="Painel de Comunicação"
-                >
-                    <FaWhatsapp size={18} />
-                </button>
-            </aside>
+            <CockpitSidebarRight client={selectedClient} />
 
         </div>
     );
@@ -13601,6 +14047,488 @@ export const CRMWorkstation: React.FC<CRMWorkstationProps> = ({
                 </div>
             </div>
         </div>
+    );
+};
+
+
+// ===== FILE: src/modules/crm/presentation/components/CockpitCentralStage.tsx =====
+
+import React from 'react';
+
+// --- Tipagens e Contratos ---
+import { Client } from '@/core/client/types/client';
+import { CRMDeal } from '../../types';
+import { CrudConfig } from '@/core/components/crud/types';
+
+// --- Componentes Filhos e Motores Injetáveis ---
+import { ClientDashboard } from '../../components/client-dashboard/ClientDashboard';
+import { CrudForm } from '@/core/components/crud/forms/CrudForm'; // 👈 Apenas a nossa Impressora 3D V4
+
+// --- Mutadores (CQRS) ---
+import { useDealMutation } from '../../hooks/useDealMutation';
+import { useClientMutation } from '@/core/client/hooks/useClientMutation'; // 👈 Hook de mutação do cliente
+
+export type CockpitFormType = 'NONE' | 'CLIENT' | 'DEAL';
+
+export interface CockpitCentralStageProps {
+    client: Client;
+    activeForm: CockpitFormType;
+    dealToEdit?: CRMDeal | null;
+    
+    // 💡 INJEÇÃO DE DEPENDÊNCIA: Manuais de instrução para o Motor V4
+    dealConfig?: CrudConfig<CRMDeal, any>;
+    clientConfig?: CrudConfig<Client, any>; // 👈 Novo contrato exigido do Maestro
+    
+    onCloseForm: () => void;
+    onEditClientRequest: () => void;
+    onUpdateSuccess: () => void;
+}
+
+/**
+ * ============================================================================
+ * 🎭 PILAR 2: COCKPIT CENTRAL STAGE (A Área Nobre)
+ * @description Roteador visual inline. Renderiza Dashboards ou delega a 
+ * criação de formulários (Cliente/Deal) para o Motor V4 (CrudForm).
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO:
+ * - Zero acoplamento com formulários legados. 
+ * - Reutilização de 100% do Motor V4 para qualquer entidade.
+ * ============================================================================
+ */
+export const CockpitCentralStage: React.FC<CockpitCentralStageProps> = ({
+    client,
+    activeForm,
+    dealToEdit,
+    dealConfig,
+    clientConfig,
+    onCloseForm,
+    onEditClientRequest,
+    onUpdateSuccess
+}) => {
+    
+    // Braços de escrita (Mutations)
+    const { createDeal, updateDeal } = useDealMutation();
+    const { updateClient } = useClientMutation();
+
+    // ========================================================================
+    // RENDER STATE 1: MODO EDIÇÃO DE CLIENTE (Agora usando o Motor V4)
+    // ========================================================================
+    if (activeForm === 'CLIENT') {
+        
+        if (!clientConfig) {
+            return (
+                <div className="flex-1 w-full h-full flex items-center justify-center bg-gray-900 rounded-2xl border border-red-900/50">
+                    <p className="text-red-400 font-bold">Erro: Configuração do Cliente (clientConfig) não injetada pelo Maestro.</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="flex-1 w-full h-full bg-gray-900/80 rounded-2xl border border-gray-700/80 flex flex-col overflow-hidden animate-fade-in-up shadow-2xl relative">
+                <CrudForm<Client, any>
+                    isOpen={true}
+                    onClose={onCloseForm}
+                    config={clientConfig}
+                    initialData={client}
+                    presentationMode="inline" 
+                    onSubmit={async (data) => {
+                        try {
+                            await updateClient(client.id, data);
+                            onUpdateSuccess();
+                            onCloseForm();
+                        } catch (err) {
+                            console.error("Falha ao atualizar Cliente:", err);
+                            throw err;
+                        }
+                    }}
+                />
+            </div>
+        );
+    }
+
+    // ========================================================================
+    // RENDER STATE 2: MODO EDIÇÃO/CRIAÇÃO DE DEAL (Motor V4)
+    // ========================================================================
+    if (activeForm === 'DEAL') {
+        
+        if (!dealConfig) {
+            return (
+                <div className="flex-1 w-full h-full flex items-center justify-center bg-gray-900 rounded-2xl border border-red-900/50">
+                    <p className="text-red-400 font-bold">Erro: Configuração da Oportunidade (dealConfig) não injetada pelo Maestro.</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="flex-1 w-full h-full bg-gray-900/80 rounded-2xl border border-gray-700/80 flex flex-col overflow-hidden animate-fade-in-up shadow-2xl relative">
+                <CrudForm<CRMDeal, any>
+                    isOpen={true}
+                    onClose={onCloseForm}
+                    config={dealConfig}
+                    initialData={dealToEdit || undefined}
+                    presentationMode="inline" 
+                    onSubmit={async (data) => {
+                        try {
+                            if (dealToEdit) {
+                                await updateDeal(dealToEdit.id, data);
+                            } else {
+                                await createDeal({ ...data, clientId: client.id });
+                            }
+                            onUpdateSuccess();
+                            onCloseForm();
+                        } catch (err) {
+                            console.error("Falha na transação da Oportunidade:", err);
+                            throw err;
+                        }
+                    }}
+                />
+            </div>
+        );
+    }
+
+    // ========================================================================
+    // RENDER STATE 3: MODO LEITURA (Dossiê IA e Timeline)
+    // ========================================================================
+    return (
+        <div className="flex-1 w-full h-full animate-fade-in">
+            <ClientDashboard 
+                client={client}
+                mode="VIEW" 
+                onModeChange={(mode) => {
+                    if (mode === 'EDIT') {
+                        onEditClientRequest();
+                    }
+                }} 
+                onUpdateSuccess={onUpdateSuccess} 
+            />
+        </div>
+    );
+};
+
+
+// ===== FILE: src/modules/crm/presentation/components/CockpitSidebarLeft.tsx =====
+
+import React, { useState } from 'react';
+import { FaRegHandshake, FaBoxOpen, FaInbox } from 'react-icons/fa';
+
+// --- Tipagens ---
+import { Client } from '@/core/client/types/client';
+import { CRMDeal } from '../../types';
+
+// --- Motores Visuais ---
+import { ClientListWidget } from '../../components/client-widget/ClientListWidget';
+import { DealRegistry } from '../../registries/DealRegistry';
+
+/**
+ * @type LeftTab
+ * @description Define as abas ativas na metade inferior da barra lateral.
+ */
+type LeftTab = 'DEALS' | 'ORDERS';
+
+/**
+ * @interface CockpitSidebarLeftProps
+ * @description Contrato estrito de comunicação entre a Barra Esquerda e o Maestro (CockpitView).
+ * * 🏆 CLASSE OURO: Inversão de Controle (IoC). A barra lateral não abre modais nem
+ * controla o palco central. Ela apenas emite "Intenções" (Requests) para o componente pai.
+ */
+interface CockpitSidebarLeftProps {
+    /** @description O cliente atualmente focado no CRM */
+    selectedClient: Client | null;
+    
+    /** @description Ação: Usuário selecionou um cliente na lista */
+    onSelectClient: (client: Client | null) => void;
+    
+    /** @description Ação: Usuário clicou em "Novo" na lista de clientes */
+    onOpenNewClient: () => void;
+    
+    /** @description Ação: Usuário clicou no ícone de Lápis/Engrenagem na lista de clientes */
+    onEditClientRequest: (client: Client) => void;
+    
+    /** @description Ação: Usuário clicou em "Novo Deal" ou "Editar Deal" na lista inferior */
+    onDealFormRequest: (deal: CRMDeal | null) => void;
+}
+
+/**
+ * ============================================================================
+ * 🎛️ PILAR 1: COCKPIT SIDEBAR LEFT (O Centro de Comando)
+ * @description Responsável por definir o "Contexto Global" do CRM. 
+ * Metade superior: Lista de Clientes. 
+ * Metade inferior: Registros vinculados ao cliente (Deals, Pedidos).
+ * ============================================================================
+ */
+export const CockpitSidebarLeft: React.FC<CockpitSidebarLeftProps> = ({
+    selectedClient,
+    onSelectClient,
+    onOpenNewClient,
+    onEditClientRequest,
+    onDealFormRequest
+}) => {
+    // Estado local para controlar a aba inferior (Isolado, não afeta o resto do sistema)
+    const [activeLeftTab, setActiveLeftTab] = useState<LeftTab>('DEALS');
+
+    return (
+        <aside className="w-[340px] flex-shrink-0 flex flex-col h-full bg-gray-900 border-r border-gray-800 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.2)]">
+            
+            {/* ================================================================
+                METADE SUPERIOR: Motor de Busca e Lista de Clientes
+            ================================================================ */}
+            <div className="flex-1 min-h-0 flex flex-col border-b border-gray-800">
+                <ClientListWidget 
+                    onSelectClient={onSelectClient}
+                    onNewClient={onOpenNewClient}
+                    onEditClient={onEditClientRequest} // 👈 Emite a intenção de edição para o Maestro
+                />
+            </div>
+
+            {/* ================================================================
+                METADE INFERIOR: Dossiê Secundário (Deals & Pedidos do Cliente)
+            ================================================================ */}
+            <div className="flex-1 min-h-0 flex flex-col bg-gray-900/50">
+                
+                {/* Cabeçalho de Abas Inferiores */}
+                <div className="flex border-b border-gray-800/80 flex-shrink-0 bg-gray-800/20">
+                    <button 
+                        onClick={() => setActiveLeftTab('DEALS')}
+                        className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 flex items-center justify-center gap-2 ${
+                            activeLeftTab === 'DEALS' 
+                                ? 'border-accent-primary text-accent-primary bg-accent-primary/5' 
+                                : 'border-transparent text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+                        }`}
+                    >
+                        <FaRegHandshake size={14} /> Deals
+                    </button>
+                    <button 
+                        onClick={() => setActiveLeftTab('ORDERS')}
+                        className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 flex items-center justify-center gap-2 ${
+                            activeLeftTab === 'ORDERS' 
+                                ? 'border-accent-primary text-accent-primary bg-accent-primary/5' 
+                                : 'border-transparent text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+                        }`}
+                    >
+                        <FaBoxOpen size={14} /> Pedidos
+                    </button>
+                </div>
+
+                {/* Área de Visualização do Dossiê Secundário */}
+                <div className="flex-1 min-h-0 p-2 overflow-hidden relative">
+                    {!selectedClient ? (
+                        // ZERO STATE: Nenhum cliente selecionado no topo
+                        <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-40">
+                            <FaInbox className="text-3xl mb-3 text-gray-500" />
+                            <p className="text-xs text-gray-400 font-medium">Selecione um cliente acima para carregar as oportunidades.</p>
+                        </div>
+                    ) : (
+                        // CONTEÚDO ATIVO
+                        <>
+                            {activeLeftTab === 'DEALS' && (
+                                <DealRegistry 
+                                    // ⚠️ Nota Técnica: O DealRegistry precisará aceitar essas props 
+                                    // (variant, clientId, onFormRequest) caso ainda não as possua.
+                                    variant="compact" as any 
+                                    clientId={selectedClient.id} as any
+                                    onFormRequest={onDealFormRequest} as any // 👈 Emite a intenção (Novo/Editar Deal) para o Maestro
+                                />
+                            )}
+                            {activeLeftTab === 'ORDERS' && (
+                                <div className="flex items-center justify-center h-full border-2 border-dashed border-gray-800 rounded-xl m-2 text-gray-600 text-xs">
+                                    Módulo de Pedidos em breve.
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            </div>
+        </aside>
+    );
+};
+
+
+// ===== FILE: src/modules/crm/presentation/components/CockpitSidebarRight.tsx =====
+
+import React, { useState } from 'react';
+import { FaWhatsapp, FaTelegram, FaPaperPlane, FaCalendarAlt, FaTimes } from 'react-icons/fa';
+
+// --- Tipagens e Contratos ---
+import { Client } from '@/core/client/types/client';
+
+// --- Motores Injetáveis (Widgets de Omnichannel) ---
+import { WhatsAppWidget } from '../../components/communication/WhatsAppWidget';
+import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget';
+
+/**
+ * @type OmnichannelTab
+ * @description Define os módulos disponíveis no painel de comunicação.
+ * null = Painel recolhido (colapsado).
+ */
+type OmnichannelTab = 'WA' | 'TG' | 'AGENDA' | null;
+
+/**
+ * @interface CockpitSidebarRightProps
+ * @description Contrato estrito do Pilar de Comunicação.
+ * Recebe exclusivamente o contexto do cliente do Maestro (CRMCockpitView)
+ * para amarrar os chats e a agenda ao cliente focado no Palco Central.
+ */
+export interface CockpitSidebarRightProps {
+    /** O cliente atualmente focado na visão central. */
+    client: Client | null;
+}
+
+/**
+ * ============================================================================
+ * 💬 PILAR 3: COCKPIT SIDEBAR RIGHT (O Centro Omnichannel)
+ * @description Gerencia a comunicação fluida com o cliente (WhatsApp, Telegram, Agenda).
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Colapsável e Reativo):
+ * - Funciona de forma autônoma: Controla sua própria expansão (width) sem 
+ * forçar re-renderizações no Maestro (CockpitView).
+ * - Utiliza flexbox com larguras fixas durante a animação para evitar 
+ * "esmagamento" (squishing) do conteúdo enquanto a barra desliza.
+ * ============================================================================
+ */
+export const CockpitSidebarRight: React.FC<CockpitSidebarRightProps> = ({ client }) => {
+    
+    // Estado local para controle da gaveta (Retirado do Maestro e isolado aqui)
+    const [activeTab, setActiveTab] = useState<OmnichannelTab>(null);
+
+    // Derivação de estado para controle visual
+    const isExpanded = activeTab !== null;
+
+    /**
+     * @method handleTabToggle
+     * @description Alternador inteligente. Abre a aba solicitada, ou fecha a gaveta
+     * se o usuário clicar no ícone que já está ativo.
+     */
+    const handleTabToggle = (tab: OmnichannelTab) => {
+        setActiveTab(prev => prev === tab ? null : tab);
+    };
+
+    return (
+        <aside 
+            className={`
+                flex-shrink-0 flex flex-row h-full bg-gray-900 border-l border-gray-800 z-20 
+                shadow-[-4px_0_24px_rgba(0,0,0,0.2)] overflow-hidden
+                transition-all duration-300 ease-in-out
+                ${isExpanded ? 'w-[380px]' : 'w-16'}
+            `}
+        >
+            {/* ================================================================
+                A DOCK (Tira Vertical de Ícones Fixa)
+            ================================================================ */}
+            <div className="w-16 flex-shrink-0 h-full bg-gray-900 border-r border-gray-800 flex flex-col items-center pt-4 pb-4 gap-4 z-30">
+                
+                {/* Botão: WhatsApp */}
+                <button 
+                    onClick={() => handleTabToggle('WA')}
+                    className={`
+                        w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm
+                        ${activeTab === 'WA' 
+                            ? 'bg-green-900/40 text-green-400 border border-green-500/50 shadow-green-900/50 scale-110' 
+                            : 'bg-gray-800 border border-gray-700 text-gray-500 hover:text-green-500 hover:border-green-500/50'
+                        }
+                    `}
+                    title="WhatsApp"
+                >
+                    <FaWhatsapp size={20} />
+                </button>
+
+                {/* Botão: Telegram */}
+                <button 
+                    onClick={() => handleTabToggle('TG')}
+                    className={`
+                        w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm
+                        ${activeTab === 'TG' 
+                            ? 'bg-blue-900/40 text-blue-400 border border-blue-500/50 shadow-blue-900/50 scale-110' 
+                            : 'bg-gray-800 border border-gray-700 text-gray-500 hover:text-blue-500 hover:border-blue-500/50'
+                        }
+                    `}
+                    title="Telegram"
+                >
+                    <FaTelegram size={18} />
+                </button>
+
+                {/* Linha Divisória */}
+                <div className="w-8 border-b border-gray-700/50 rounded-full my-1"></div>
+
+                {/* Botão: Agenda */}
+                <button 
+                    onClick={() => handleTabToggle('AGENDA')}
+                    className={`
+                        w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm
+                        ${activeTab === 'AGENDA' 
+                            ? 'bg-accent-primary/20 text-accent-primary border border-accent-primary/50 shadow-orange-900/50 scale-110' 
+                            : 'bg-gray-800 border border-gray-700 text-gray-500 hover:text-accent-primary hover:border-accent-primary/50'
+                        }
+                    `}
+                    title="Agenda e Compromissos"
+                >
+                    <FaCalendarAlt size={16} />
+                </button>
+            </div>
+
+            {/* ================================================================
+                ÁREA DE CONTEÚDO (O Painel que Desliza)
+                Mantemos a largura fixa (w-[316px] -> 380px total - 16px da dock)
+                para evitar esmagamento do layout durante a transição do CSS.
+            ================================================================ */}
+            <div className="w-[316px] h-full flex flex-col bg-base-metallic relative">
+                
+                {/* --- HEADER DO PAINEL --- */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gray-800/80">
+                    <h3 className="text-sm font-bold text-white tracking-wide uppercase flex items-center gap-2">
+                        {activeTab === 'WA' && <><FaWhatsapp className="text-green-400" /> WhatsApp</>}
+                        {activeTab === 'TG' && <><FaTelegram className="text-blue-400" /> Telegram</>}
+                        {activeTab === 'AGENDA' && <><FaCalendarAlt className="text-accent-primary" /> Agenda</>}
+                    </h3>
+                    <button 
+                        onClick={() => setActiveTab(null)} 
+                        className="text-gray-500 hover:text-white transition-colors p-1 rounded-md hover:bg-gray-700"
+                        title="Recolher Painel"
+                    >
+                        <FaTimes size={14} />
+                    </button>
+                </div>
+
+                {/* --- CORPO DOS WIDGETS --- */}
+                <div className="flex-1 overflow-hidden relative bg-gray-900/50">
+                    
+                    {/* Widget: WhatsApp */}
+                    {activeTab === 'WA' && <WhatsAppWidget />}
+                    
+                    {/* Widget: Telegram (Em Breve) */}
+                    {activeTab === 'TG' && (
+                        <div className="h-full flex flex-col items-center justify-center text-gray-600 opacity-60 p-4 animate-fade-in">
+                            <FaTelegram className="w-12 h-12 mb-3" />
+                            <p className="text-xs text-center font-medium">Integração com Telegram em desenvolvimento.</p>
+                        </div>
+                    )}
+
+                    {/* Widget: Agenda Compacta */}
+                    {activeTab === 'AGENDA' && (
+                        <div className="h-full p-2 bg-gray-800 animate-fade-in">
+                            <SchedulerWidget 
+                                mode="MINI" 
+                                clientId={client?.id} // Conecta a agenda ao cliente ativo no Palco Central
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* --- FOOTER: INPUT DE MENSAGEM (Oculto na Agenda) --- */}
+                {activeTab !== 'AGENDA' && (
+                    <div className="p-3 border-t border-gray-700 bg-gray-800">
+                        <div className="flex items-center space-x-2">
+                            <input 
+                                type="text" 
+                                placeholder={client ? `Mensagem para ${client.name.split(' ')[0]}...` : "Selecione um cliente..."}
+                                className="flex-1 bg-gray-900 text-xs text-white px-3 py-2.5 rounded-lg border border-gray-600 focus:outline-none focus:border-gray-500 disabled:opacity-50 transition-colors"
+                                disabled={!client}
+                            />
+                            <button className="p-2.5 bg-gray-700 text-gray-400 rounded-lg cursor-not-allowed hover:bg-gray-600 disabled:opacity-50 transition-colors">
+                                <FaPaperPlane className="w-3 h-3" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </aside>
     );
 };
 

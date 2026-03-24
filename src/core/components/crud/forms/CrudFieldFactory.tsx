@@ -1,8 +1,9 @@
 import React from 'react';
-import { UseFormReturn, FieldValues, Path, RegisterOptions } from 'react-hook-form'; // 💡 IMPORT VITAL: Path e RegisterOptions adicionados
+import { UseFormReturn, FieldValues, Path, RegisterOptions, Controller } from 'react-hook-form'; // 💡 IMPORT VITAL: Controller adicionado
 
-// Importa a tipagem consolidada
+// --- Tipagens e Componentes UI ---
 import { CrudField } from '../types';
+import { SmartDatePicker } from '../../ui/SmartDatePicker'; // 👈 Nosso Calendário Inteligente
 
 export interface CrudFieldFactoryProps<FormData extends FieldValues> {
     field: CrudField<FormData>;
@@ -16,6 +17,9 @@ export interface CrudFieldFactoryProps<FormData extends FieldValues> {
  * @description Princípio da Responsabilidade Única (SRP) do SOLID. 
  * Este componente não conhece regras de negócio. Sua ÚNICA função é traduzir 
  * um contrato JSON em inputs visuais de alta fidelidade e interceptar erros.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Componentes Controlados):
+ * - Substitui o <input type="date"> nativo falho por um SmartDatePicker,
+ * eliminando problemas de Timezone e garantindo que o Zod receba Strings ISO puras.
  * ============================================================================
  */
 export function CrudFieldFactory<FormData extends FieldValues>({
@@ -24,23 +28,20 @@ export function CrudFieldFactory<FormData extends FieldValues>({
     disabled = false
 }: CrudFieldFactoryProps<FormData>) {
     
-    // 🛡️ Tipagem Forte: Removemos o 'as any'. Agora o TypeScript garante
-    // que o fieldName é um caminho válido dentro do formulário.
+    // 🛡️ Tipagem Forte: Garante que o fieldName é um caminho válido no formulário.
     const fieldName = String(field.name) as Path<FormData>;
     const errorMessage = form.formState.errors[fieldName]?.message as string | undefined;
 
     // ========================================================================
-    // ⚙️ CONSTRUTOR DE OPÇÕES (Roteamento de Tipagem XOR)
-    // Ao isolarmos a atribuição neste bloco, garantimos ao compilador que 
-    // um campo jamais será 'Number' e 'Date' simultaneamente, resolvendo 
-    // a restrição estrita do React Hook Form sem o uso de gambiarras.
+    // ⚙️ CONSTRUTOR DE OPÇÕES (Roteamento de Tipagem Seguro)
     // ========================================================================
     let registerOptions: RegisterOptions<FormData, Path<FormData>> = {};
     
+    // 🛡️ FIX ARQUITETURAL: Removemos o `valueAsDate: true`. 
+    // A data agora trafega como String pura (ISO 8601), respeitando o Zod Schema 
+    // e evitando bloqueios silenciosos na submissão.
     if (field.type === 'number') {
         registerOptions = { valueAsNumber: true };
-    } else if (field.type === 'date') {
-        registerOptions = { valueAsDate: true };
     }
 
     // ========================================================================
@@ -67,7 +68,7 @@ export function CrudFieldFactory<FormData extends FieldValues>({
     }
 
     // ========================================================================
-    // 🎨 2. RENDERIZAÇÃO PADRÃO (Inputs Nativos)
+    // 🎨 2. RENDERIZAÇÃO PADRÃO (Inputs e Componentes UI)
     // ========================================================================
     return (
         <div className={`flex flex-col space-y-1.5 w-full ${field.type === 'textarea' ? 'col-span-full' : 'col-span-1 md:col-span-1'}`}>
@@ -109,10 +110,27 @@ export function CrudFieldFactory<FormData extends FieldValues>({
                     </div>
                 </label>
                 
+            ) : field.type === 'date' ? (
+                // 📅 O CALENDÁRIO INTELIGENTE: Padrão "Controlled Input"
+                // O Controller atua como um tradutor perfeito entre o nosso componente
+                // de UI customizado e a engine interna do React Hook Form.
+                <Controller
+                    control={form.control}
+                    name={fieldName}
+                    render={({ field: { onChange, value } }) => (
+                        <SmartDatePicker
+                            value={value as string | undefined}
+                            onChange={onChange}
+                            disabled={disabled}
+                            placeholder={field.placeholder || "Selecione a data"}
+                        />
+                    )}
+                />
+                
             ) : (
                 <input
                     type={field.type}
-                    // 🛡️ O objeto limpo e seguro é injetado aqui sem causar pânico no compilador
+                    // 🛡️ O objeto limpo e seguro é injetado aqui
                     {...form.register(fieldName, registerOptions)}
                     disabled={disabled}
                     placeholder={field.placeholder}

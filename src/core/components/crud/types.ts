@@ -67,6 +67,44 @@ export interface CrudHooks<T, FormData extends FieldValues = any> {
 
 /**
  * ============================================================================
+ * 🛡️ CONTRATOS DO ADAPTADOR DE DOMÍNIO (Domain Adapter Pattern)
+ * @description Interfaces que garantem o alinhamento estrito entre os Hooks 
+ * de API (React Query/Axios) e o Motor CRUD, padronizando a injeção de dependências.
+ * ============================================================================
+ */
+
+export interface CrudQueryContext<T> {
+    data: T[];
+    isLoading: boolean;
+    error: unknown;
+    refetch: () => void;
+}
+
+export interface CrudMutationContext<FormData extends FieldValues> {
+    isLoading: boolean;
+    error: unknown;
+    createFn: (data: FormData) => Promise<any>;
+    updateFn: (id: string, data: Partial<FormData>) => Promise<any>;
+    deleteFn?: (id: string) => Promise<any>;
+}
+
+export interface CrudAdapterOptions {
+    /** Nome amigável da entidade para exibição nas mensagens e alertas de UI (Ex: "Cliente") */
+    entityName: string;
+    /** Regra de Negócio: Permite ou bloqueia a exibição e ação do botão de exclusão física */
+    allowDelete?: boolean;
+    /** Chaves de domínio específicas que devem ser sumariamente removidas no Update, além do lixo de sistema (ex: campos temporários da UI) */
+    omitKeysOnUpdate?: string[];
+}
+
+export interface UseCrudAdapterParams<T, FormData extends FieldValues> {
+    query: CrudQueryContext<T>;
+    mutation: CrudMutationContext<FormData>;
+    options: CrudAdapterOptions;
+}
+
+/**
+ * ============================================================================
  * 🖨️ A IMPRESSORA 3D (Propriedades do Formulário Gerador)
  * ============================================================================
  */

@@ -13,10 +13,12 @@ interface CrudLayoutProps<TData extends FieldValues & { id: string }, TForm exte
 }
 
 /**
- * @component CrudLayout (O Maestro)
+ * ============================================================================
+ * 🏛️ COMPONENTE: CrudLayout (O Maestro Visual)
  * @description O Layout Universal para Cadastros de Apoio e Master Data.
  * Agora equipado com a Máquina de Estados 'View-Swap' (Lista <-> Formulário)
  * garantindo transições suaves (In-Place) sem uso de modais intrusivos.
+ * ============================================================================
  */
 export function CrudLayout<TData extends FieldValues & { id: string }, TForm extends FieldValues>({
     config,
@@ -65,23 +67,43 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
         setTimeout(() => setEditingItem(null), 300);
     };
 
+    /**
+     * @method handleSubmit
+     * @description Gerencia o envio de dados e o fechamento automático da UI.
+     * 🏆 PADRÃO CLASSE OURO (UX & Resiliência):
+     * Utiliza try/catch para garantir que a gaveta SÓ feche se o backend 
+     * retornar sucesso. Em caso de falha, o usuário não perde o que digitou.
+     */
     const handleSubmit = async (formData: TForm) => {
-        if (editingItem) {
-            await hooks.onUpdate(editingItem.id, formData);
-        } else {
-            await hooks.onCreate(formData);
+        try {
+            if (editingItem) {
+                await hooks.onUpdate(editingItem.id, formData);
+            } else {
+                await hooks.onCreate(formData);
+            }
+            
+            // 🔄 Sincroniza a tabela com o banco de dados
+            hooks.onRefresh();
+            
+            // 🚪 COREOGRAFIA CORRIGIDA: Recolhe a gaveta após o sucesso
+            handleCloseForm();
+            
+        } catch (error) {
+            // O erro técnico já foi logado e tratado pelos hooks internos (useCrudAdapter / CrudForm).
+            // Apenas abortamos o fechamento para que o usuário corrija os dados apontados na tarja vermelha.
+            console.error('[CrudLayout] A transação falhou na API. Mantendo formulário aberto para correção.');
         }
-        hooks.onRefresh();
     };
 
     const handleDelete = async (id: string) => {
-        if (window.confirm(`Tem certeza que deseja excluir este registro de ${config.title}?`)) {
-            try {
-                await hooks.onDelete(id);
+        try {
+            // O Adapter Central já gerencia a exibição do window.confirm
+            const deleted = await hooks.onDelete(id);
+            if (deleted) {
                 hooks.onRefresh();
-            } catch (error) {
-                console.error("Erro ao deletar:", error);
             }
+        } catch (error) {
+            console.error("[CrudLayout] Erro na deleção:", error);
         }
     };
 
@@ -151,7 +173,7 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
                 {/* --- VITRINE (A Tabela) --- */}
                 <div className="flex-1 min-h-0 overflow-hidden pb-2">
                     {hooks.error && (
-                        <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 text-red-400 rounded-lg text-sm text-center">
+                        <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 text-red-400 rounded-lg text-sm text-center animate-fade-in">
                             {hooks.error}
                         </div>
                     )}
@@ -174,7 +196,7 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
                 isOpen={viewMode === 'FORM'}
                 onClose={handleCloseForm}
                 config={config}
-                initialData={editingItem}
+                initialData={editingItem || undefined}
                 onSubmit={handleSubmit}
             />
 
