@@ -4,7 +4,7 @@ import React, { ReactNode } from 'react';
 import { FaSearch, FaPlus, FaSync } from 'react-icons/fa';
 
 // --- Contratos ---
-import { ListMode } from '../types';
+import { ListMode } from '../../../types/visual.types';
 
 /**
  * @interface CrudListHeaderProps

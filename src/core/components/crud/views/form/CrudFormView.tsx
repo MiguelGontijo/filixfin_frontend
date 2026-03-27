@@ -9,7 +9,7 @@ import { CrudFormProps, CrudField } from '../../types';
 
 // --- Utilitários e Wrappers ---
 import { useDelayedUnmount } from '@/core/components/crud/hooks/useDelayedUnmount';
-import { CrudFormWrapper } from '../layout/CrudFormWrapper';
+import { CrudFormWrapper } from './layout/CrudFormWrapper';
 
 /**
  * @helper formatFieldValue

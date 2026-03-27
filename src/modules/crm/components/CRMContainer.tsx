@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 
 // --- COMPONENTES DAS VISÕES LEGADAS E ATUAIS ---
 import { CRMKanbanView } from './CRMKanbanView';
-import { CRMWorkstation } from './CRMWorkstation';
 
 // --- HOOKS DE DADOS & IA ---
 import { useDeals } from '../hooks/useDeals';
@@ -47,7 +46,6 @@ export const CRMContainer: React.FC = () => {
     
     // Configuração das Abas (Navegação de Topo)
     const tabs = [
-        { id: 'WORKSTATION', label: 'Workstation (Legado)', icon: FaStream },
         { id: 'COCKPIT', label: 'Cockpit 360 (V4)', icon: FaRocket }, // 👈 O Nosso Novo Canteiro de Obras
         { id: 'KANBAN', label: 'Kanban Board', icon: FaColumns },
         { id: 'AGENDA', label: 'Agenda', icon: FaCalendarAlt },
@@ -261,23 +259,7 @@ export const CRMContainer: React.FC = () => {
             {/* MAIN: Conteúdo Principal */}
             <main className="flex-1 p-6 overflow-hidden animate-fade-in relative">
                 
-                {/* --- VISÃO 1: WORKSTATION LEGADA --- */}
-                {activeView === 'WORKSTATION' && (
-                    <CRMWorkstation 
-                        contextClient={selectedClient}
-                        dashboardMode={dashboardMode}
-                        refreshListTrigger={refreshTrigger}
-                        activeChatTab={activeChatTab}
-                        onSelectClient={handleSelectClient}
-                        onOpenNewClient={handleOpenNewClient}
-                        onOpenEditClient={handleOpenEditClient}
-                        onModeChange={setDashboardMode}
-                        onUpdateSuccess={handleUpdateSuccess}
-                        onTabChange={setActiveChatTab}
-                    />
-                )}
-
-                {/* --- VISÃO 2: O NOVO CANTEIRO DE OBRAS (Cockpit V4) --- */}
+                 {/* --- VISÃO 2: O NOVO CANTEIRO DE OBRAS (Cockpit V4) --- */}
                 {activeView === 'COCKPIT' && (
                     <CRMCockpitView 
                         selectedClient={selectedClient}

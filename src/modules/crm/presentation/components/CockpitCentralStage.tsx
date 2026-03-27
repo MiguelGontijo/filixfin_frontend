@@ -6,7 +6,7 @@ import { CRMDeal } from '../../types';
 import { CrudConfig } from '@/core/components/crud/types';
 
 // --- Componentes Filhos e Motores Injetáveis ---
-import { CrudFormOrchestrator } from '@/core/components/crud/orchestrators/CrudFormOrchestrator'; 
+import { CrudFormOrchestrator } from '@/core/components/crud/views/form/CrudFormOrchestrator'; 
 import { ClientDashboard } from '../../components/client-dashboard/ClientDashboard'; // 👑 O Retorno do Rei (Memória de IA)
 
 // --- Mutadores (CQRS - Padrão Command) ---

@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
 import { FieldValues } from 'react-hook-form';
 
-// --- Tipagens e Contratos do Core ---
-import { UseCrudAdapterParams, CrudHooks } from '../types';
+import { UseCrudAdapterParams, CrudHooks } from '../types/engine.types';
 
 /**
  * ============================================================================

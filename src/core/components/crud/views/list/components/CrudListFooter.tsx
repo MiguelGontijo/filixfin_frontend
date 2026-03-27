@@ -1,7 +1,7 @@
 import React from 'react';
 
 // --- Contratos ---
-import { ListMode } from '../types';
+import { ListMode } from '../../../types/visual.types';
 
 /**
  * @interface CrudListFooterProps

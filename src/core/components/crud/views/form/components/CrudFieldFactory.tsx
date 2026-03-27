@@ -2,8 +2,9 @@ import React from 'react';
 import { UseFormReturn, FieldValues, Path, RegisterOptions, Controller } from 'react-hook-form'; // 💡 IMPORT VITAL: Controller adicionado
 
 // --- Tipagens e Componentes UI ---
-import { CrudField } from '../types';
-import { SmartDatePicker } from '../../ui/SmartDatePicker'; // 👈 Nosso Calendário Inteligente
+import { CrudField } from '../../../types/engine.types';
+import { SmartDatePicker } from '@/core/components/ui/SmartDatePicker';
+
 
 export interface CrudFieldFactoryProps<FormData extends FieldValues> {
     field: CrudField<FormData>;

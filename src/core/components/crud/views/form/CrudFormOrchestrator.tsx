@@ -2,10 +2,10 @@ import React from 'react';
 import { FieldValues } from 'react-hook-form';
 
 // --- Tipagens e Contratos ---
-import { CrudFormProps } from '../types';
+import { CrudFormProps } from '../../types';
 
 // --- Operários Especializados (Views) ---
-import { CrudForm } from '../forms/views/CrudFormEdit';
+import { CrudForm } from './CrudFormEdit';
 // import { CrudFormView } from '../views/CrudFormView'; // 👈 Será injetado na Fase 4
 
 /**

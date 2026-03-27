@@ -1,11 +1,11 @@
 import React from 'react';
 
 // --- Tipagens e Contratos ---
-import { CrudConfig, ListMode } from '../types';
+import { CrudConfig, ListMode } from '../../types';
 
 // --- Operários Especializados (Views) ---
-import { CrudTable } from '../CrudTable';
-import { CrudCardList } from '../lists/CrudCardList'; 
+import { CrudTable } from '../list/components/CrudTable';
+import { CrudCardList } from '../list/components/CrudCardList'; 
 
 /**
  * @interface CrudListOrchestratorProps

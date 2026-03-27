@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { FaEdit, FaTrash, FaInbox } from 'react-icons/fa';
-import { CrudColumn } from './types'; 
+import { CrudColumn } from '../../../types/visual.types';
 
 interface CrudTableProps<T> {
     data: T[];

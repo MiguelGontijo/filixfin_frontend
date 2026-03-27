@@ -3,8 +3,8 @@ import { UseFormReturn, FieldValues } from 'react-hook-form';
 import { FaExclamationTriangle, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
 // --- Tipagens e Componentes do Core ---
-import { CrudConfig } from '../../types';
-import { CrudFieldFactory } from '../CrudFieldFactory';
+import { CrudConfig } from '../../../types';
+import { CrudFieldFactory } from './CrudFieldFactory';
 
 /**
  * @interface CrudFormBodyProps

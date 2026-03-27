@@ -4,7 +4,7 @@ import React, { ReactNode } from 'react';
 import { FaEdit, FaTrash, FaInbox, FaSync } from 'react-icons/fa';
 
 // --- Tipagens e Contratos ---
-import { CrudConfig, CrudCardBadge } from '../types';
+import { CrudConfig, CrudCardBadge } from '../../../types/engine.types';
 
 export interface CrudCardListProps<T> {
     data: T[];

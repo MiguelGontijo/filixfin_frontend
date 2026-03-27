@@ -1,5 +1,3 @@
-// ===== FILE: src/modules/core/presentation/CadastrosContainer.tsx =====
-
 'use client';
 
 import { ClientRegistry } from '@/core/client/registries/ClientRegistry';

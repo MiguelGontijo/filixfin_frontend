@@ -1,8 +1,12 @@
 import React, { ReactNode } from 'react';
 
 // --- Tipagens do Core ---
-import { PresentationMode } from '../../types';
+import { PresentationMode } from '../../../types';
 
+/**
+ * @interface CrudFormWrapperProps
+ * @description Contrato rigoroso de dependências do Envelopador Polimórfico.
+ */ 
 export interface CrudFormWrapperProps {
     presentationMode: PresentationMode;
     /** 🛡️ VITAL: Passado para o Wrapper para preservar a transição CSS original do Drawer */

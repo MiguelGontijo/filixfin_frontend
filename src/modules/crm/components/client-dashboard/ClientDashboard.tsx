@@ -8,7 +8,7 @@ import {
     FaChevronDown, FaChevronUp
 } from 'react-icons/fa';
 import { Client, AddressType } from '@/core/client/types/client';
-import { ClientForm } from '@/core/components/client/ClientForm';
+import { ClientForm } from '@/modules/crm/components/client-dashboard/ClientForm';
 
 // --- AQUI ESTÁ A MUDANÇA: Importamos o Módulo Soberano ---
 import { TimelineModule } from '@/modules/timeline/TimelineModule';

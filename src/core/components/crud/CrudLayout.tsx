@@ -11,12 +11,12 @@ import { useCrudLayoutState } from './hooks/useCrudLayoutState';
 import { useCrudSearch } from './hooks/useCrudSearch';
 
 // --- Operários Visuais Isolados (A Trindade da Lista) ---
-import { CrudListHeader } from './lists/CrudListHeader';
-import { CrudListFooter } from './lists/CrudListFooter';
+import { CrudListHeader } from './views/list/components/CrudListHeader';
+import { CrudListFooter } from './views/list/components/CrudListFooter';
 
 // --- Orquestradores (Maestros Burros) ---
-import { CrudListOrchestrator } from './orchestrators/CrudListOrchestrator';
-import { CrudFormOrchestrator } from './orchestrators/CrudFormOrchestrator';
+import { CrudListOrchestrator } from './views/list/CrudListOrchestrator';
+import { CrudFormOrchestrator } from './views/form/CrudFormOrchestrator';
 
 /**
  * ============================================================================
