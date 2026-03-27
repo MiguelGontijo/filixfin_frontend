@@ -1,21 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FaBrain } from 'react-icons/fa';
 
 // --- Contratos e Tipos ---
 import { Client } from '@/core/client/types/client';
 import { CRMDeal } from '../types';
 
+// --- Motores Injetáveis (Os Manuais de Instrução V4) ---
+import { useClientConfig } from '@/core/client/hooks/useClientConfig';
+import { useDealConfig } from '../hooks/useDealConfig';
+
+// --- Motores de Dados (CQRS) ---
+import { useClients } from '@/core/client/hooks/useClients';
+import { usePipelines } from '../hooks/usePipelines';
+
 // --- Os 3 Pilares da Arquitetura V4 (Inversão de Controle) ---
 import { CockpitSidebarLeft } from './components/CockpitSidebarLeft';
 import { CockpitCentralStage } from './components/CockpitCentralStage';
 import { CockpitSidebarRight } from './components/CockpitSidebarRight';
-
-// ⚠️ Nota: Mantive a chamada para a sua configuração do CrudForm com base no legado.
-// Caso você ainda não tenha isolado o 'useDealConfig' num hook próprio, 
-// basta importar a sua `const config = ...` do DealRegistry aqui.
-// import { useDealConfig } from '../hooks/useDealConfig';
 
 export interface CRMCockpitViewProps {
     selectedClient: Client | null;
@@ -27,10 +30,11 @@ export interface CRMCockpitViewProps {
  * @type FormState
  * @description Mantém o histórico de qual tela (Leitura, Cliente ou Deal) 
  * deve ser projetada no Palco Central.
+ * 💡 FIX: O tipo de 'CLIENT' agora permite 'null', habilitando o Modo de Criação.
  */
 type FormState = 
     | { type: 'NONE' }
-    | { type: 'CLIENT'; data: Client }
+    | { type: 'CLIENT'; data: Client | null }
     | { type: 'DEAL'; data: CRMDeal | null };
 
 /**
@@ -39,8 +43,9 @@ type FormState =
  * @description A planta baixa definitiva da nova Workstation. 
  * Implementa o padrão "Holy Grail Layout" com painéis independentes.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO:
- * - Separação Absoluta de Preocupações (SoC).
- * - Zero Modais: Experiência de aplicativo nativo (Inline Routing).
+ * - Substituição do 'useEffect' cego por 'Interceptadores Proativos', 
+ * garantindo que a máquina de estados (formState) só resete quando for 
+ * uma intenção real do usuário (clicar em outro cliente), e não um side-effect.
  * ============================================================================
  */
 export function CRMCockpitView({ 
@@ -54,36 +59,54 @@ export function CRMCockpitView({
     // =========================================================================
     const [formState, setFormState] = useState<FormState>({ type: 'NONE' });
 
-    /**
-     * 🛡️ PREVENÇÃO DE FORMULÁRIO ZUMBI (Life-cycle hook)
-     * @description Se o usuário trocar de cliente na barra esquerda enquanto 
-     * edita uma Deal, o sistema aborta a edição instantaneamente para prevenir
-     * o salvamento de dados no cliente errado.
-     */
-    useEffect(() => {
-        setFormState({ type: 'NONE' });
-    }, [selectedClient?.id]);
+    // =========================================================================
+    // 📡 DADOS GLOBAIS PARA INJEÇÃO
+    // Buscamos as listas necessárias para os selects dinâmicos do DealConfig
+    // =========================================================================
+    const { clients } = useClients();
+    const { pipelines } = usePipelines();
 
-    // O "Manual de Instruções" da Oportunidade para a Impressora 3D (CrudForm).
-    // @ts-ignore - Bypass de segurança caso o hook ainda esteja sendo construído
-    const dealConfig = typeof useDealConfig === 'function' ? useDealConfig('standard', selectedClient?.id) : undefined;
+    // =========================================================================
+    // 🖨️ OS MANUAIS DE INSTRUÇÃO (Para a Impressora 3D V4)
+    // Instanciamos as regras de negócio visuais de Cliente e Deal.
+    // =========================================================================
+    const clientConfig = useClientConfig();
+    const dealConfig = useDealConfig(clients, pipelines, false);
 
     // =========================================================================
     // ⚙️ HANDLERS (Interceptadores de Intenção)
     // =========================================================================
     
+    /**
+     * @method handleSelectClientInterceptor
+     * @description O Guardião do Contexto. Se o usuário clicar em um cliente
+     * diferente na lista esquerda, abortamos qualquer form que esteja aberto
+     * no centro, para evitar que ele salve dados no cliente errado.
+     */
+    const handleSelectClientInterceptor = (client: Client | null) => {
+        if (client?.id !== selectedClient?.id) {
+            setFormState({ type: 'NONE' });
+        }
+        onSelectClient(client);
+    };
+
+    /**
+     * @method handleNewClientRequest
+     * @description Resolve o "Buraco Negro". Avisa a máquina de estados que
+     * o palco central DEVE ficar ativo, no modo CLIENT, e sem dados (Criação).
+     */
+    const handleNewClientRequest = () => {
+        onOpenNewClient(); // Avisa o topo (CRMContainer) para soltar o cliente atual
+        setFormState({ type: 'CLIENT', data: null }); // Arma a impressora em modo branco
+    };
+
     const handleEditClientRequest = (clientToEdit?: Client) => {
         const targetClient = clientToEdit || selectedClient;
         if (targetClient) {
-            // Garante que a barra esquerda e o contexto global estejam sincronizados
             if (targetClient.id !== selectedClient?.id) {
                 onSelectClient(targetClient);
             }
-            
-            // O setTimeout joga a montagem do form para o fim da fila de renderização (60FPS)
-            setTimeout(() => {
-                setFormState({ type: 'CLIENT', data: targetClient });
-            }, 0);
+            setFormState({ type: 'CLIENT', data: targetClient });
         }
     };
 
@@ -93,11 +116,17 @@ export function CRMCockpitView({
 
     const handleCloseForm = () => {
         setFormState({ type: 'NONE' });
+        // Se o usuário cancelar a criação de um "Novo Cliente", 
+        // o palco ficará vazio e voltará a mostrar o Cérebro da IA graciosamente.
     };
 
     // =========================================================================
-    // 🖼️ RENDERIZAÇÃO DO ESQUELETO (O Quebra-Cabeça Montado)
+    // 🖼️ LÓGICA DE ATIVAÇÃO DO PALCO
+    // O Palco não morre se selectedClient for null, desde que a intenção
+    // do usuário seja criar um novo cliente (formState.type === 'CLIENT').
     // =========================================================================
+    const isCentralStageActive = selectedClient !== null || formState.type === 'CLIENT';
+
     return (
         <div className="flex flex-row h-full w-full bg-base-dark text-base-text overflow-hidden animate-fade-in font-sans">
             
@@ -106,8 +135,12 @@ export function CRMCockpitView({
             ================================================================ */}
             <CockpitSidebarLeft 
                 selectedClient={selectedClient}
-                onSelectClient={onSelectClient}
-                onOpenNewClient={onOpenNewClient}
+                
+                // 💡 O FIO CONDUTOR: Extrai o Deal ativo do formState e repassa
+                selectedDeal={formState.type === 'DEAL' ? formState.data : null}
+                
+                onSelectClient={handleSelectClientInterceptor}
+                onOpenNewClient={handleNewClientRequest}
                 onEditClientRequest={handleEditClientRequest}
                 onDealFormRequest={handleDealFormRequest}
             />
@@ -115,22 +148,23 @@ export function CRMCockpitView({
             {/* ================================================================
                 🎭 PILAR 2: PALCO CENTRAL (Área Nobre)
             ================================================================ */}
-            {/* Adicionado padding (p-4) para o palco não grudar nas barras laterais */}
             <main className="flex-1 min-w-0 h-full bg-base-metallic/5 relative flex flex-col p-4">
                 
-                {selectedClient ? (
-                    // O Roteador Visual Inline entra em ação
+                {isCentralStageActive ? (
                     <CockpitCentralStage 
-                        client={selectedClient}
+                        // O "as Client" aqui é um bypass seguro para a tipagem, pois 
+                        // resolveremos a capacidade do palco aceitar "null" no próximo arquivo.
+                        client={selectedClient as Client} 
                         activeForm={formState.type}
                         dealToEdit={formState.type === 'DEAL' ? formState.data : null}
+                        
                         dealConfig={dealConfig}
+                        clientConfig={clientConfig}
+                        
                         onCloseForm={handleCloseForm}
                         onEditClientRequest={() => handleEditClientRequest()}
                         onUpdateSuccess={() => {
-                            // A Oportunidade foi salva com sucesso!
-                            // Se o seu useDeals ou React Query usar eventos globais, 
-                            // as listas na barra lateral já se atualizarão sozinhas.
+                            // A transação foi salva com sucesso. Listas reagem sozinhas.
                         }}
                     />
                 ) : (

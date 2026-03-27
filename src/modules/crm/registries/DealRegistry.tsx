@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { FaHandshake } from 'react-icons/fa'; // 💡 Identidade visual: O aperto de mão do fechamento
 
 // --- Motor CRUD V4 & Adaptador ---
 import { CrudLayout } from '@/core/components/crud/CrudLayout';
@@ -21,7 +22,7 @@ import { useDealConfig } from '../hooks/useDealConfig';
 
 /**
  * ============================================================================
- * 🛡️ CONTRATO DE POLIMORFISMO
+ * 🛡️ CONTRATO DE POLIMORFISMO E ESTADO
  * @description Ensina o TypeScript que o DealRegistry pode atuar como Tela 
  * Cheia (Master) ou como Widget Lateral Compacto (Detail) no Cockpit.
  * ============================================================================
@@ -29,7 +30,18 @@ import { useDealConfig } from '../hooks/useDealConfig';
 export interface DealRegistryProps {
     variant?: 'full' | 'compact';
     clientId?: string;
-    onFormRequest?: (deal: CRMDeal | null) => void;
+    
+    /** 🛡️ FIX CLASSE OURO: Alinhamento de tipagem com o Motor V4.
+     * Agora aceita rascunhos (Partial) para suportar a injeção de clientId.
+     */
+    onFormRequest?: (deal?: CRMDeal | Partial<CRMDeal> | null) => void;
+    
+    /**
+     * @property selectedItemId
+     * @description O ID da oportunidade (Deal) atualmente em foco no Palco Central.
+     * Injetado pelo Maestro para roteamento visual do card ativo.
+     */
+    selectedItemId?: string;
 }
 
 /**
@@ -37,17 +49,21 @@ export interface DealRegistryProps {
  * 🏭 COMPONENTE PRINCIPAL: DEAL REGISTRY (Orquestrador Puro)
  * @description A Visão "Master Data" das oportunidades.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (SOLID & Clean Architecture):
- * 1. Single Responsibility: Este arquivo não sabe desenhar botões nem inputs. 
- * Ele apenas roteia os dados do Apollo/Axios para o Layout.
+ * 1. Identidade de Módulo: Renomeia a entidade para "Deals" e injeta o ícone 
+ * FaHandshake, garantindo semântica e vida ao cabeçalho.
  * 2. Injeção de Dependências: Todo o layout reativo e colunas foram delegados 
  * ao hook `useDealConfig`.
- * 3. Sanitização: Delega o envio seguro (Data Scrubbing) ao `useCrudAdapter`.
+ * 3. Roteamento Dinâmico: Comunica ao CrudLayout qual a "roupa" correta 
+ * (listMode) baseando-se na variante solicitada pelo componente pai.
+ * 4. Segurança de Tipagem: Resolve o conflito de assinaturas entre o domínio
+ * e o motor genérico (Partial consistency).
  * ============================================================================
  */
 export function DealRegistry({ 
     variant = 'full', 
     clientId, 
-    onFormRequest 
+    onFormRequest,
+    selectedItemId 
 }: DealRegistryProps) {
     
     // =========================================================================
@@ -61,7 +77,7 @@ export function DealRegistry({
     const isGlobalLoading = loadingDeals || loadingClients || isLoadingPipelines;
     const isCompact = variant === 'compact';
 
-    // 🔍 FILTRO DE DOMÍNIO: Isola a lista de deals apenas para o cliente ativo (se solicitado pelo Cockpit)
+    // 🔍 FILTRO DE DOMÍNIO: Isola a lista de deals apenas para o cliente ativo
     const filteredDeals = useMemo(() => {
         if (clientId) return deals.filter(d => d.clientId === clientId);
         return deals;
@@ -69,14 +85,15 @@ export function DealRegistry({
 
     // =========================================================================
     // ⚙️ CONFIGURAÇÃO CLASSE OURO (Injeção Visual)
-    // O hook extrai a complexidade do JSX e devolve apenas o objeto limpo.
     // =========================================================================
     const config = useDealConfig(clients, pipelines, isCompact);
+    
+    // 👑 AJUSTES DE IDENTIDADE (Setas 1 e 3 da sua análise)
+    config.title = "Deals"; // Nome curto, forte e executivo
+    config.icon = <FaHandshake />; // Ícone dinâmico injetado no cabeçalho
 
     // =========================================================================
     // 🔌 ROTEAMENTO DE AÇÕES (O Adaptador Universal)
-    // O Adapter assume o controle da submissão: remove os System Fields e 
-    // gerencia o loading unificado, preservando a regra de não excluir (allowDelete: false).
     // =========================================================================
     const crudHooks = useCrudAdapter<CRMDeal, DealFormInput>({
         query: {
@@ -86,14 +103,14 @@ export function DealRegistry({
             refetch: refreshDeals
         },
         mutation: {
-            isLoading: false, // Absorvido silenciosamente pelo Adapter central
+            isLoading: false, 
             error: null,
             createFn: createDeal as any,
             updateFn: updateDeal as any,
-            deleteFn: undefined // Segurança Nível 1: Não expõe método de delete
+            deleteFn: undefined 
         },
         options: {
-            entityName: 'Oportunidade (Deal)',
+            entityName: 'Deal',
             allowDelete: false 
         }
     });
@@ -103,6 +120,13 @@ export function DealRegistry({
             <CrudLayout<CRMDeal, DealFormInput>
                 config={config}
                 hooks={crudHooks}
+                listMode={isCompact ? 'cards' : 'table'}
+                
+                // 💡 INVERSÃO DE CONTROLE: Injeta o clientId automaticamente em novas Deals
+                baseInjectData={clientId ? { clientId } : undefined}
+                
+                selectedItemId={selectedItemId}
+                onFormRequest={onFormRequest}
             />
         </div>
     );

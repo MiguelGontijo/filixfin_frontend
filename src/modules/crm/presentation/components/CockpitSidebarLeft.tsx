@@ -5,8 +5,8 @@ import { FaRegHandshake, FaBoxOpen, FaInbox } from 'react-icons/fa';
 import { Client } from '@/core/client/types/client';
 import { CRMDeal } from '../../types';
 
-// --- Motores Visuais ---
-import { ClientListWidget } from '../../components/client-widget/ClientListWidget';
+// --- Motores Visuais (V4) ---
+import { ClientRegistry } from '@/core/client/registries/ClientRegistry';
 import { DealRegistry } from '../../registries/DealRegistry';
 
 /**
@@ -20,10 +20,14 @@ type LeftTab = 'DEALS' | 'ORDERS';
  * @description Contrato estrito de comunicação entre a Barra Esquerda e o Maestro (CockpitView).
  * * 🏆 CLASSE OURO: Inversão de Controle (IoC). A barra lateral não abre modais nem
  * controla o palco central. Ela apenas emite "Intenções" (Requests) para o componente pai.
+ * E agora atua como conduíte de estado de seleção (Prop Drilling) para iluminar os cards ativos.
  */
 interface CockpitSidebarLeftProps {
-    /** @description O cliente atualmente focado no CRM */
+    /** @description O cliente atualmente focado no CRM (Palco Central) */
     selectedClient: Client | null;
+    
+    /** @description 💡 A oportunidade (Deal) atualmente focada no CRM (Palco Central) */
+    selectedDeal: CRMDeal | null;
     
     /** @description Ação: Usuário selecionou um cliente na lista */
     onSelectClient: (client: Client | null) => void;
@@ -42,12 +46,13 @@ interface CockpitSidebarLeftProps {
  * ============================================================================
  * 🎛️ PILAR 1: COCKPIT SIDEBAR LEFT (O Centro de Comando)
  * @description Responsável por definir o "Contexto Global" do CRM. 
- * Metade superior: Lista de Clientes. 
+ * Metade superior: Lista de Clientes (Motor V4). 
  * Metade inferior: Registros vinculados ao cliente (Deals, Pedidos).
  * ============================================================================
  */
 export const CockpitSidebarLeft: React.FC<CockpitSidebarLeftProps> = ({
     selectedClient,
+    selectedDeal, // 💡 Recebemos a intenção de foco do Maestro
     onSelectClient,
     onOpenNewClient,
     onEditClientRequest,
@@ -60,13 +65,24 @@ export const CockpitSidebarLeft: React.FC<CockpitSidebarLeftProps> = ({
         <aside className="w-[340px] flex-shrink-0 flex flex-col h-full bg-gray-900 border-r border-gray-800 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.2)]">
             
             {/* ================================================================
-                METADE SUPERIOR: Motor de Busca e Lista de Clientes
+                METADE SUPERIOR: Motor de Busca e Lista de Clientes (V4)
             ================================================================ */}
             <div className="flex-1 min-h-0 flex flex-col border-b border-gray-800">
-                <ClientListWidget 
+                <ClientRegistry 
+                    variant="compact"
+                    // 💡 O FIO CONDUTOR DO CLIENTE: Informa ao Registry qual ID destacar
+                    selectedItemId={selectedClient?.id} 
+                    
+                    // Emite a intenção de seleção para o Maestro
                     onSelectClient={onSelectClient}
-                    onNewClient={onOpenNewClient}
-                    onEditClient={onEditClientRequest} // 👈 Emite a intenção de edição para o Maestro
+                    // Transforma o request unificado do Motor V4 nas ações específicas do Maestro
+                    onFormRequest={(clientToEdit) => {
+                        if (clientToEdit) {
+                            onEditClientRequest(clientToEdit);
+                        } else {
+                            onOpenNewClient();
+                        }
+                    }}
                 />
             </div>
 
@@ -112,11 +128,13 @@ export const CockpitSidebarLeft: React.FC<CockpitSidebarLeftProps> = ({
                         <>
                             {activeLeftTab === 'DEALS' && (
                                 <DealRegistry 
-                                    // ⚠️ Nota Técnica: O DealRegistry precisará aceitar essas props 
-                                    // (variant, clientId, onFormRequest) caso ainda não as possua.
-                                    variant="compact" as any 
-                                    clientId={selectedClient.id} as any
-                                    onFormRequest={onDealFormRequest} as any // 👈 Emite a intenção (Novo/Editar Deal) para o Maestro
+                                    variant="compact" 
+                                    clientId={selectedClient.id} 
+                                    
+                                    // 💡 O FIO CONDUTOR DO DEAL: Informa ao Registry qual ID destacar
+                                    selectedItemId={selectedDeal?.id} 
+                                    
+                                    onFormRequest={onDealFormRequest} 
                                 />
                             )}
                             {activeLeftTab === 'ORDERS' && (

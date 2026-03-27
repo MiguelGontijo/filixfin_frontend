@@ -3,7 +3,7 @@
 "use client";
 
 import React from 'react';
-import { CRMContainer } from '@/modules/crm/presentation/CRMContainer';
+import { CRMContainer } from '@/modules/crm/components/CRMContainer';
 
 /**
  * @component CRMPage

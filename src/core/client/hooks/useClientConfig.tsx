@@ -16,15 +16,18 @@ import { ClientFormSchema, ClientFormInput } from '../schemas/clientSchema';
  * - Ao isolar o Config em um Hook, permitimos que a mesma estrutura visual seja
  * consumida pela Tela de Listagem (ClientRegistry) e pelo Cockpit V4 Avançado,
  * sem duplicar uma única linha de código.
+ * - Capacidade Polimórfica: Agora ciente do contexto espacial (isCompact),
+ * adaptando títulos e injetando o cardConfig para renderização em barras laterais.
  * ============================================================================
  */
-export function useClientConfig(): CrudConfig<Client, ClientFormInput> {
+export function useClientConfig(isCompact: boolean = false): CrudConfig<Client, ClientFormInput> {
     
     // O useMemo previne que o objeto de configuração seja recriado a cada renderização,
     // garantindo performance máxima de 60FPS no motor CrudForm.
     return useMemo(() => ({
-        title: 'Carteira de Clientes',
-        description: 'Gerencie a sua base de contatos, histórico e percepções de inteligência artificial.',
+        // Adaptação de título baseada no espaço disponível
+        title: isCompact ? 'Clientes' : 'Carteira de Clientes',
+        description: isCompact ? '' : 'Gerencie a sua base de contatos, histórico e percepções de inteligência artificial.',
         
         // Zod atuando como o Guardião do Payload
         schema: ClientFormSchema as any, 
@@ -86,6 +89,30 @@ export function useClientConfig(): CrudConfig<Client, ClientFormInput> {
         ],
 
         // ====================================================================
+        // 🃏 VISÃO COMPACTA (Cards para Barra Lateral / Mobile)
+        // @description Mapeamento visual estrito para o CrudCardList.
+        // ====================================================================
+        cardConfig: {
+            title: (item) => item.name,
+            subtitle: (item) => (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] text-gray-500 truncate">
+                        {item.email || item.phone || 'Sem contato'}
+                    </span>
+                </div>
+            ),
+            avatar: () => (
+                <div className="flex items-center justify-center w-7 h-7 rounded-full bg-accent-primary/10 text-accent-primary flex-shrink-0">
+                    <FaUserTie className="w-3.5 h-3.5" />
+                </div>
+            ),
+            badge: (item) => ({
+                text: item.isActive ? 'Ativo' : 'Inativo',
+                variant: item.isActive ? 'success' : 'danger'
+            })
+        },
+
+        // ====================================================================
         // 📝 VISÃO DETAIL (O Mapa do Formulário CrudForm V4)
         // ====================================================================
         fields: [
@@ -120,5 +147,5 @@ export function useClientConfig(): CrudConfig<Client, ClientFormInput> {
             { name: 'updatedAt', label: 'Última Atualização', type: 'text' }
         ]
 
-    }), []); // Array de dependências vazio, pois a estrutura do cliente não depende de listas externas
+    }), [isCompact]); // Reconstroi o manual caso o contexto espacial mude (variant)
 }

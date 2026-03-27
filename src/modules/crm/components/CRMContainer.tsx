@@ -12,13 +12,13 @@ import { useFilixAI } from '@/core/ai/context/FilixAIContext'; // [IA] Hook Widg
 
 // --- ICONS & TYPES ---
 import { FaStream, FaColumns, FaCalendarAlt, FaFilter, FaRocket } from 'react-icons/fa';
-import { ConfigStage } from '../components/pipeline-manager/StageList';
+import { ConfigStage } from './pipeline-manager/StageList';
 import { Client } from '@/core/client/types/client';
-import { DashboardMode } from '../components/client-dashboard/ClientDashboard';
+import { DashboardMode } from './client-dashboard/ClientDashboard';
 import { AIContextMetadata } from '@/core/ai/types/dtos/AIChatRequest.dto';
 import { AppModules, FeatureKeys } from '@/core/ai/types/enums/AIEnums';
 import { useDealMutation } from '../hooks/useDealMutation';
-import { CRMCockpitView } from './CRMCockpitView';
+import { CRMCockpitView } from '../presentation/CRMCockpitView';
 
 /**
  * @type CRMViewType

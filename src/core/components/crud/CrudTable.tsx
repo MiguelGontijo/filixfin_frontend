@@ -1,17 +1,19 @@
-// ===== FILE: src/core/components/crud/CrudTable.tsx =====
-
 'use client';
 
 import React from 'react';
 import { FaEdit, FaTrash, FaInbox } from 'react-icons/fa';
-import { CrudColumnConfig } from './types';
+import { CrudColumn } from './types'; 
 
 interface CrudTableProps<T> {
     data: T[];
-    columns: CrudColumnConfig<T>[];
+    columns: CrudColumn<T>[]; 
     isLoading?: boolean;
     onEdit: (item: T) => void;
     onDelete: (id: string) => void;
+    
+    // 💡 INJEÇÃO DE EVENTO (O Novo Fio de Visualização)
+    // Permite que a Tabela Master Data também acesse o Dashboard/Dossiê ao clicar na linha
+    onViewRequest?: (item: T) => void;
 }
 
 /**
@@ -19,13 +21,18 @@ interface CrudTableProps<T> {
  * @description Um Grid de dados universal de alta performance.
  * Implementa a tecnologia de 'Dynamic Accessors' para permitir renderizações
  * complexas via configuração, mantendo o componente agnóstico e puro.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Paridade Arquitetural):
+ * - Simetria de Eventos: A linha inteira responde à intenção de visualização (`onViewRequest`), 
+ * enquanto os botões de ação na última coluna isolam as mutações (`onEdit`/`onDelete`) 
+ * usando e.stopPropagation() para evitar vazamento de cliques (Event Bubbling).
  */
 export function CrudTable<T extends { id: string }>({
     data,
     columns,
     isLoading,
     onEdit,
-    onDelete
+    onDelete,
+    onViewRequest // Recebe o fio de visualização passiva
 }: CrudTableProps<T>) {
 
     /**
@@ -33,7 +40,7 @@ export function CrudTable<T extends { id: string }>({
      * @description O motor de renderização da célula. 
      * Decide entre exibir um valor primitivo ou executar um componente funcional.
      */
-    const renderCell = (item: T, column: CrudColumnConfig<T>) => {
+    const renderCell = (item: T, column: CrudColumn<T>) => { 
         const { accessor } = column;
 
         // Se o accessor for uma função, delegamos a renderização para ela (Classe Ouro)
@@ -82,7 +89,7 @@ export function CrudTable<T extends { id: string }>({
                                 scope="col"
                                 className="px-6 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest"
                             >
-                                {column.header} {/* 👈 Uso do novo padrão 'header' */}
+                                {column.header}
                             </th>
                         ))}
                         <th scope="col" className="px-6 py-4 text-right text-[11px] font-bold text-gray-400 uppercase tracking-widest">
@@ -94,11 +101,14 @@ export function CrudTable<T extends { id: string }>({
                     {data.map((item) => (
                         <tr 
                             key={item.id} 
-                            className="group hover:bg-accent-primary/5 transition-colors duration-150"
+                            // 🛡️ O Roteamento de Intenção na Linha:
+                            // Transforma a linha em um conduíte para o Dossiê/Dashboard.
+                            onClick={() => onViewRequest ? onViewRequest(item) : onEdit(item)}
+                            className="group hover:bg-accent-primary/5 transition-colors duration-150 cursor-pointer"
                         >
                             {columns.map((column, index) => (
                                 <td key={index} className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                    {renderCell(item, column)} {/* 👈 Motor dinâmico em ação */}
+                                    {renderCell(item, column)}
                                 </td>
                             ))}
                             
@@ -106,14 +116,22 @@ export function CrudTable<T extends { id: string }>({
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
-                                        onClick={() => onEdit(item)}
+                                        onClick={(e) => {
+                                            // 🛡️ Prevenção de Event Bubbling: Garante que clicar no Lápis não acione a linha (Dossiê).
+                                            e.stopPropagation();
+                                            onEdit(item);
+                                        }}
                                         className="p-2 text-gray-400 hover:text-accent-primary hover:bg-gray-800 rounded-lg transition-all"
                                         title="Editar registro"
                                     >
                                         <FaEdit className="w-4 h-4" />
                                     </button>
                                     <button
-                                        onClick={() => onDelete(item.id)}
+                                        onClick={(e) => {
+                                            // 🛡️ Prevenção de Event Bubbling.
+                                            e.stopPropagation();
+                                            onDelete(item.id);
+                                        }}
                                         className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-all"
                                         title="Excluir registro"
                                     >

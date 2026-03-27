@@ -3,16 +3,16 @@ import { useForm, FieldValues, DefaultValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 // --- Tipagens e Contratos ---
-import { CrudFormProps } from '../types';
+import { CrudFormProps } from '../../types';
 
 // --- Utilitários de Performance ---
-import { useDelayedUnmount } from '@/core/hooks/useDelayedUnmount';
+import { useDelayedUnmount } from '@/core/components/crud/hooks/useDelayedUnmount';
 
 // --- Componentes Estruturais (Layout) ---
-import { CrudFormWrapper } from './layout/CrudFormWrapper';
-import { CrudFormHeader } from './layout/CrudFormHeader';
-import { CrudFormBody } from './layout/CrudFormBody';
-import { CrudFormFooter } from './layout/CrudFormFooter';
+import { CrudFormWrapper } from '../layout/CrudFormWrapper';
+import { CrudFormHeader } from '../layout/CrudFormHeader';
+import { CrudFormBody } from '../layout/CrudFormBody';
+import { CrudFormFooter } from '../layout/CrudFormFooter';
 
 /**
  * @function CrudForm

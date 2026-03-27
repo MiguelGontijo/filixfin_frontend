@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect } from 'react';
 import { UseFormReturn, useFieldArray, useWatch } from 'react-hook-form'; 
-import { FaUserTie, FaDollarSign, FaTrash, FaPlus } from 'react-icons/fa';
+// 💡 FIX: Importamos o FaHandshake para atuar como o Avatar do Card
+import { FaUserTie, FaDollarSign, FaTrash, FaPlus, FaHandshake } from 'react-icons/fa';
 
 // --- Motor CRUD V4 ---
 import { CrudConfig } from '@/core/components/crud/types';
@@ -273,6 +274,48 @@ export function useDealConfig(
                     )
                 }
             ],
+
+            // ========================================================================
+            // 🃏 CONFIGURAÇÃO DE CARDS (Para a Barra Lateral Inferior)
+            // @description Ensina ao CrudCardList como extrair e desenhar os dados visuais.
+            // ========================================================================
+            cardConfig: {
+                title: (item) => item.title,
+                subtitle: (item) => {
+                    const pipe = pipelines.find(p => p.id === item.pipelineId);
+                    const stage = pipe?.stages?.find(s => s.id === item.currentStageId);
+                    const formattedValue = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(item.value));
+                    
+                    return (
+                        <div className="flex flex-col gap-1 mt-0.5">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full shadow-[0_0_4px_rgba(255,255,255,0.1)]" style={{ backgroundColor: stage?.color || '#555' }} />
+                                <span className="text-[10px] text-gray-500 truncate font-medium">
+                                    {stage?.name || item.status}
+                                </span>
+                            </div>
+                            <span className="text-xs font-bold text-green-400 drop-shadow-sm">
+                                {formattedValue}
+                            </span>
+                        </div>
+                    );
+                },
+                // 💡 FIX CLASSE OURO: Injetado o avatar para criar alinhamento e simetria com a lista superior.
+                avatar: () => (
+                    <div className="flex items-center justify-center w-7 h-7 rounded-full bg-accent-primary/10 text-accent-primary flex-shrink-0 shadow-inner">
+                        <FaHandshake className="w-3.5 h-3.5" />
+                    </div>
+                ),
+                badge: (item) => {
+                    // Badge estilizada com base na probabilidade de fechamento
+                    const isHigh = item.probability >= 70;
+                    const isMedium = item.probability >= 30;
+                    return {
+                        text: `${item.probability}%`,
+                        variant: isHigh ? 'success' : isMedium ? 'warning' : 'danger'
+                    };
+                }
+            },
 
             // --- 📝 VISÃO DETAIL (O Formulário de Auditoria) ---
             fields: [

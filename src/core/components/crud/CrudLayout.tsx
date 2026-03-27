@@ -1,79 +1,78 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { FaSearch, FaPlus, FaSync } from 'react-icons/fa';
-import { CrudConfig, CrudHooks } from './types';
-import { CrudTable } from './CrudTable';
-import { CrudForm } from './forms/CrudForm';
+import React from 'react';
 import { FieldValues } from 'react-hook-form';
 
-interface CrudLayoutProps<TData extends FieldValues & { id: string }, TForm extends FieldValues> {
-    config: CrudConfig<TData, TForm>;
-    hooks: CrudHooks<TData, TForm>;
-}
+// --- Tipagens e Contratos ---
+import { CrudLayoutProps } from './types';
+
+// --- Motores de Estado e Inteligência (Cérebro) ---
+import { useCrudLayoutState } from './hooks/useCrudLayoutState';
+import { useCrudSearch } from './hooks/useCrudSearch';
+
+// --- Operários Visuais Isolados (A Trindade da Lista) ---
+import { CrudListHeader } from './lists/CrudListHeader';
+import { CrudListFooter } from './lists/CrudListFooter';
+
+// --- Orquestradores (Maestros Burros) ---
+import { CrudListOrchestrator } from './orchestrators/CrudListOrchestrator';
+import { CrudFormOrchestrator } from './orchestrators/CrudFormOrchestrator';
 
 /**
  * ============================================================================
- * 🏛️ COMPONENTE: CrudLayout (O Maestro Visual)
+ * 🏛️ COMPONENTE: CrudLayout (O Maestro Visual V4)
  * @description O Layout Universal para Cadastros de Apoio e Master Data.
- * Agora equipado com a Máquina de Estados 'View-Swap' (Lista <-> Formulário)
- * garantindo transições suaves (In-Place) sem uso de modais intrusivos.
+ * Agora refatorado com DDD e SOLID (Single Responsibility Principle).
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO:
+ * - HTML 100% Declarativo: Não há mais condicionais sujas de renderização. 
+ * O Maestro apenas posiciona os blocos (Header, Orchestrator, Footer).
+ * - Delegação de Formulário (IoC): Impede a sobreposição de telas ao delegar
+ * a renderização do Form para o Palco Central quando instruído pelo pai.
  * ============================================================================
  */
 export function CrudLayout<TData extends FieldValues & { id: string }, TForm extends FieldValues>({
     config,
-    hooks
-}: CrudLayoutProps<TData, TForm>) {
+    hooks,
+    listMode = 'table', // Padrão: Tabela Master Data
+    formMode = 'edit',  // Padrão: Formulário Editável
+    selectedItemId,     // Fio de Estado Visual
+    baseInjectData,
+    onFormRequest,      // 💡 FIO DE DELEGAÇÃO: Se existir, o pai assume o form
+    onViewRequest       // 💡 FIO DE VISUALIZAÇÃO: Extrai a intenção de Dossiê/Dashboard
+}: CrudLayoutProps<TData, TForm>) { // 🛡️ FIX CLASSE OURO: Usando o contrato oficial direto do types.ts
 
     // =========================================================================
-    // 🧠 MÁQUINA DE ESTADOS DO ORQUESTRADOR
+    // 🧠 MÁQUINA DE ESTADOS E CÉREBRO DE BUSCA
     // =========================================================================
-    const [searchTerm, setSearchTerm] = useState('');
-    const [editingItem, setEditingItem] = useState<TData | null>(null);
     
-    // O coração da transição suave: Define quem está no palco principal
-    const [viewMode, setViewMode] = useState<'LIST' | 'FORM'>('LIST');
+    const { viewMode, editingItem, openCreate, openEdit, closeForm } = useCrudLayoutState<TData>();
+    const { searchTerm, setSearchTerm, filteredData } = useCrudSearch<TData>(hooks.data);
 
     // =========================================================================
-    // 🔍 MOTOR DE BUSCA UNIVERSAL (Client-side)
+    // 🚦 INTERCEPTADORES DE ROTEAMENTO (O Conserto do Formulário Esmagado)
+    // Avalia se o formulário deve abrir localmente ou se deve ser delegado ao Pai.
     // =========================================================================
-    const filteredData = useMemo(() => {
-        if (!searchTerm.trim()) return hooks.data;
-        
-        const lowerTerm = searchTerm.toLowerCase();
-        return hooks.data.filter((item) => {
-            return Object.values(item).some(val => 
-                String(val).toLowerCase().includes(lowerTerm)
-            );
-        });
-    }, [hooks.data, searchTerm]);
-
-    // =========================================================================
-    // ⚙️ HANDLERS DE AÇÃO (Coreografia de Tela)
-    // =========================================================================
+    
     const handleOpenCreate = () => {
-        setEditingItem(null);
-        setViewMode('FORM'); // Aciona a transição para o formulário
+        if (onFormRequest) {
+            onFormRequest(baseInjectData ? (baseInjectData as unknown as TData) : null);
+        } else {
+            openCreate(); // Ninguém reclamou controle, abre o form localmente
+        }
     };
 
     const handleOpenEdit = (item: TData) => {
-        setEditingItem(item);
-        setViewMode('FORM'); // Aciona a transição para o formulário
+        if (onFormRequest) {
+            onFormRequest(item); // Avisa o Maestro Central passando os dados do item
+        } else {
+            openEdit(item); // Abre localmente
+        }
     };
 
-    const handleCloseForm = () => {
-        setViewMode('LIST'); // Retorna a tabela suavemente para a tela
-        // Aguardamos a animação terminar (300ms) antes de limpar o item para evitar "pulos" visuais
-        setTimeout(() => setEditingItem(null), 300);
-    };
-
-    /**
-     * @method handleSubmit
-     * @description Gerencia o envio de dados e o fechamento automático da UI.
-     * 🏆 PADRÃO CLASSE OURO (UX & Resiliência):
-     * Utiliza try/catch para garantir que a gaveta SÓ feche se o backend 
-     * retornar sucesso. Em caso de falha, o usuário não perde o que digitou.
-     */
+    // =========================================================================
+    // ⚙️ HANDLERS DE AÇÃO (Transações com a API)
+    // =========================================================================
+    
     const handleSubmit = async (formData: TForm) => {
         try {
             if (editingItem) {
@@ -81,23 +80,15 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
             } else {
                 await hooks.onCreate(formData);
             }
-            
-            // 🔄 Sincroniza a tabela com o banco de dados
             hooks.onRefresh();
-            
-            // 🚪 COREOGRAFIA CORRIGIDA: Recolhe a gaveta após o sucesso
-            handleCloseForm();
-            
+            closeForm();
         } catch (error) {
-            // O erro técnico já foi logado e tratado pelos hooks internos (useCrudAdapter / CrudForm).
-            // Apenas abortamos o fechamento para que o usuário corrija os dados apontados na tarja vermelha.
             console.error('[CrudLayout] A transação falhou na API. Mantendo formulário aberto para correção.');
         }
     };
 
     const handleDelete = async (id: string) => {
         try {
-            // O Adapter Central já gerencia a exibição do window.confirm
             const deleted = await hooks.onDelete(id);
             if (deleted) {
                 hooks.onRefresh();
@@ -108,95 +99,67 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
     };
 
     // =========================================================================
-    // 🖼️ RENDERIZAÇÃO MONUMENTAL (O Palco)
+    // 🖼️ RENDERIZAÇÃO MONUMENTAL (O Palco Limpo e Declarativo)
     // =========================================================================
     return (
-        // O Palco: relative e overflow-hidden garantem que o form deslize apenas aqui dentro
-        <div className="h-full flex flex-col min-h-0 relative overflow-hidden bg-base-dark rounded-xl">
+        <div className="h-full flex flex-col min-h-0 relative overflow-hidden bg-transparent rounded-xl">
             
-            {/* --- MODO VISUALIZAÇÃO (A TABELA E A BUSCA) --- 
-                Quando o form abre, esta div reduz 5% (scale-95) e fica transparente (opacity-0).
-                Isso cria a ilusão de profundidade perfeitamente suave.
-            */}
             <div 
                 className={`
-                    flex flex-col h-full space-y-6 transition-all duration-300 ease-in-out
+                    flex flex-col h-full transition-all duration-300 ease-in-out
                     ${viewMode === 'FORM' ? 'opacity-0 scale-95 pointer-events-none absolute inset-0' : 'opacity-100 scale-100 relative'}
                 `}
             >
-                {/* --- HEADER E TOOLBAR --- */}
-                <div className="flex flex-col md:flex-row gap-4 justify-between items-center flex-shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div>
-                            <h2 className="text-xl font-bold text-base-text tracking-tight">
-                                {config.title}
-                            </h2>
-                            {config.description && (
-                                <p className="text-sm text-gray-400">{config.description}</p>
-                            )}
-                        </div>
-                    </div>
+                {/* 🎩 1. TOPO (Header Polimórfico) */}
+                <CrudListHeader 
+                    title={config.title}
+                    icon={config.icon}
+                    description={config.description}
+                    listMode={listMode}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    onOpenCreate={handleOpenCreate}
+                    onRefresh={() => hooks.onRefresh()}
+                    isLoading={hooks.isLoading}
+                />
 
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <div className="relative w-full md:w-72 group">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <FaSearch className="text-gray-500 group-focus-within:text-accent-primary transition-colors" />
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Buscar..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="block w-full pl-10 pr-3 py-2.5 border border-gray-700 rounded-lg leading-5 bg-gray-900 text-base-text placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-accent-primary focus:border-accent-primary sm:text-sm transition-colors shadow-inner"
-                            />
-                        </div>
-
-                        <button
-                            onClick={handleOpenCreate}
-                            className="flex items-center justify-center gap-2 bg-accent-primary hover:bg-accent-primary-hover text-base-dark px-5 py-2.5 rounded-lg font-bold transition-all shadow-lg shadow-accent-primary/20 active:scale-95 flex-shrink-0"
-                        >
-                            <FaPlus className="w-3 h-3" />
-                            <span className="hidden sm:inline">Novo</span>
-                        </button>
-
-                        <button
-                            onClick={() => hooks.onRefresh()}
-                            disabled={hooks.isLoading}
-                            className="p-2.5 text-gray-400 hover:text-white bg-gray-800 border border-gray-700 rounded-lg transition-colors disabled:opacity-50"
-                            title="Atualizar dados"
-                        >
-                            <FaSync className={hooks.isLoading ? 'animate-spin' : ''} />
-                        </button>
-                    </div>
-                </div>
-
-                {/* --- VITRINE (A Tabela) --- */}
+                {/* 👁️ 2. VITRINE (Corpo com Lista/Tabela) */}
                 <div className="flex-1 min-h-0 overflow-hidden pb-2">
                     {hooks.error && (
-                        <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 text-red-400 rounded-lg text-sm text-center animate-fade-in">
+                        <div className="mb-4 mx-4 mt-4 p-3 bg-red-900/20 border border-red-500/30 text-red-400 rounded-lg text-sm text-center animate-fade-in">
                             {hooks.error}
                         </div>
                     )}
                     
-                    <CrudTable<TData>
+                    <CrudListOrchestrator<TData>
+                        listMode={listMode}
                         data={filteredData}
-                        columns={config.columns}
+                        config={config}
                         isLoading={hooks.isLoading}
-                        onEdit={handleOpenEdit}
+                        onEdit={handleOpenEdit} // Passamos o interceptador
                         onDelete={handleDelete}
+                        selectedItemId={selectedItemId} 
+                        
+                        // 💡 A CONEXÃO: Repassamos o fio do Dossiê para a Vitrine
+                        onViewRequest={onViewRequest} 
                     />
                 </div>
+
+                {/* 🦶 3. RODAPÉ (Metadados e Contadores) */}
+                <CrudListFooter 
+                    listMode={listMode}
+                    totalItems={filteredData.length}
+                />
             </div>
 
-            {/* --- MODO FORMULÁRIO (A IMPRESSORA 3D) --- 
-                Ele mora aqui o tempo todo. Quando viewMode === 'FORM', a prop isOpen vira true
-                e ele desliza para dentro do palco cobrindo a tabela desbotada.
-            */}
-            <CrudForm<TData, TForm>
+            {/* --- MODO FORMULÁRIO (A IMPRESSORA 3D LOCAL) --- */}
+            {/* Só será renderizada e vista se onFormRequest NÃO existir e o usuário abrir localmente */}
+            <CrudFormOrchestrator<TData, TForm>
                 isOpen={viewMode === 'FORM'}
-                onClose={handleCloseForm}
+                onClose={closeForm}
                 config={config}
                 initialData={editingItem || undefined}
+                formMode={formMode}
                 onSubmit={handleSubmit}
             />
 

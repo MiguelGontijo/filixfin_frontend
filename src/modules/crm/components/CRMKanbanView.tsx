@@ -3,13 +3,13 @@
 import React, { useState } from 'react';
 
 // --- COMPONENTES VISUAIS ---
-import { KanbanBoard } from '../components/kanban/KanbanBoard';
-import { EmptyPipelineState } from '../components/kanban/EmptyPipelineState'; // ✅ Importado
-import { DealModal } from '../components/deals/DealModal';
+import { KanbanBoard } from './kanban/KanbanBoard';
+import { EmptyPipelineState } from './kanban/EmptyPipelineState'; // ✅ Importado
+import { DealModal } from './deals/DealModal';
 
 // --- COMPONENTES DE CONFIGURAÇÃO ---
-import { PipelineDrawer } from '../components/pipeline-manager/PipelineDrawer';
-import { ConfigStage } from '../components/pipeline-manager/StageList';
+import { PipelineDrawer } from './pipeline-manager/PipelineDrawer';
+import { ConfigStage } from './pipeline-manager/StageList';
 
 // --- TYPES E ICONS ---
 import { CRMDeal, DealStatus } from '../types';

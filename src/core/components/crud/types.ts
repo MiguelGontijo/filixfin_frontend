@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ReactNode } from 'react';
-import { UseFormReturn, FieldValues } from 'react-hook-form'; // 💡 IMPORT VITAL: Adicionado FieldValues
+import { UseFormReturn, FieldValues } from 'react-hook-form'; 
 
 /**
  * ============================================================================
@@ -36,17 +36,64 @@ export interface CrudField<FormData extends FieldValues = any> {
 
 /**
  * ============================================================================
+ * 🎴 CONFIGURAÇÃO DE CARDS (Injeção Visão Lateral) [NOVO - FASE 1]
+ * @description Mapeia dinamicamente as propriedades de uma entidade de domínio
+ * para os "slots" visuais de um Card de interface (ex: ClientListWidget).
+ * ============================================================================
+ */
+export interface CrudCardBadge {
+    text: string;
+    variant?: 'success' | 'danger' | 'warning' | 'info' | 'default';
+}
+
+export interface CrudCardConfig<T> {
+    /** O texto principal em destaque no card (Ex: Nome do Cliente) */
+    title: keyof T | ((item: T) => string);
+    /** Texto secundário abaixo do título (Ex: E-mail ou CPF) */
+    subtitle?: keyof T | ((item: T) => string | ReactNode);
+    /** Tag de status colorida (Ex: Ativo/Inativo) */
+    badge?: keyof T | ((item: T) => CrudCardBadge | null);
+    /** Ícone ou avatar posicionado na lateral do card */
+    avatar?: keyof T | ((item: T) => ReactNode);
+}
+
+/**
+ * ============================================================================
  * ⚙️ CONFIGURAÇÕES PRINCIPAIS (O "Manual de Instruções" da Impressora)
  * ============================================================================
  */
 
 export interface CrudConfig<T, FormData extends FieldValues = any> {
+    /** 🏷️ Identidade do Módulo (Ex: "Clientes", "Deals") */
     title: string;
+
+    /** * 🎨 ÍCONE DE IDENTIDADE (Classe Ouro)
+     * @description O elemento visual que dá vida ao cabeçalho do módulo.
+     * Deve ser um componente de ícone (ex: FaHandshake) que represente 
+     * semanticamente a entidade no Master Data.
+     */
+    icon?: ReactNode;
+
+    /** 📝 Descrição de apoio para contextos de tela cheia */
     description?: string;
-    schema: z.ZodType<any, any, any>; // O validador blindado (Zod)
-    columns: CrudColumn<T>[];         // Como exibir na Grid/Tabela
-    fields: CrudField<FormData>[];    // Como exibir no Formulário Principal
-    systemFields?: CrudField<FormData>[]; // Campos de Auditoria (Gaveta secundária)
+
+    /** 🛡️ O validador blindado (Zod Schema) */
+    schema: z.ZodType<any, any, any>; 
+
+    /** 📊 Definição de Colunas: Como exibir na Grid/Tabela (Master Data) */
+    columns: CrudColumn<T>[];
+
+    /** 📝 Definição de Campos: Como exibir no Formulário Principal */
+    fields: CrudField<FormData>[];
+
+    /** 🗄️ Auditoria: Campos de Sistema (Gaveta secundária de leitura) */
+    systemFields?: CrudField<FormData>[]; 
+    
+    /** * 🎴 CONFIGURAÇÃO DE CARDS
+     * @description Dicionário de renderização para o layout de Cards.
+     * Essencial para a barra lateral polimórfica (ListMode = 'cards').
+     */
+    cardConfig?: CrudCardConfig<T>;
 }
 
 /**
@@ -105,16 +152,19 @@ export interface UseCrudAdapterParams<T, FormData extends FieldValues> {
 
 /**
  * ============================================================================
- * 🖨️ A IMPRESSORA 3D (Propriedades do Formulário Gerador)
+ * 🖨️ MÁQUINA DE ESTADOS VISUAIS (Orquestradores) [NOVO - FASE 1]
  * ============================================================================
  */
 
-/**
- * @type PresentationMode
- * @description Define o comportamento espacial/visual do Motor de Formulário.
- * 🏆 CLASSE OURO: Aplicação do Princípio Aberto/Fechado (SOLID).
- */
+export type ListMode = 'table' | 'cards';
+export type FormMode = 'edit' | 'readonly';
 export type PresentationMode = 'drawer' | 'modal' | 'inline';
+
+/**
+ * ============================================================================
+ * 🧱 CONTRATOS DE PROPRIEDADES DOS COMPONENTES VISUAIS
+ * ============================================================================
+ */
 
 export interface CrudFormProps<T, FormData extends FieldValues = any> {
     isOpen: boolean;
@@ -124,13 +174,20 @@ export interface CrudFormProps<T, FormData extends FieldValues = any> {
     
     /**
      * @property presentationMode
-     * @description Roteador Visual do Formulário.
-     * - 'drawer': (Padrão) Desliza da borda direita com fundo escuro (Backdrop).
+     * @description Roteador Espacial do Formulário (Onde e como ele nasce).
+     * - 'drawer': (Padrão) Desliza da borda direita com fundo escuro.
      * - 'modal': Abre centralizado flutuando sobre a tela.
-     * - 'inline': Remove os wrappers absolutos e renderiza de forma plana, 
-     * permitindo que o formulário se adapte a divs pais (ex: Cockpit Central Stage).
+     * - 'inline': Renderiza de forma plana, adaptando-se à div pai (Cockpit).
      */
     presentationMode?: PresentationMode;
+    
+    /**
+     * @property formMode
+     * @description Roteador Lógico do Formulário (O que ele permite fazer).
+     * - 'edit': (Padrão) Instancia o Zod e inputs editáveis.
+     * - 'readonly': Remove inputs e botões de salvar, exibindo como um Dossiê.
+     */
+    formMode?: FormMode;
     
     onSubmit: (data: FormData) => Promise<void>;
 }
@@ -138,4 +195,49 @@ export interface CrudFormProps<T, FormData extends FieldValues = any> {
 export interface CrudLayoutProps<T, FormData extends FieldValues = any> {
     config: CrudConfig<T, FormData>;
     hooks: CrudHooks<T, FormData>;
+    
+    /**
+     * @property listMode
+     * @description Define o Operário Visual da listagem. Padrão: 'table'.
+     */
+    listMode?: ListMode;
+    
+    /**
+     * @property formMode
+     * @description Define o Operário Lógico do painel de detalhes. Padrão: 'edit'.
+     */
+    formMode?: FormMode;
+
+    /**
+     * @property selectedItemId
+     * @description Injeção de estado externo passivo (A Informação). Informa ao layout qual 
+     * registro está em foco no momento (útil para realçar o item ativo em barras laterais polimórficas).
+     */
+    selectedItemId?: string;
+
+    /**
+     * @property onViewRequest
+     * @description 💡 FIO DE EVENTO (Leitura/Dossiê): Emissor de intenção de foco.
+     * Disparado quando o usuário clica no corpo do card (e não no lápis). Informa ao 
+     * Maestro que o objetivo é exibir o Dossiê/Dashboard de IA, e não o formulário de edição.
+     * Desacopla perfeitamente a intenção de "Ver" da intenção de "Editar".
+     */
+    onViewRequest?: (item: T) => void;
+
+    /**
+     * @property onFormRequest
+     * @description 💡 FIO DE DELEGAÇÃO (Escrita/Edição): Inversão de Controle (IoC). 
+     * Disparado quando o usuário clica em "Novo" ou no ícone de "Lápis/Editar".
+     * Se fornecido, o layout não abrirá o formulário localmente. Em vez disso, emitirá a 
+     * intenção para o componente pai assumir a renderização no Palco Central.
+     */
+    onFormRequest?: (item?: T | Partial<T> | null) => void;
+    
+    /**
+     * @property baseInjectData
+     * @description Rascunho dinâmico para Criação (Null Object Pattern). 
+     * Utilizado para pré-preencher formulários filhos quando disparados a partir de um 
+     * contexto pai (Ex: injetar silenciosamente o `clientId` ao criar uma nova Oportunidade).
+     */
+    baseInjectData?: Partial<T>;
 }
