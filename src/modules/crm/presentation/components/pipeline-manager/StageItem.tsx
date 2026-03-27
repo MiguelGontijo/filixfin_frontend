@@ -1,5 +1,3 @@
-// ===== FILE: src/modules/crm/components/pipeline-manager/StageItem.tsx =====
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { FaGripVertical, FaTrash, FaCheck } from 'react-icons/fa';

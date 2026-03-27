@@ -5,7 +5,7 @@ import { FaWhatsapp, FaTelegram, FaPaperPlane, FaCalendarAlt, FaTimes } from 're
 import { Client } from '@/core/client/types/client';
 
 // --- Motores Injetáveis (Widgets de Omnichannel) ---
-import { WhatsAppWidget } from '../../components/communication/WhatsAppWidget';
+import { WhatsAppWidget } from '../../shared/WhatsAppWidget';
 import { SchedulerWidget } from '@/modules/scheduler/components/SchedulerWidget';
 
 /**

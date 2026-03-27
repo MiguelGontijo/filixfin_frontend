@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api } from '@/core/services/api';
-import { CRMDeal, DealStatus } from '../types';
+import { CRMDeal, DealStatus } from '../../domain/types';
 
 /**
  * ============================================================================

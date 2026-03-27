@@ -5,20 +5,20 @@ import { FaBrain } from 'react-icons/fa';
 
 // --- Contratos e Tipos ---
 import { Client } from '@/core/client/types/client';
-import { CRMDeal } from '../types';
+import { CRMDeal } from '../../domain/types';
 
 // --- Motores Injetáveis (Os Manuais de Instrução V4) ---
 import { useClientConfig } from '@/core/client/hooks/useClientConfig';
-import { useDealConfig } from '../hooks/useDealConfig';
+import { useDealConfig } from '../../application/hooks/useDealConfig';
 
 // --- Motores de Dados (CQRS) ---
 import { useClients } from '@/core/client/hooks/useClients';
-import { usePipelines } from '../hooks/usePipelines';
+import { usePipelines } from '../../application/hooks/usePipelines';
 
 // --- Os 3 Pilares da Arquitetura V4 (Inversão de Controle) ---
-import { CockpitSidebarLeft } from './components/CockpitSidebarLeft';
-import { CockpitCentralStage } from './components/CockpitCentralStage';
-import { CockpitSidebarRight } from './components/CockpitSidebarRight';
+import { CockpitSidebarLeft } from '../components/cockpit/CockpitSidebarLeft';
+import { CockpitCentralStage } from '../components/cockpit/CockpitCentralStage';
+import { CockpitSidebarRight } from '../components/cockpit/CockpitSidebarRight';
 
 export interface CRMCockpitViewProps {
     selectedClient: Client | null;

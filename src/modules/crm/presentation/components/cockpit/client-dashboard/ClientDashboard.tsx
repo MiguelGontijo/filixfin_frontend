@@ -1,5 +1,3 @@
-// ===== FILE: src/modules/crm/components/client-dashboard/ClientDashboard.tsx =====
-
 import React, { useState, useEffect } from 'react';
 import { 
     FaUser, FaEdit, FaEnvelope, FaPhone, FaMapMarkerAlt, 
@@ -8,11 +6,11 @@ import {
     FaChevronDown, FaChevronUp
 } from 'react-icons/fa';
 import { Client, AddressType } from '@/core/client/types/client';
-import { ClientForm } from '@/modules/crm/components/client-dashboard/ClientForm';
 
 // --- AQUI ESTÁ A MUDANÇA: Importamos o Módulo Soberano ---
 import { TimelineModule } from '@/modules/timeline/TimelineModule';
 import { AppModules } from '@/core/ai/types/enums/AIEnums';
+import { ClientForm } from './ClientForm';
 
 export type DashboardMode = 'VIEW' | 'EDIT' | 'CREATE';
 

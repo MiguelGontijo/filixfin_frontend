@@ -8,17 +8,17 @@ import { CrudLayout } from '@/core/components/crud/CrudLayout';
 import { useCrudAdapter } from '@/core/components/crud/hooks/useCrudAdapter';
 
 // --- Contratos e Tipos ---
-import { CRMDeal } from '../types';
-import { DealFormInput } from '../schemas/dealSchema';
+import { CRMDeal } from '../../domain/types';
+import { DealFormInput } from '../../domain/schemas/dealSchema';
 
 // --- Motores de Dados (CQRS) ---
-import { useDeals } from '../hooks/useDeals';
-import { usePipelines } from '../hooks/usePipelines';
+import { useDeals } from '../../application/hooks/useDeals';
+import { usePipelines } from '../../application/hooks/usePipelines';
 import { useClients } from '@/core/client/hooks/useClients';
-import { useDealMutation } from '../hooks/useDealMutation';
+import { useDealMutation } from '../../application/hooks/useDealMutation';
 
 // --- Configuração Injetável (O Manual de Instruções) ---
-import { useDealConfig } from '../hooks/useDealConfig';
+import { useDealConfig } from '../../application/hooks/useDealConfig';
 
 /**
  * ============================================================================

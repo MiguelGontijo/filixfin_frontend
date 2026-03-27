@@ -1,5 +1,3 @@
-// ===== FILE: src/modules/crm/components/pipeline-manager/PipelineDrawer.tsx =====
-
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaSave, FaStream } from 'react-icons/fa';
 import { StageList, ConfigStage } from './StageList';

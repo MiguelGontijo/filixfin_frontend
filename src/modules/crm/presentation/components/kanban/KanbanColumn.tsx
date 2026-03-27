@@ -1,6 +1,6 @@
 import React from 'react';
 import { Droppable } from '@hello-pangea/dnd';
-import { CRMDeal } from '@/modules/crm/types'; // Removemos DealStatus, não precisamos dele aqui
+import { CRMDeal } from '@/modules/crm/domain/types'; // Removemos DealStatus, não precisamos dele aqui
 import { DealCard } from './DealCard';
 import { FaPlus } from 'react-icons/fa';
 

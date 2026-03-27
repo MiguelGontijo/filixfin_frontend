@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
 // --- COMPONENTES DAS VISÕES LEGADAS E ATUAIS ---
-import { CRMKanbanView } from './CRMKanbanView';
+import { CRMCockpitView } from '../views/CRMCockpitView';
+import { CRMKanbanView } from '../views/CRMKanbanView';
 
 // --- HOOKS DE DADOS & IA ---
-import { useDeals } from '../hooks/useDeals';
-import { usePipelines } from '../hooks/usePipelines';
+import { useDeals } from '../../application/hooks/useDeals';
+import { usePipelines } from '../../application/hooks/usePipelines';
 import { useAIContextInjector } from '@/core/ai/hooks/useAIContextInjector'; // [IA] Hook Sniper
 import { useFilixAI } from '@/core/ai/context/FilixAIContext'; // [IA] Hook Widget & Draft
 
 // --- ICONS & TYPES ---
 import { FaStream, FaColumns, FaCalendarAlt, FaFilter, FaRocket } from 'react-icons/fa';
-import { ConfigStage } from './pipeline-manager/StageList';
+import { ConfigStage } from '../components/pipeline-manager/StageList';
 import { Client } from '@/core/client/types/client';
-import { DashboardMode } from './client-dashboard/ClientDashboard';
+import { DashboardMode } from '../../presentation/components/cockpit/client-dashboard/ClientDashboard';
 import { AIContextMetadata } from '@/core/ai/types/dtos/AIChatRequest.dto';
 import { AppModules, FeatureKeys } from '@/core/ai/types/enums/AIEnums';
-import { useDealMutation } from '../hooks/useDealMutation';
-import { CRMCockpitView } from '../presentation/CRMCockpitView';
+import { useDealMutation } from '../../application/hooks/useDealMutation';
 
 /**
  * @type CRMViewType

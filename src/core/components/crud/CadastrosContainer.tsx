@@ -1,8 +1,8 @@
 'use client';
 
 import { ClientRegistry } from '@/core/client/registries/ClientRegistry';
-import { DealRegistry } from '@/modules/crm/registries/DealRegistry';
-import { PipelineRegistry } from '@/modules/crm/registries/PipelineRegistry';
+import { DealRegistry } from '@/modules/crm/presentation/registries/DealRegistry';
+import { PipelineRegistry } from '@/modules/crm/presentation/registries/PipelineRegistry';
 import { FiscalRegistry } from '@/modules/fiscal/registries/FiscalRegistry';
 import { InventoryRegistry } from '@/modules/inventory/registries/InventoryRegistry';
 import { WarehouseRegistry } from '@/modules/inventory/registries/WarehouseRegistry';

@@ -3,7 +3,7 @@
 import React from 'react';
 import { FaTimes, FaHandshake } from 'react-icons/fa';
 import { DealForm } from './DealForm';
-import { DealStatus, CRMDeal } from '@/modules/crm/types';
+import { DealStatus, CRMDeal } from '@/modules/crm/domain/types';
 
 interface DealModalProps {
     isOpen: boolean;

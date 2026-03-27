@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, DropResult, Droppable } from '@hello-pangea/dnd';
-import { CRMDeal, DealStatus } from '@/modules/crm/types';
-import { IPipelineStage } from '@/modules/crm/types/pipeline.types';
+import { CRMDeal, DealStatus } from '@/modules/crm/domain/types';
+import { IPipelineStage } from '@/modules/crm/domain/types/pipeline.types';
 import { KanbanColumn } from './KanbanColumn';
 
 interface KanbanBoardProps {

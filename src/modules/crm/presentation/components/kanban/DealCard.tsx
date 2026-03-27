@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { CRMDeal } from '@/modules/crm/types';
+import { CRMDeal } from '@/modules/crm/domain/types';
 import { FaBuilding } from 'react-icons/fa';
 
 interface DealCardProps {

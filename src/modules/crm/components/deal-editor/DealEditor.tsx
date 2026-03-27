@@ -1,11 +1,9 @@
-// ===== FILE: src/modules/crm/components/deal-editor/DealEditor.tsx =====
-
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaSave, FaUser, FaCalendar, FaBoxOpen, FaTrash, FaPlus, FaStream } from 'react-icons/fa';
-import { CRMDeal, DealStatus, CRMDealItem } from '@/modules/crm/types';
-import { IPipelineStage } from '../../types/pipeline.types';
+import { CRMDeal, DealStatus, CRMDealItem } from '@/modules/crm/domain/types';
+import { IPipelineStage } from '../../domain/types/pipeline.types';
 import { useClients } from '@/core/client/hooks/useClients';
-import { useDeals } from '../../hooks/useDeals';
+import { useDealMutation } from '../../application/hooks/useDealMutation';
 
 interface DealEditorProps {
     isOpen: boolean;
@@ -29,7 +27,7 @@ export const DealEditor: React.FC<DealEditorProps> = ({
     
     // Hooks de Dados
     const { clients } = useClients(); 
-    const { createDeal, updateDeal } = useDeals();
+    const { createDeal, updateDeal } = useDealMutation();
 
     // ============================================================================
     // 1. BLINDAGEM (DEFENSIVE PROGRAMMING)

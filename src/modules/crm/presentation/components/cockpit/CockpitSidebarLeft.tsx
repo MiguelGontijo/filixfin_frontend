@@ -3,7 +3,7 @@ import { FaRegHandshake, FaBoxOpen, FaInbox } from 'react-icons/fa';
 
 // --- Tipagens ---
 import { Client } from '@/core/client/types/client';
-import { CRMDeal } from '../../types';
+import { CRMDeal } from '../../../domain/types';
 
 // --- Motores Visuais (V4) ---
 import { ClientRegistry } from '@/core/client/registries/ClientRegistry';
@@ -36,7 +36,7 @@ interface CockpitSidebarLeftProps {
     onOpenNewClient: () => void;
     
     /** @description Ação: Usuário clicou no ícone de Lápis/Engrenagem na lista de clientes */
-    onEditClientRequest: (client: Client) => void;
+    onEditClientRequest: (client: Client | Partial<Client>) => void;
     
     /** @description Ação: Usuário clicou em "Novo Deal" ou "Editar Deal" na lista inferior */
     onDealFormRequest: (deal: CRMDeal | null) => void;

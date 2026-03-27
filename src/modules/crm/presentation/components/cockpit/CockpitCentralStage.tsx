@@ -2,15 +2,15 @@ import React from 'react';
 
 // --- Tipagens e Contratos ---
 import { Client } from '@/core/client/types/client';
-import { CRMDeal } from '../../types';
+import { CRMDeal } from '../../../domain/types';
 import { CrudConfig } from '@/core/components/crud/types';
 
 // --- Componentes Filhos e Motores Injetáveis ---
 import { CrudFormOrchestrator } from '@/core/components/crud/views/form/CrudFormOrchestrator'; 
-import { ClientDashboard } from '../../components/client-dashboard/ClientDashboard'; // 👑 O Retorno do Rei (Memória de IA)
+import { ClientDashboard } from './client-dashboard/ClientDashboard'; // 👑 O Retorno do Rei (Memória de IA)
 
 // --- Mutadores (CQRS - Padrão Command) ---
-import { useDealMutation } from '../../hooks/useDealMutation';
+import { useDealMutation } from '../../../application/hooks/useDealMutation';
 import { useClientMutation } from '@/core/client/hooks/useClientMutation';
 
 export type CockpitFormType = 'NONE' | 'CLIENT' | 'DEAL';

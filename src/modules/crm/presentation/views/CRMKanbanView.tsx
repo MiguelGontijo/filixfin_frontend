@@ -1,22 +1,20 @@
-// ===== FILE: src/modules/crm/presentation/CRMKanbanView.tsx =====
-
 import React, { useState } from 'react';
 
 // --- COMPONENTES VISUAIS ---
-import { KanbanBoard } from './kanban/KanbanBoard';
-import { EmptyPipelineState } from './kanban/EmptyPipelineState'; // ✅ Importado
-import { DealModal } from './deals/DealModal';
+import { KanbanBoard } from '../../presentation/components/kanban/KanbanBoard';
+import { EmptyPipelineState } from '../../presentation/components/kanban/EmptyPipelineState'; // ✅ Importado
+import { DealModal } from '../../components/deals/DealModal';
 
 // --- COMPONENTES DE CONFIGURAÇÃO ---
-import { PipelineDrawer } from './pipeline-manager/PipelineDrawer';
-import { ConfigStage } from './pipeline-manager/StageList';
+import { PipelineDrawer } from '../components/pipeline-manager/PipelineDrawer';
+import { ConfigStage } from '../components/pipeline-manager/StageList';
 
 // --- TYPES E ICONS ---
-import { CRMDeal, DealStatus } from '../types';
+import { CRMDeal, DealStatus } from '../../domain/types';
 import { FaSync, FaExclamationTriangle, FaPlus } from 'react-icons/fa';
 
 // --- HOOKS ---
-import { usePipelineDetails } from '../hooks/usePipelines';
+import { usePipelineDetails } from '../../application/hooks/usePipelines';
 
 interface CRMKanbanViewProps {
     // Dados Principais

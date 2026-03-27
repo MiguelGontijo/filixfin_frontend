@@ -7,9 +7,9 @@ import { FaUserTie, FaDollarSign, FaTrash, FaPlus, FaHandshake } from 'react-ico
 import { CrudConfig } from '@/core/components/crud/types';
 
 // --- Contratos e Tipos do Domínio ---
-import { CRMDeal, DealStatus, DealSource } from '../types';
-import { DealFormSchema, DealFormInput } from '../schemas/dealSchema';
-import { IPipeline } from '../types/pipeline.types';
+import { CRMDeal, DealStatus, DealSource } from '../domain/types';
+import { DealFormSchema, DealFormInput } from '../domain/schemas/dealSchema';
+import { IPipeline } from '../domain/types/pipeline.types';
 import { Client } from '@/core/client/types/client';
 
 /**

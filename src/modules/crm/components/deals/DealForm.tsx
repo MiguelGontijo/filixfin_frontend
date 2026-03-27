@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { FaSave, FaPlus, FaTrash, FaBox, FaWrench, FaExclamationTriangle, FaLink } from 'react-icons/fa';
 import { useClients } from '@/core/client/hooks/useClients';
-import { useDeals } from '@/modules/crm/hooks/useDeals'; 
-import { DealStatus, DealItemType, CRMDeal } from '@/modules/crm/types'; 
+import { useDeals } from '@/modules/crm/application/hooks/useDeals'; 
+import { DealStatus, DealItemType, CRMDeal } from '@/modules/crm/domain/types'; 
 import { Product } from '@/modules/products/types'; 
 import { ProductSelector } from '@/modules/products/components/ProductSelector'; 
 

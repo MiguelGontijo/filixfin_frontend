@@ -4,18 +4,19 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { FaProjectDiagram, FaCheckCircle, FaSync } from 'react-icons/fa';
 
-// --- Motor CRUD V4 ---
+// --- Mundo 1: Motor CRUD V4 (Contratos Globais) ---
 import { CrudLayout } from '@/core/components/crud/CrudLayout';
 import { CrudConfig, CrudHooks } from '@/core/components/crud/types';
 
-// --- Contratos e Tipos ---
-import { IPipeline } from '../types/pipeline.types';
-import { PipelineFormSchema, PipelineFormInput } from '../schemas/pipelineSchema';
+// --- Mundo 2: Domínio & Aplicação (CRM) ---
+import { IPipeline } from '../../domain/types/pipeline.types';
+import { PipelineFormSchema, PipelineFormInput } from '../../domain/schemas/pipelineSchema';
 
 // --- Motores de Dados (CQRS) ---
-import { usePipelines, usePipelineDetails } from '../hooks/usePipelines';
+import { usePipelines, usePipelineDetails } from '../../application/hooks/usePipelines';
+import { usePipelineMutation } from '../../application/hooks/usePipelineMutation'; // 💡 Novo Braço de Comando
 
-// --- Componentes Injetáveis ---
+// --- Componentes de Apresentação ---
 import { StageList, ConfigStage } from '../components/pipeline-manager/StageList';
 
 /**
@@ -60,7 +61,6 @@ const StagesEditorInjector = ({ form }: { form: UseFormReturn<any> }) => {
     const currentStages = form.watch('stages') || [];
 
     // ⏳ LOADING STATE (Proteção contra Race Conditions)
-    // Impede que o usuário interaja com a tela enquanto o Lazy Load do Backend não trouxer as etapas.
     if (pipelineId && isLoadingPipeline && syncRef.current !== pipelineId) {
         return (
             <div className="mt-4 p-8 flex flex-col items-center justify-center bg-gray-800/30 border border-gray-700/50 rounded-xl text-gray-500">
@@ -73,11 +73,9 @@ const StagesEditorInjector = ({ form }: { form: UseFormReturn<any> }) => {
     return (
         <div className="mt-4 p-4 bg-gray-800/30 border border-gray-700/50 rounded-xl shadow-inner animate-fade-in">
             <StageList 
-                // Garantimos que a tipagem bate com a interface do componente visual
                 stages={currentStages as ConfigStage[]} 
                 onChange={(newStages) => {
-                    // Quando o usuário interage (Drag & Drop), salvamos no RHF em tempo real.
-                    // shouldValidate força o Zod a reavaliar a regra .min(1) imediatamente.
+                    // Sincroniza as mudanças do Drag & Drop com o motor do formulário
                     form.setValue('stages', newStages, { shouldValidate: true, shouldDirty: true });
                 }}
             />
@@ -90,23 +88,17 @@ const StagesEditorInjector = ({ form }: { form: UseFormReturn<any> }) => {
  * 🏭 COMPONENTE PRINCIPAL: PIPELINE REGISTRY
  * @description O Orquestrador de Funis de Venda (Master Data).
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
- * 1. Lazy Loading Protegido: O `StagesEditorInjector` isola a complexidade 
- * de rede, garantindo que o form abra limpo e seja hidratado com segurança.
- * 2. Tipagem Híbrida Segura: Utiliza bypass controlado (`as any`) nas fronteiras
- * de envio/recepção para harmonizar o RHF com a tipagem estrita do Zod.
+ * 1. CQRS Bridge: Conecta hooks de Query e Mutation ao CrudLayout universal.
+ * 2. Type-Safety: Resolve inconsistências de retorno de Promises entre Mundos.
+ * 3. Injeção de Componentes: Utiliza o portal 'custom' do Motor V4 para embutir
+ * o gestor de etapas reordenável.
  * ============================================================================
  */
 export function PipelineRegistry() {
     
-    // 1. O Motor de Dados (Leitura e Escrita unificados no hook CQRS)
-    const { 
-        pipelines, 
-        isLoadingPipelines, 
-        errorPipelines, 
-        createPipeline, 
-        updatePipeline, 
-        refreshPipelines 
-    } = usePipelines();
+    // 📡 Mundo Application: Leitura e Escrita segregadas
+    const { pipelines, isLoadingPipelines, errorPipelines, refreshPipelines } = usePipelines();
+    const { createPipeline, updatePipeline, isLoading: isMutating, error: mutationError } = usePipelineMutation();
 
     // =========================================================================
     // ⚙️ CONFIGURAÇÃO CLASSE OURO (O Manual do CrudLayout)
@@ -114,13 +106,13 @@ export function PipelineRegistry() {
     const config: CrudConfig<IPipeline, PipelineFormInput> = useMemo(() => ({
         title: 'Funis de Vendas (Pipelines)',
         description: 'Configure as esteiras comerciais e suas respectivas etapas (Kanban).',
-        schema: PipelineFormSchema as any, // Validação rigorosa do Zod acoplada ao RHF
+        schema: PipelineFormSchema as any,
 
         // --- VISÃO MASTER (GRID DE FUNIS) ---
         columns: [
             {
                 header: 'Nome do Funil',
-                accessor: (item) => (
+                accessor: (item: IPipeline) => (
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-gray-800 rounded-lg border border-gray-700 text-accent-secondary flex-shrink-0">
                             <FaProjectDiagram className="w-4 h-4" />
@@ -133,15 +125,13 @@ export function PipelineRegistry() {
             },
             {
                 header: 'Etapas (Stages)',
-                accessor: (item) => {
-                    // Fallback seguro caso o TypeORM do backend não envie as etapas na listagem master
+                accessor: (item: IPipeline) => {
                     const stageCount = item.stages?.length || 0;
                     return (
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-gray-300 bg-gray-800 px-2 py-1 rounded-md border border-gray-700">
                                 {stageCount} Etapas
                             </span>
-                            {/* Dashboard Visual: Renderiza as cores das etapas em miniatura para fácil reconhecimento */}
                             <div className="hidden sm:flex items-center gap-0.5">
                                 {item.stages?.slice(0, 5).map((stage, i) => (
                                     <div key={i} className="w-2 h-4 rounded-sm shadow-sm" style={{ backgroundColor: stage.color }} title={stage.name} />
@@ -154,7 +144,7 @@ export function PipelineRegistry() {
             },
             {
                 header: 'Funil Padrão',
-                accessor: (item) => (
+                accessor: (item: IPipeline) => (
                     item.isDefault ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                             <FaCheckCircle /> Padrão
@@ -166,21 +156,19 @@ export function PipelineRegistry() {
             }
         ],
 
-        // --- VISÃO DETAIL (O FORMULÁRIO E A INJEÇÃO DO DRAG & DROP) ---
+        // --- VISÃO DETAIL (O FORMULÁRIO) ---
         fields: [
-            { name: 'name', label: 'Nome do Funil', type: 'text', placeholder: 'Ex: Vendas B2B, Retenção, Parcerias...' },
-            { name: 'isDefault', label: 'Funil Padrão (Carrega automaticamente no CRM)', type: 'boolean', trueLabel: 'Sim, é o padrão', falseLabel: 'Não' },
-            
-            // 💡 A INJEÇÃO DE CLASSE OURO (O Componente Inteligente)
+            { name: 'name', label: 'Nome do Funil', type: 'text', placeholder: 'Ex: Vendas B2B...' },
+            { name: 'isDefault', label: 'Funil Padrão', type: 'boolean', trueLabel: 'Sim, é o padrão', falseLabel: 'Não' },
             {
-                name: 'stages' as any, 
+                name: 'stages',
                 label: 'Configuração das Etapas (Arraste para reordenar)',
                 type: 'custom',
-                customRender: (form) => <StagesEditorInjector form={form} />
+                customRender: (form: UseFormReturn<any>) => <StagesEditorInjector form={form} />
             }
         ],
 
-        // --- GAVETA DE AUDITORIA (System Fields) ---
+        // --- GAVETA DE AUDITORIA ---
         systemFields: [
             { name: 'id', label: 'UUID do Funil', type: 'text' },
             { name: 'tenantId', label: 'Tenant ID', type: 'text' },
@@ -189,26 +177,24 @@ export function PipelineRegistry() {
     }), []);
 
     // =========================================================================
-    // 🔌 ROTEAMENTO DE AÇÕES E BYPASS SEGURO DE TIPAGEM (CQRS)
+    // 🔌 ROTEAMENTO DE AÇÕES (CQRS Bridge)
     // =========================================================================
     const crudHooks: CrudHooks<IPipeline, PipelineFormInput> = {
         data: pipelines,
-        isLoading: isLoadingPipelines,
-        error: errorPipelines ? String(errorPipelines) : null,
+        isLoading: isLoadingPipelines || isMutating,
+        error: (mutationError || (errorPipelines ? String(errorPipelines) : null)),
         
-        // 💡 O React Hook Form passa o dado rigorosamente limpo e processado pelo `.transform()` do Zod.
-        // O `as any` aqui diz ao TypeScript que o Zod já garantiu a conversão para ICreatePipelineDTO.
+        // 💡 CONFORMIDADE CLASSE OURO: O Zod garante a tipagem correta no .transform()
         onCreate: async (data) => {
             return createPipeline(data as any);
         },
         
         onUpdate: async (id, data) => {
-            return updatePipeline({ id, ...(data as any) });
+            return updatePipeline(id, data as any);
         },
         
-        // Proteção arquitetural contra exclusão acidental. 
         onDelete: async () => {
-            alert('⚠️ Operação bloqueada: A exclusão de funis requer desvinculação prévia de todos os negócios (Deals) associados. Use a inativação ou contate o suporte técnico.');
+            alert('⚠️ Operação bloqueada: A exclusão de funis requer desvinculação prévia de Deals.');
         },
         
         onRefresh: refreshPipelines

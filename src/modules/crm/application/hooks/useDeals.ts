@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/core/services/api';
 
 // --- Contratos de Domínio (CRM) ---
-import { CRMDeal, DealStatus } from '../types';
+import { CRMDeal, DealStatus } from '../../domain/types';
 
 // --- Contratos Globais (Shared Kernel) ---
 import { PaginatedResponse } from '@/core/types/api';
