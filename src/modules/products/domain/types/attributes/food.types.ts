@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * 🍕 METADATA TYPE: FoodMetadata
+ * 🍕 Attributes TYPE: FoodAttributes
  * @description Define a estrutura de dados dinâmicos (JSONB) para o setor 
  * de alimentação e food service.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Level):
@@ -13,7 +13,13 @@
  * ============================================================================
  */
 
-export interface FoodMetadata {
+export interface FoodAttributes {
+    /** * 🧬 DNA: domain
+     * @description Identificador de ativação do modelo de nicho. 
+     * Essencial para o brilho automático e introspecção do Motor CRUD.
+     */
+    domain: string;
+    
     /** 🥗 Lista de ingredientes que compõem o produto */
     ingredients: string[];
 

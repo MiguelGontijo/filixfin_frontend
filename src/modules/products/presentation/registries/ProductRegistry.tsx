@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React from 'react';
 
 // --- Motores do Core CRUD V4 (A fundação blindada) ---
 import { CrudLayout } from '@/core/components/crud/CrudLayout';
 import { CrudHooks } from '@/core/components/crud/types';
 
 // --- Inteligência de Domínio e Configuração ---
-import { ProductDomainModel } from '../../domain/types/enums';
 import { ProductFormInput } from '../../domain/schemas/productSchema';
 import { useProductConfig } from '../../application/useProductConfig';
 
@@ -19,15 +18,13 @@ import { useFiscal } from '@/modules/fiscal/hooks/useFiscal';
 
 /**
  * ============================================================================
- * 🏭 REGISTRY: ProductRegistry
+ * 🏭 REGISTRY: ProductRegistry (Versão Purificada V2)
  * @description Maestro principal para gestão de produtos e serviços polimórficos.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Architecture):
- * 1. Strategic Decoupling: Consome a inteligência visual via 'useProductConfig', 
- * mantendo o Registry focado apenas no fluxo de dados.
- * 2. Data Transformation (Flattener): Normaliza a estrutura de Variantes/JSONB 
- * para uma visão plana e executiva na CrudTable V4.
- * 3. Reactive Integration: Sincroniza estados de Categoria e Fiscal em tempo 
- * real com os seletores do formulário.
+ * 1. Zero-Maintenance Data: Remove o 'Great Flattener' manual. O Motor CRUD 
+ * agora consome o middleware 'hydrate' definido no Config automaticamente.
+ * 2. Pure Data Binding: Mantém o Registry 100% agnóstico à estrutura do JSONB.
+ * 3. Reactive Sync: Integração total com categorias, fiscal e mutações de API.
  * ============================================================================
  */
 export const ProductRegistry: React.FC = () => {
@@ -41,7 +38,8 @@ export const ProductRegistry: React.FC = () => {
 
     /**
      * 📐 3. CONFIGURAÇÃO VISUAL (Abstração de UI)
-     * Delegamos a definição de campos e colunas para o hook especializado.
+     * O Hook especializado agora entrega não apenas os campos, mas a inteligência 
+     * de hidratação/desidratação que o Motor CRUD executará internamente.
      */
     const productConfig = useProductConfig({ 
         categories, 
@@ -51,37 +49,13 @@ export const ProductRegistry: React.FC = () => {
     });
 
     /**
-     * 🔄 4. THE GREAT FLATTENER (Normalização de Leitura)
-     * @description Traduz o modelo rico do Backend para o formato plano da Tabela.
-     */
-    const flatProducts = useMemo(() => {
-        return (products || []).map(product => {
-            // Extração da Variante Mestra para exibição Master-Data
-            const mainVariant = (product.variants && product.variants.length > 0) 
-                ? product.variants[0] 
-                : {} as any;
-            
-            const metadataRaw = mainVariant.metadata as any;
-            const domain = metadataRaw?.domain || ProductDomainModel.PHYSICAL;
-
-            return {
-                ...product,
-                variantId: mainVariant.id || '',
-                sku: mainVariant.sku || '',
-                salePrice: mainVariant.salePrice || 0,
-                domainModel: domain,
-                // O metadata aqui chega plano para alimentar os sub-forms no CustomRender
-                metadata: metadataRaw?.data || {}
-            };
-        });
-    }, [products]);
-
-    /**
-     * 🔌 5. GANCHOS DE EXECUÇÃO (Data Bindings)
+     * 🔌 4. GANCHOS DE EXECUÇÃO (Data Bindings)
      * Conecta as ações do Motor CRUD aos Hooks de Mutação.
+     * Nota: O 'flatProducts' foi removido. O CrudLayout receberá 'products' bruto 
+     * e aplicará o hydrate por conta própria em cada linha e no formulário.
      */
     const crudHooks: CrudHooks<any, ProductFormInput> = {
-        data: flatProducts,
+        data: products || [],
         isLoading: loadingProducts,
         error: queryError || mutationError || null,
         onCreate: createProduct as any,

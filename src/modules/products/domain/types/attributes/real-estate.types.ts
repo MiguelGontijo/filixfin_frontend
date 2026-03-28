@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * 🏠 METADATA TYPE: RealEstateMetadata
+ * 🏠 Attributes TYPE: RealEstateAttributes
  * @description Define a estrutura de dados dinâmicos (JSONB) para o setor 
  * imobiliário e de propriedades.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Level):
@@ -13,7 +13,13 @@
  * ============================================================================
  */
 
-export interface RealEstateMetadata {
+export interface RealEstateAttributes {
+    /** * 🧬 DNA: domain
+     * @description Identificador de ativação do modelo de nicho. 
+     * Essencial para o brilho automático e introspecção do Motor CRUD.
+     */
+    domain: string;
+    
     /** 🏘️ Classificação do tipo de propriedade */
     property_type: 'HOUSE' | 'APARTMENT' | 'LAND' | 'COMMERCIAL' | 'FARM';
 

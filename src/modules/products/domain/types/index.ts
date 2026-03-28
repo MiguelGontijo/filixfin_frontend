@@ -6,7 +6,7 @@
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Architecture):
  * 1. Interface Unification: Centraliza as definições de Produto e Variante, 
  * facilitando o consumo pelo Motor CRUD V4 e Hooks de Domínio.
- * 2. Metadata Aggregation: Expõe o cérebro polimórfico (ProductMetadata), 
+ * 2. Attributes Aggregation: Expõe o cérebro polimórfico (ProductAttributes), 
  * integrando os nichos de Veículos, Imóveis, Digital e Food.
  * 3. Enums Governance: Garante que os mapas de intenções (ProductType, 
  * ProductDomainModel) sejam exportados com suas respectivas chaves de tipagem.
@@ -17,12 +17,12 @@
 export * from './enums';
 
 // 🧬 Inteligência Polimórfica (JSONB) e Nichos de Mercado
-export * from './metadata.types';
-export * from './metadata/food.types';
-export * from './metadata/vehicle.types';
-export * from './metadata/real-estate.types';
-export * from './metadata/digital.types';
-export * from './metadata/service.types';
+export * from './attributes.types';
+export * from './attributes/food.types';
+export * from './attributes/vehicle.types';
+export * from './attributes/real-estate.types';
+export * from './attributes/digital.types';
+export * from './attributes/service.types';
 
 // 📦 Entidades Core e Contratos de Escrita (DTOs)
 export * from './product';

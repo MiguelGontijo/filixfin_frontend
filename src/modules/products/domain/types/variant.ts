@@ -1,4 +1,4 @@
-import { ProductMetadata } from './metadata.types';
+import { ProductAttributes } from './attributes.types';
 
 /**
  * ============================================================================
@@ -7,7 +7,7 @@ import { ProductMetadata } from './metadata.types';
  * Em um modelo Shopify, cada variante possui sua própria identidade, 
  * precificação e atributos específicos salvos em JSONB.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
- * 1. Metadata Sovereignty: O campo 'metadata' armazena as especificidades 
+ * 1. Attributes Sovereignty: O campo 'attributes' armazena as especificidades 
  * de nicho (ex: a quilometragem de um carro ou os alérgenos de uma pizza).
  * 2. Financial Precision: Separação estrita entre preço de venda, custo 
  * e promoções para auditoria de margem.
@@ -36,7 +36,7 @@ export interface ProductVariant {
     /** 🧠 Inteligência Dinâmica (JSONB)
      * Contém os atributos polimórficos definidos pelo DomainModel do Produto.
      */
-    metadata: ProductMetadata;
+    attributes?: ProductAttributes;
 
     /** 📦 Informações de Estoque (Injetadas via Response DTO) */
     stockQuantity?: number;
@@ -66,5 +66,5 @@ export interface ProductVariantFormData {
     promotionalPrice?: number;
 
     /** Payload dinâmico para o JSONB */
-    metadata?: any;
+    attributes: any;
 }

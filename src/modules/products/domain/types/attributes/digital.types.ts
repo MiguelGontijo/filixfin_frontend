@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * 💾 METADATA TYPE: DigitalMetadata
+ * 💾 Attributes TYPE: DigitalAttributes
  * @description Define a estrutura de dados dinâmicos (JSONB) para o setor 
  * de produtos digitais, software e infoprodutos.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Level):
@@ -13,7 +13,13 @@
  * ============================================================================
  */
 
-export interface DigitalMetadata {
+export interface DigitalAttributes {
+    /** * 🧬 DNA: domain
+     * @description Identificador de ativação do modelo de nicho. 
+     * Essencial para o brilho automático e introspecção do Motor CRUD.
+     */
+    domain: string;
+    
     /** 📦 Tamanho total do arquivo para download em Megabytes (MB) */
     file_size_mb?: number;
 

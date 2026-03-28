@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * 🛠️ METADATA TYPE: ServiceMetadata
+ * 🛠️ Attributes TYPE: ServiceAttributes
  * @description Define a estrutura de dados para o domínio de serviços, 
  * consultorias e assinaturas.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Google/Shopify Level):
@@ -11,7 +11,13 @@
  * ============================================================================
  */
 
-export interface ServiceMetadata {
+export interface ServiceAttributes {
+    /** * 🧬 DNA: domain
+     * @description Identificador de ativação do modelo de nicho. 
+     * Essencial para o brilho automático e introspecção do Motor CRUD.
+     */
+    domain: string;
+    
     /** ⏱️ Duração estimada da execução do serviço em minutos */
     duration_minutes: number;
 

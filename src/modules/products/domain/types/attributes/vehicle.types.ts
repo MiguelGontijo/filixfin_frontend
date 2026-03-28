@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * 🏎️ METADATA TYPE: VehicleMetadata
+ * 🏎️ ATTRIBUTES TYPE: VehicleAttributes
  * @description Define a estrutura de dados dinâmicos (JSONB) para o setor 
  * automotivo e de transportes.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Level):
@@ -13,7 +13,13 @@
  * ============================================================================
  */
 
-export interface VehicleMetadata {
+export interface VehicleAttributes {
+    /** * 🧬 DNA: domain
+     * @description Identificador de ativação do modelo de nicho. 
+     * Essencial para o brilho automático e introspecção do Motor CRUD.
+     */
+    domain: string;
+    
     /** 📅 Ano do modelo ou fabricação do veículo */
     year: number;
 

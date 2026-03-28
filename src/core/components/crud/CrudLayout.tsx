@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FieldValues } from 'react-hook-form';
 
 // --- Tipagens e Contratos ---
@@ -9,6 +9,9 @@ import { CrudLayoutProps, FormMode } from './types';
 // --- Motores de Estado e Inteligência (Cérebro) ---
 import { useCrudLayoutState } from './hooks/useCrudLayoutState';
 import { useCrudSearch } from './hooks/useCrudSearch';
+
+// --- Unidade de Inteligência de Dados (UID) ---
+import { DataEngine } from './utils/DataEngine';
 
 // --- Operários Visuais Isolados (A Trindade da Lista) ---
 import { CrudListHeader } from './views/list/components/CrudListHeader';
@@ -20,52 +23,64 @@ import { CrudFormOrchestrator } from './views/form/CrudFormOrchestrator';
 
 /**
  * ============================================================================
- * 🏛️ COMPONENTE: CrudLayout (O Maestro Visual V4)
+ * 🏛️ COMPONENTE: CrudLayout (O Maestro Visual V4 - Versão Auto-Aware)
  * @description O Layout Universal para Cadastros de Apoio e Master Data.
- * Agora refatorado com DDD e SOLID (Single Responsibility Principle).
- * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO:
- * - HTML 100% Declarativo: Não há mais condicionais sujas de renderização. 
- * O Maestro apenas posiciona os blocos (Header, Orchestrator, Footer).
- * - Delegação de Formulário (IoC): Impede a sobreposição de telas ao delegar
- * a renderização do Form para o Palco Central quando instruído pelo pai.
+ * Agora integrado com a DataEngine para processamento automático de Variants e Attributes.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Level):
+ * 1. Zero-Config Data Pipeline: Intercepta o fluxo de dados e aplica hidratação 
+ * automática sem necessidade de mapeamento manual no Config.
+ * 2. Variant & Attribute Intelligence: Promove automaticamente campos de variantes 
+ * para a raiz da UI, mantendo a simetria com o backend.
+ * 3. Atomic Consistency: Garante que o 'deflate' ocorra antes de qualquer mutação, 
+ * preservando a integridade do DTO original.
  * ============================================================================
  */
 export function CrudLayout<TData extends FieldValues & { id: string }, TForm extends FieldValues>({
     config,
     hooks,
-    listMode = 'table', // Padrão: Tabela Master Data
-    formMode = FormMode.EDIT,  // Padrão: Formulário Editável
-    selectedItemId,     // Fio de Estado Visual
+    listMode = 'table', 
+    formMode = FormMode.EDIT,  
+    selectedItemId,     
     baseInjectData,
-    onFormRequest,      // 💡 FIO DE DELEGAÇÃO: Se existir, o pai assume o form
-    onViewRequest       // 💡 FIO DE VISUALIZAÇÃO: Extrai a intenção de Dossiê/Dashboard
-}: CrudLayoutProps<TData, TForm>) { // 🛡️ FIX CLASSE OURO: Usando o contrato oficial direto do types.ts
+    onFormRequest,      
+    onViewRequest       
+}: CrudLayoutProps<TData, TForm>) {
 
     // =========================================================================
-    // 🧠 MÁQUINA DE ESTADOS E CÉREBRO DE BUSCA
+    // 🧠 MÁQUINA DE ESTADOS E PROCESSAMENTO AUTONÔMICO
     // =========================================================================
     
+    /** 💧 AUTO-HYDRATION: Processamento de Dados de Entrada
+     * @description Utiliza a DataEngine para inflar os objetos brutos da API.
+     * Resolve o achatamento de Variants e a normalização do container 'attributes'.
+     */
+    const processedData = useMemo(() => {
+        if (!hooks.data) return [];
+        return hooks.data.map(item => DataEngine.inflate(item));
+    }, [hooks.data]);
+
     const { viewMode, editingItem, openCreate, openEdit, closeForm } = useCrudLayoutState<TData>();
-    const { searchTerm, setSearchTerm, filteredData } = useCrudSearch<TData>(hooks.data);
+    
+    /** 🔍 MOTOR DE BUSCA: Opera sobre a vitrine já hidratada pela DataEngine */
+    const { searchTerm, setSearchTerm, filteredData } = useCrudSearch<TData>(processedData);
 
     // =========================================================================
-    // 🚦 INTERCEPTADORES DE ROTEAMENTO (O Conserto do Formulário Esmagado)
-    // Avalia se o formulário deve abrir localmente ou se deve ser delegado ao Pai.
+    // 🚦 INTERCEPTADORES DE ROTEAMENTO
     // =========================================================================
     
     const handleOpenCreate = () => {
         if (onFormRequest) {
             onFormRequest(baseInjectData ? (baseInjectData as unknown as TData) : null);
         } else {
-            openCreate(); // Ninguém reclamou controle, abre o form localmente
+            openCreate();
         }
     };
 
     const handleOpenEdit = (item: TData) => {
         if (onFormRequest) {
-            onFormRequest(item); // Avisa o Maestro Central passando os dados do item
+            onFormRequest(item);
         } else {
-            openEdit(item); // Abre localmente
+            openEdit(item);
         }
     };
 
@@ -73,12 +88,21 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
     // ⚙️ HANDLERS DE AÇÃO (Transações com a API)
     // =========================================================================
     
+    /** 🚀 SUBMISSÃO COM AUTO-DEFLATE
+     * @description Antes de enviar para os hooks de mutação, o motor utiliza a 
+     * DataEngine para re-empacotar os dados promovidos para a estrutura de 
+     * variantes e atributos que o DTO do Backend exige.
+     */
     const handleSubmit = async (formData: TForm) => {
         try {
+            // 🧪 RE-EMPACOTAMENTO: Encontra o item original para preservar metadados de sistema
+            const originalItem = hooks.data.find(i => i.id === (editingItem as any)?.id);
+            const apiPayload = DataEngine.deflate(formData, originalItem);
+
             if (editingItem) {
-                await hooks.onUpdate(editingItem.id, formData);
+                await hooks.onUpdate(editingItem.id, apiPayload);
             } else {
-                await hooks.onCreate(formData);
+                await hooks.onCreate(apiPayload);
             }
             hooks.onRefresh();
             closeForm();
@@ -99,7 +123,7 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
     };
 
     // =========================================================================
-    // 🖼️ RENDERIZAÇÃO MONUMENTAL (O Palco Limpo e Declarativo)
+    // 🖼️ RENDERIZAÇÃO MONUMENTAL (O Palco Limpo e Inteligente)
     // =========================================================================
     return (
         <div className="h-full flex flex-col min-h-0 relative overflow-hidden bg-transparent rounded-xl">
@@ -136,11 +160,9 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
                         data={filteredData}
                         config={config}
                         isLoading={hooks.isLoading}
-                        onEdit={handleOpenEdit} // Passamos o interceptador
+                        onEdit={handleOpenEdit}
                         onDelete={handleDelete}
                         selectedItemId={selectedItemId} 
-                        
-                        // 💡 A CONEXÃO: Repassamos o fio do Dossiê para a Vitrine
                         onViewRequest={onViewRequest} 
                     />
                 </div>
@@ -152,12 +174,12 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
                 />
             </div>
 
-            {/* --- MODO FORMULÁRIO (A IMPRESSORA 3D LOCAL) --- */}
-            {/* Só será renderizada e vista se onFormRequest NÃO existir e o usuário abrir localmente */}
+            {/* --- MODO FORMULÁRIO --- */}
             <CrudFormOrchestrator<TData, TForm>
                 isOpen={viewMode === 'FORM'}
                 onClose={closeForm}
                 config={config}
+                // O editingItem aqui já passou pelo DataEngine.inflate no processedData
                 initialData={editingItem || undefined}
                 formMode={formMode}
                 onSubmit={handleSubmit}
