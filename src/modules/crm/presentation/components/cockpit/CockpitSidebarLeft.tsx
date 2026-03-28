@@ -39,7 +39,7 @@ interface CockpitSidebarLeftProps {
     onEditClientRequest: (client: Client | Partial<Client>) => void;
     
     /** @description Ação: Usuário clicou em "Novo Deal" ou "Editar Deal" na lista inferior */
-    onDealFormRequest: (deal: CRMDeal | null) => void;
+    onDealFormRequest: (deal?: CRMDeal | Partial<CRMDeal> | null) => void;
 }
 
 /**

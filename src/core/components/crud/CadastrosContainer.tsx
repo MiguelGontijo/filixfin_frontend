@@ -6,8 +6,8 @@ import { PipelineRegistry } from '@/modules/crm/presentation/registries/Pipeline
 import { FiscalRegistry } from '@/modules/fiscal/registries/FiscalRegistry';
 import { InventoryRegistry } from '@/modules/inventory/registries/InventoryRegistry';
 import { WarehouseRegistry } from '@/modules/inventory/registries/WarehouseRegistry';
-import { CategoryRegistry } from '@/modules/products/registries/CategoryRegistry';
-import { ProductRegistry } from '@/modules/products/registries/ProductRegistry';
+import { CategoryRegistry } from '@/modules/categories/registries/CategoryRegistry';
+import { ProductRegistry } from '@/modules/products/presentation/registries/ProductRegistry';
 import React, { useState, useMemo } from 'react';
 import { 
     FaBoxOpen, 

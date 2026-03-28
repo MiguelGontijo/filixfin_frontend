@@ -26,11 +26,20 @@ export interface CrudColumn<T> {
  */
 export type ListMode = 'table' | 'cards';
 
-/** * @type FormMode
- * @description Roteador Lógico do conteúdo do formulário.
- * 'edit' (Interativo) vs 'readonly' (Dossiê/Demitido da Edição).
+/** * @enum FormMode
+ * @description Roteador Lógico de Permissão do formulário.
+ * EDIT: Permite interação e salvamento.
+ * READONLY: Apenas visualização de dados (Audit Mode).
  */
-export type FormMode = 'edit' | 'readonly';
+export enum FormMode {
+    EDIT = 'edit',
+    READONLY = 'readonly'
+}
+
+/** * @type FormModeType
+ * @description Atalho para compatibilidade de tipos literais.
+ */
+export type FormModeType = FormMode;
 
 /** * @type PresentationMode
  * @description Roteador Espacial (O Envelopador).

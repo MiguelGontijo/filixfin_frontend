@@ -2,7 +2,7 @@ import React from 'react';
 import { FieldValues } from 'react-hook-form';
 
 // --- Tipagens e Contratos ---
-import { CrudFormProps } from '../../types';
+import { CrudFormProps, FormMode } from '../../types';
 
 // --- Operários Especializados (Views) ---
 import { CrudForm } from './CrudFormEdit';
@@ -25,7 +25,7 @@ export function CrudFormOrchestrator<T, FormData extends FieldValues = any>(
     props: CrudFormProps<T, FormData>
 ) {
     // Extrai o modo de visão (padrão: 'edit') e repassa o restante das props intactas
-    const { formMode = 'edit', ...restProps } = props;
+    const { formMode = FormMode.EDIT, ...restProps } = props;
 
     // ========================================================================
     // 👁️ ESTRATÉGIA 1: MODO LEITURA (Dossiê / Dashboard)

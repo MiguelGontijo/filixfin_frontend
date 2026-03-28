@@ -4,7 +4,7 @@ import React from 'react';
 import { FieldValues } from 'react-hook-form';
 
 // --- Tipagens e Contratos ---
-import { CrudLayoutProps } from './types';
+import { CrudLayoutProps, FormMode } from './types';
 
 // --- Motores de Estado e Inteligência (Cérebro) ---
 import { useCrudLayoutState } from './hooks/useCrudLayoutState';
@@ -34,7 +34,7 @@ export function CrudLayout<TData extends FieldValues & { id: string }, TForm ext
     config,
     hooks,
     listMode = 'table', // Padrão: Tabela Master Data
-    formMode = 'edit',  // Padrão: Formulário Editável
+    formMode = FormMode.EDIT,  // Padrão: Formulário Editável
     selectedItemId,     // Fio de Estado Visual
     baseInjectData,
     onFormRequest,      // 💡 FIO DE DELEGAÇÃO: Se existir, o pai assume o form

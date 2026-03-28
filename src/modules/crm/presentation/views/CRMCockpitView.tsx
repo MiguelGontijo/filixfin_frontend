@@ -9,7 +9,7 @@ import { CRMDeal } from '../../domain/types';
 
 // --- Motores Injetáveis (Os Manuais de Instrução V4) ---
 import { useClientConfig } from '@/core/client/hooks/useClientConfig';
-import { useDealConfig } from '../../application/hooks/useDealConfig';
+import { useDealConfig } from '../../application/useDealConfig';
 
 // --- Motores de Dados (CQRS) ---
 import { useClients } from '@/core/client/hooks/useClients';
@@ -100,18 +100,17 @@ export function CRMCockpitView({
         setFormState({ type: 'CLIENT', data: null }); // Arma a impressora em modo branco
     };
 
-    const handleEditClientRequest = (clientToEdit?: Client) => {
+    const handleEditClientRequest = (clientToEdit?: Client | Partial<Client>) => {
         const targetClient = clientToEdit || selectedClient;
         if (targetClient) {
-            if (targetClient.id !== selectedClient?.id) {
-                onSelectClient(targetClient);
-            }
-            setFormState({ type: 'CLIENT', data: targetClient });
+            // Se for um rascunho (sem ID), tratamos como criação no palco central
+            setFormState({ type: 'CLIENT', data: targetClient as Client });
         }
     };
 
-    const handleDealFormRequest = (deal: CRMDeal | null) => {
-        setFormState({ type: 'DEAL', data: deal });
+    const handleDealFormRequest = (deal?: CRMDeal | Partial<CRMDeal> | null) => {
+        // Se o deal vier undefined, a máquina de estados entende como um 'Novo Registro'
+        setFormState({ type: 'DEAL', data: (deal as CRMDeal) || null });
     };
 
     const handleCloseForm = () => {

@@ -3,7 +3,7 @@ import React from 'react';
 // --- Tipagens e Contratos ---
 import { Client } from '@/core/client/types/client';
 import { CRMDeal } from '../../../domain/types';
-import { CrudConfig } from '@/core/components/crud/types';
+import { CrudConfig, FormMode } from '@/core/components/crud/types';
 
 // --- Componentes Filhos e Motores Injetáveis ---
 import { CrudFormOrchestrator } from '@/core/components/crud/views/form/CrudFormOrchestrator'; 
@@ -77,7 +77,7 @@ export const CockpitCentralStage: React.FC<CockpitCentralStageProps> = ({
                     config={clientConfig}
                     initialData={client || undefined} 
                     presentationMode="inline" 
-                    formMode="edit"
+                    formMode={FormMode.EDIT}
                     onSubmit={async (data) => {
                         try {
                             if (client) {
@@ -129,7 +129,7 @@ export const CockpitCentralStage: React.FC<CockpitCentralStageProps> = ({
                     config={dealConfig}
                     initialData={dealToEdit || undefined}
                     presentationMode="inline" 
-                    formMode="edit"
+                    formMode={FormMode.EDIT}
                     onSubmit={async (data) => {
                         try {
                             if (dealToEdit) {

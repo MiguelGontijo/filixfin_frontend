@@ -1,7 +1,7 @@
 // src/app/[tenantId]/dashboard/supply-chain/page.tsx
 
 import React from 'react';
-import { ProductContainer } from '@/modules/products/presentation/ProductContainer';
+import { ProductContainer } from '@/modules/products/presentation/containers/ProductContainer';
 
 /**
  * @page SupplyChainPage

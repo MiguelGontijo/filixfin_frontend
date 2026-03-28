@@ -18,7 +18,7 @@ import { useClients } from '@/core/client/hooks/useClients';
 import { useDealMutation } from '../../application/hooks/useDealMutation';
 
 // --- Configuração Injetável (O Manual de Instruções) ---
-import { useDealConfig } from '../../application/hooks/useDealConfig';
+import { useDealConfig } from '../../application/useDealConfig';
 
 /**
  * ============================================================================
