@@ -13,7 +13,7 @@ import { useFilixAI } from '@/core/ai/context/FilixAIContext';
 
 // --- ICONS & CONTRATOS ---
 import { FaColumns, FaCalendarAlt, FaRocket, FaChartBar } from 'react-icons/fa';
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 import { AIContextMetadata } from '@/core/ai/types/dtos/AIChatRequest.dto';
 import { AppModules, FeatureKeys } from '@/core/ai/types/enums/AIEnums';
 

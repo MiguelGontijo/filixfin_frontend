@@ -79,16 +79,19 @@
 │   │   │   └── utils
 │   │   │       └── imageCompressor.ts
 │   │   ├── client
-│   │   │   ├── hooks
-│   │   │   │   ├── useClientConfig.tsx
-│   │   │   │   ├── useClientMutation.ts
-│   │   │   │   └── useClients.ts
-│   │   │   ├── registries
-│   │   │   │   └── ClientRegistry.tsx
-│   │   │   ├── schemas
-│   │   │   │   └── clientSchema.ts
-│   │   │   └── types
-│   │   │       └── client.ts
+│   │   │   ├── application
+│   │   │   │   ├── hooks
+│   │   │   │   │   ├── useClientMutation.ts
+│   │   │   │   │   └── useClients.ts
+│   │   │   │   └── useClientConfig.tsx
+│   │   │   ├── domain
+│   │   │   │   ├── schemas
+│   │   │   │   │   └── clientSchema.ts
+│   │   │   │   └── types
+│   │   │   │       └── client.ts
+│   │   │   └── presentation
+│   │   │       └── registries
+│   │   │           └── ClientRegistry.tsx
 │   │   ├── components
 │   │   │   ├── auth
 │   │   │   │   ├── AuthGuard.tsx
@@ -129,7 +132,8 @@
 │   │   │   ├── tenant
 │   │   │   │   └── TenantSelector.tsx
 │   │   │   └── ui
-│   │   │       └── SmartDatePicker.tsx
+│   │   │       ├── SmartDatePicker.tsx
+│   │   │       └── SmartSwitch.tsx
 │   │   ├── constants
 │   │   │   └── sysColors.ts
 │   │   ├── hooks
@@ -285,6 +289,7 @@
 │   │   │   │       ├── attributes
 │   │   │   │       │   ├── digital.types.ts
 │   │   │   │       │   ├── food.types.ts
+│   │   │   │       │   ├── physical.types.ts
 │   │   │   │       │   ├── real-estate.types.ts
 │   │   │   │       │   ├── service.types.ts
 │   │   │   │       │   └── vehicle.types.ts
@@ -431,7 +436,7 @@ export default eslintConfig;
 
 /// <reference types="next" />
 /// <reference types="next/image-types/global" />
-import "./.next/types/routes.d.ts";
+import "./.next/dev/types/routes.d.ts";
 
 // NOTE: This file should not be edited
 // see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
@@ -4151,167 +4156,12 @@ export const compressImage = async (file: File, options: CompressOptions = {}): 
 };
 
 
-// ===== FILE: src/core/client/hooks/useClientConfig.tsx =====
-
-import React, { useMemo } from 'react';
-import { FaUserTie, FaRobot } from 'react-icons/fa';
-
-// --- Tipagens do Motor V4 ---
-import { CrudConfig } from '@/core/components/crud/types';
-
-// --- Tipos e Schemas do Domínio de Cliente ---
-import { Client } from '../types/client';
-import { ClientFormSchema, ClientFormInput } from '../schemas/clientSchema';
-
-/**
- * ============================================================================
- * 📐 HOOK: useClientConfig (O Manual de Instruções do Cliente)
- * @description Centraliza o dicionário de dados (Data-Driven UI) da entidade Cliente.
- * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (SOLID e DRY):
- * - Ao isolar o Config em um Hook, permitimos que a mesma estrutura visual seja
- * consumida pela Tela de Listagem (ClientRegistry) e pelo Cockpit V4 Avançado,
- * sem duplicar uma única linha de código.
- * - Capacidade Polimórfica: Agora ciente do contexto espacial (isCompact),
- * adaptando títulos e injetando o cardConfig para renderização em barras laterais.
- * ============================================================================
- */
-export function useClientConfig(isCompact: boolean = false): CrudConfig<Client, ClientFormInput> {
-    
-    // O useMemo previne que o objeto de configuração seja recriado a cada renderização,
-    // garantindo performance máxima de 60FPS no motor CrudForm.
-    return useMemo(() => ({
-        // Adaptação de título baseada no espaço disponível
-        title: isCompact ? 'Clientes' : 'Carteira de Clientes',
-        description: isCompact ? '' : 'Gerencie a sua base de contatos, histórico e percepções de inteligência artificial.',
-        
-        // Zod atuando como o Guardião do Payload
-        schema: ClientFormSchema as any, 
-
-        // ====================================================================
-        // 👁️ VISÃO MASTER (Colunas para Tabelas e Grids)
-        // ====================================================================
-        columns: [
-            {
-                header: 'Cliente / Contato Principal',
-                accessor: (item) => (
-                    <div className="flex items-center gap-3">
-                        <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-accent-primary/10 text-accent-primary flex-shrink-0">
-                            <FaUserTie className="w-4 h-4" />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-sm font-bold text-white tracking-tight">
-                                {item.name}
-                            </span>
-                            <span className="text-[11px] text-gray-500">
-                                {item.email || item.phone || 'Sem contato cadastrado'}
-                            </span>
-                        </div>
-                    </div>
-                )
-            },
-            {
-                header: 'Documento',
-                accessor: (item) => (
-                    <span className="text-sm text-gray-400 font-mono">
-                        {item.document || '-'}
-                    </span>
-                )
-            },
-            {
-                header: 'Inteligência AI',
-                accessor: (item) => (
-                    item.aiSummary ? (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20" title="Perfil analisado pela IA">
-                            <FaRobot /> Analisado
-                        </span>
-                    ) : (
-                        <span className="text-[10px] text-gray-600 uppercase tracking-widest">Pendente</span>
-                    )
-                )
-            },
-            {
-                header: 'Status',
-                accessor: (item) => (
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest ${
-                        item.isActive 
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                    }`}>
-                        {item.isActive ? 'Ativo' : 'Inativo'}
-                    </span>
-                )
-            }
-        ],
-
-        // ====================================================================
-        // 🃏 VISÃO COMPACTA (Cards para Barra Lateral / Mobile)
-        // @description Mapeamento visual estrito para o CrudCardList.
-        // ====================================================================
-        cardConfig: {
-            title: (item) => item.name,
-            subtitle: (item) => (
-                <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] text-gray-500 truncate">
-                        {item.email || item.phone || 'Sem contato'}
-                    </span>
-                </div>
-            ),
-            avatar: () => (
-                <div className="flex items-center justify-center w-7 h-7 rounded-full bg-accent-primary/10 text-accent-primary flex-shrink-0">
-                    <FaUserTie className="w-3.5 h-3.5" />
-                </div>
-            ),
-            badge: (item) => ({
-                text: item.isActive ? 'Ativo' : 'Inativo',
-                variant: item.isActive ? 'success' : 'danger'
-            })
-        },
-
-        // ====================================================================
-        // 📝 VISÃO DETAIL (O Mapa do Formulário CrudForm V4)
-        // ====================================================================
-        fields: [
-            // Agrupamento: Dados Principais
-            { name: 'name', label: 'Nome Completo / Razão Social', type: 'text', placeholder: 'Ex: Stark Industries' },
-            { name: 'document', label: 'CPF / CNPJ', type: 'text', placeholder: 'Apenas números' },
-            
-            // Agrupamento: Contato
-            { name: 'email', label: 'E-mail Principal', type: 'text', placeholder: 'contato@empresa.com' },
-            { name: 'phone', label: 'Telefone / WhatsApp', type: 'text', placeholder: '(11) 90000-0000' },
-            
-            // Agrupamento: Observações Humanas (HITL)
-            { 
-                name: 'userNotes', 
-                label: 'Anotações Privadas (Opcional)', 
-                type: 'textarea', 
-                placeholder: 'Registre detalhes de negociação, preferências ou contexto do cliente...' 
-            },
-
-            // Controle de Acesso
-            { name: 'isActive', label: 'Cliente Ativo (Permite Vendas)', type: 'boolean', trueLabel: 'Ativo', falseLabel: 'Inativo' }
-        ],
-
-        // ====================================================================
-        // 🗄️ VISÃO DE AUDITORIA (Gaveta Oculta de Sistema)
-        // ====================================================================
-        systemFields: [
-            { name: 'id', label: 'UUID do Cliente', type: 'text' },
-            // O Resumo da IA é readonly visualmente via Motor V4
-            { name: 'aiSummary', label: 'Resumo da Inteligência Artificial', type: 'textarea' },
-            { name: 'createdAt', label: 'Data de Cadastro', type: 'text' },
-            { name: 'updatedAt', label: 'Última Atualização', type: 'text' }
-        ]
-
-    }), [isCompact]); // Reconstroi o manual caso o contexto espacial mude (variant)
-}
-
-
-// ===== FILE: src/core/client/hooks/useClientMutation.ts =====
+// ===== FILE: src/core/client/application/hooks/useClientMutation.ts =====
 
 
 import { useState } from 'react';
 import { api } from '@/core/services/api';
-import { Client, CreateClientDto, UpdateClientDto } from '@/core/client/types/client';
+import { Client, CreateClientDto, UpdateClientDto } from '@/core/client/domain/types/client';
 
 /**
  * @function useClientMutation
@@ -4396,13 +4246,13 @@ export function useClientMutation() {
 }
 
 
-// ===== FILE: src/core/client/hooks/useClients.ts =====
+// ===== FILE: src/core/client/application/hooks/useClients.ts =====
 
 // src/core/hooks/useClients.ts
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/core/services/api';
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 
 /**
  * @function useClients
@@ -4468,143 +4318,186 @@ export function useClients(externalTrigger: number = 0) {
 }
 
 
-// ===== FILE: src/core/client/registries/ClientRegistry.tsx =====
+// ===== FILE: src/core/client/application/useClientConfig.tsx =====
 
 'use client';
 
-import React from 'react';
-import { FaUser } from 'react-icons/fa'; // 💡 Identidade visual do módulo
+import React, { useMemo } from 'react';
+import { FaUserTie, FaRobot, FaUser } from 'react-icons/fa';
 
-// --- Motor CRUD V4 & Adaptadores ---
-import { CrudLayout } from '@/core/components/crud/CrudLayout';
-import { useCrudAdapter } from '@/core/components/crud/hooks/useCrudAdapter';
+// --- Tipagens do Motor V4 ---
+import { CrudConfig } from '@/core/components/crud/types';
 
-// --- Tipos do Domínio ---
-import { Client } from '../types/client';
-import { ClientFormInput } from '../schemas/clientSchema';
-
-// --- Motores de Dados (CQRS) ---
-import { useClients } from '../hooks/useClients';
-import { useClientMutation } from '../hooks/useClientMutation';
-
-// --- Configuração Injetável (O Manual de Instruções) ---
-import { useClientConfig } from '../hooks/useClientConfig';
+// --- Tipos e Schemas do Domínio de Cliente ---
+import { Client } from '../domain/types/client';
+import { ClientFormSchema, ClientFormInput } from '../domain/schemas/clientSchema';
 
 /**
  * ============================================================================
- * 🛡️ CONTRATO DE POLIMORFISMO E ESTADO
- * @description Ensina o TypeScript que o ClientRegistry pode atuar como Tela 
- * Cheia (Master) ou como Widget Lateral Compacto (Detail) no Cockpit.
+ * 📐 HOOK: useClientConfig (O Manual de Instruções do Cliente - V4 Ready)
+ * @description Centraliza o dicionário de dados (Data-Driven UI) da entidade Cliente.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Level):
+ * 1. SmartSwitch Integration: Define labels semânticas para ativação da UI cinética.
+ * 2. Visual Identity: Injeta o ícone FaUser nativamente para coerência no Master Data.
+ * 3. Polymorphic Efficiency: Otimizado via useMemo para sustentar o motor de 
+ * busca profunda sem degradação de performance.
  * ============================================================================
  */
-export interface ClientRegistryProps {
-    variant?: 'full' | 'compact';
-    onSelectClient?: (client: Client | null) => void;
+export function useClientConfig(isCompact: boolean = false): CrudConfig<Client, ClientFormInput> {
     
-    // 🛡️ Alinhamento com o Motor V4 para aceitar rascunhos de injeção (Partial).
-    onFormRequest?: (client?: Client | Partial<Client> | null) => void;
-    
-    /** * @property selectedItemId 
-     * @description O ID do cliente atualmente em foco no Palco Central. 
-     * Usado para realce visual na listagem. 
-     */
-    selectedItemId?: string;
+    return useMemo(() => ({
+        // Identidade Visual e Títulos
+        title: isCompact ? 'Clientes' : 'Carteira de Clientes',
+        description: isCompact ? '' : 'Gerencie sua base de contatos, histórico e percepções de inteligência artificial.',
+        icon: <FaUser className="text-accent-primary" />,
+        
+        // Guardião do Contrato de Dados
+        schema: ClientFormSchema as any, 
+
+        // ====================================================================
+        // 👁️ VISÃO MASTER (A Vitrine de Clientes)
+        // ====================================================================
+        columns: [
+            {
+                header: 'Cliente / Contato Principal',
+                accessor: (item) => (
+                    <div className="flex items-center gap-3">
+                        {/* <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-accent-primary/10 text-accent-primary flex-shrink-0">
+                            <FaUserTie className="w-4 h-4" />
+                        </div> */}
+                        <div className="flex flex-col">
+                            <span className="text-sm font-bold text-white tracking-tight">
+                                {item.name}
+                            </span>
+                            <span className="text-[11px] text-gray-500">
+                                {item.email || item.phone || 'Sem contato cadastrado'}
+                            </span>
+                        </div>
+                    </div>
+                )
+            },
+            {
+                header: 'Documento',
+                accessor: (item) => (
+                    <span className="text-sm text-gray-400 font-mono">
+                        {item.document || '-'}
+                    </span>
+                )
+            },
+            {
+                header: 'Inteligência AI',
+                accessor: (item) => (
+                    item.aiSummary ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20" title="Perfil analisado pela IA">
+                            <FaRobot /> Analisado
+                        </span>
+                    ) : (
+                        <span className="text-[10px] text-gray-600 uppercase tracking-widest">Pendente</span>
+                    )
+                )
+            },
+            {
+                header: 'Status',
+                accessor: (item) => (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest ${
+                        item.isActive 
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    }`}>
+                        {item.isActive ? 'Ativo' : 'Inativo'}
+                    </span>
+                )
+            }
+        ],
+
+        // ====================================================================
+        // 🃏 VISÃO COMPACTA (Cards para Barra Lateral)
+        // ====================================================================
+        cardConfig: {
+            title: (item) => item.name,
+            subtitle: (item) => (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] text-gray-500 truncate">
+                        {item.email || item.phone || 'Sem contato'}
+                    </span>
+                </div>
+            ),
+            avatar: () => (
+                <div className="flex items-center justify-center w-7 h-7 rounded-full bg-accent-primary/10 text-accent-primary flex-shrink-0">
+                    <FaUserTie className="w-3.5 h-3.5" />
+                </div>
+            ),
+            badge: (item) => ({
+                text: item.isActive ? 'Ativo' : 'Inativo',
+                variant: item.isActive ? 'success' : 'danger'
+            })
+        },
+
+        // ====================================================================
+        // 📝 VISÃO DETAIL (O Mapa do Formulário CrudForm V4)
+        // ====================================================================
+        fields: [
+            { name: 'name', label: 'Nome Completo / Razão Social', type: 'text', placeholder: 'Ex: Stark Industries' },
+            { name: 'document', label: 'CPF / CNPJ', type: 'text', placeholder: 'Apenas números' },
+            { name: 'email', label: 'E-mail Principal', type: 'text', placeholder: 'contato@empresa.com' },
+            { name: 'phone', label: 'Telefone / WhatsApp', type: 'text', placeholder: '(11) 90000-0000' },
+            { 
+                name: 'userNotes', 
+                label: 'Anotações Privadas (Opcional)', 
+                type: 'textarea', 
+                placeholder: 'Registre detalhes de negociação, preferências ou contexto do cliente...' 
+            },
+
+            /** 🔘 EVOLUÇÃO: Ativação do SmartSwitch 
+             * Ao definir trueLabel e falseLabel, a CrudFieldFactory injetará 
+             * automaticamente o componente cinético com as cores do sistema.
+             */
+            { 
+                name: 'isActive', 
+                label: 'Status do Cliente', 
+                type: 'boolean', 
+                trueLabel: 'Ativo', 
+                falseLabel: 'Inativo' 
+            }
+        ],
+
+        // ====================================================================
+        // 🗄️ VISÃO DE AUDITORIA (Gaveta de Sistema)
+        // ====================================================================
+        systemFields: [
+            { name: 'id', label: 'UUID do Cliente', type: 'text' },
+            { name: 'aiSummary', label: 'Resumo da Inteligência Artificial', type: 'textarea' },
+            { name: 'createdAt', label: 'Data de Cadastro', type: 'text' },
+            { name: 'updatedAt', label: 'Última Atualização', type: 'text' }
+        ]
+
+    }), [isCompact]);
 }
 
-/**
- * ============================================================================
- * 🏭 COMPONENTE PRINCIPAL: CLIENT REGISTRY
- * @description O Orquestrador da base de Clientes. 
- * Conecta o Motor V4 aos fluxos de leitura (useClients) e escrita (useClientMutation).
- * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (SOLID, DRY & Adapter Pattern):
- * 1. Identidade de Módulo: Injeta o ícone FaUser na configuração para dar vida
- * ao cabeçalho, conforme a hierarquia visual aprovada.
- * 2. Injeção do Adaptador Central: Delega a responsabilidade de sanitização 
- * de payload e tratamento de erros globais.
- * 3. Roteamento de Fios: Conecta perfeitamente o onViewRequest ao onSelectClient,
- * separando a visualização (Dashboard de IA) da edição (Formulário).
- * ============================================================================
- */
-export function ClientRegistry({ 
-    variant = 'full',
-    onSelectClient,
-    onFormRequest,
-    selectedItemId 
-}: ClientRegistryProps) {
-    
-    const isCompact = variant === 'compact';
 
-    // 1. O Motor de Leitura (A Vitrine de Dados)
-    const { clients, isLoading: loadingRead, error: readError, refreshData } = useClients();
-
-    // 2. O Motor de Mutação (A Caneta de Escrita do Banco)
-    const { createClient, updateClient, deleteClient, isLoading: writing, error: writeError } = useClientMutation();
-
-    // 3. A Injeção de Dependência Visual
-    // 💡 Recuperamos a config e injetamos a "Alma" do módulo (Ícone) nela
-    const config = useClientConfig(isCompact);
-    config.icon = <FaUser />; // 👑 Vida ao cabeçalho de Clientes
-
-    // =========================================================================
-    // 🔌 ROTEAMENTO DE AÇÕES (O Adaptador Universal de Domínio)
-    // =========================================================================
-    const crudHooks = useCrudAdapter<Client, ClientFormInput>({
-        query: {
-            data: clients,
-            isLoading: loadingRead,
-            error: readError,
-            refetch: refreshData
-        },
-        mutation: {
-            isLoading: writing,
-            error: writeError,
-            createFn: createClient,
-            updateFn: updateClient,
-            deleteFn: deleteClient
-        },
-        options: {
-            entityName: 'Cliente',
-            allowDelete: true, 
-        }
-    });
-
-    return (
-        <div className="h-full w-full animate-fade-in">
-            <CrudLayout<Client, ClientFormInput>
-                config={config}
-                hooks={crudHooks}
-                listMode={isCompact ? 'cards' : 'table'}
-                selectedItemId={selectedItemId}
-                onFormRequest={onFormRequest}
-                
-                // 💡 O FIO DE VISUALIZAÇÃO: Conecta ao Dashboard de IA
-                onViewRequest={onSelectClient}
-            />
-        </div>
-    );
-}
-
-
-// ===== FILE: src/core/client/schemas/clientSchema.ts =====
+// ===== FILE: src/core/client/domain/schemas/clientSchema.ts =====
 
 import { z } from 'zod';
 
 /**
- * @file clientSchema.ts
- * @description SCHEMA DE VALIDAÇÃO DE CLIENTES (Zod)
+ * ============================================================================
+ * 🛡️ SCHEMA: ClientFormSchema (Versão Sincronizada V4)
+ * @description Define as regras de integridade e normalização para a entidade Cliente.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
- * 1. Blindagem de Tipos: Garante que os dados do formulário respeitem o DTO do Backend.
- * 2. Tratamento de Vazios: Uso do `.or(z.literal(''))` para permitir que campos 
- * opcionais sejam limpos pelo usuário sem disparar falsos erros de tipagem.
- * 3. Sanitização Silenciosa: (Opcional) Prepara o terreno para futuras máscaras de CPF/CNPJ.
+ * 1. Data Scrubbing: Normaliza documentos removendo caracteres não numéricos.
+ * 2. Payload Optimization: O transform final garante que campos opcionais vazios 
+ * sejam enviados como 'undefined', respeitando o DTO de PATCH/PUT do Backend.
+ * 3. Null-Resilience: Preparado para lidar com o fluxo da DataEngine, permitindo 
+ * que campos opcionais transitem entre a UI e o banco com segurança.
+ * ============================================================================
  */
 export const ClientFormSchema = z.object({
     
-    // Identificador (Injetado automaticamente no modo Edição)
+    /** 🔑 Identificador único (Opcional na criação, obrigatório na edição) */
     id: z.string().optional(),
     
     // =========================================================================
-    // 👤 DADOS PRINCIPAIS
+    // 👤 IDENTIDADE E DOCUMENTAÇÃO
     // =========================================================================
     name: z.string()
         .min(3, 'O nome do cliente deve ter no mínimo 3 caracteres.')
@@ -4612,22 +4505,22 @@ export const ClientFormSchema = z.object({
     
     document: z.string()
         .optional()
-        .transform(val => val ? val.replace(/\D/g, '') : val), // Limpa pontos e traços (se houver)
+        .transform(val => val ? val.replace(/\D/g, '') : val), 
 
     // =========================================================================
-    // 📞 CONTATO
+    // 📞 CANAIS DE CONTATO
     // =========================================================================
     email: z.string()
         .email('Por favor, insira um endereço de e-mail válido.')
         .optional()
-        .or(z.literal('')), // Permite que o campo inicie ou fique vazio sem quebrar a validação
+        .or(z.literal('')), 
         
     phone: z.string()
         .optional()
         .or(z.literal('')),
 
     // =========================================================================
-    // 📝 INFORMAÇÕES AUXILIARES
+    // 📝 INTELIGÊNCIA E NOTAS
     // =========================================================================
     userNotes: z.string()
         .max(2000, 'As observações não podem ultrapassar 2000 caracteres.')
@@ -4635,36 +4528,44 @@ export const ClientFormSchema = z.object({
         .or(z.literal('')),
 
     // =========================================================================
-    // ⚙️ CONTROLE DE SISTEMA
+    // ⚙️ CONTROLE DE ESTADO (Vínculo com SmartSwitch)
     // =========================================================================
     isActive: z.boolean().default(true),
 
-    // Campos de Auditoria (Apenas leitura)
+    /** 🛡️ Campos de Auditoria (Gerenciados pelo Sistema) */
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
+    aiSummary: z.string().optional().or(z.literal('')),
 
 }).transform((data) => {
-    // 🪄 TRANSFORMAÇÃO DE SAÍDA (O Roteador Final)
-    // Limpamos strings vazias transformando-as em undefined, garantindo que o 
-    // Backend receba um Payload enxuto (UpdateClientDto / CreateClientDto).
+    /**
+     * 🪄 NORMALIZAÇÃO DE SAÍDA (Contract Guard)
+     * @description Limpamos strings vazias e as convertemos em 'undefined'.
+     * Isso evita que o Backend tente validar ou persistir strings em branco 
+     * em campos que deveriam ser nulos/ausentes no DTO.
+     */
     return {
         ...data,
         document: data.document === '' ? undefined : data.document,
         email: data.email === '' ? undefined : data.email,
         phone: data.phone === '' ? undefined : data.phone,
         userNotes: data.userNotes === '' ? undefined : data.userNotes,
+        aiSummary: data.aiSummary === '' ? undefined : data.aiSummary,
     };
 });
 
-/**
- * @type ClientFormInput
- * @description Tipagem inferida automaticamente a partir do Schema Zod.
- * Usada para tipar o CrudLayout e o React Hook Form.
+/** * @type ClientFormInput 
+ * @description Contrato de entrada para o React Hook Form.
  */
 export type ClientFormInput = z.input<typeof ClientFormSchema>;
 
+/** * @type ClientFormOutput 
+ * @description Contrato de saída pronto para consumo da API.
+ */
+export type ClientFormOutput = z.output<typeof ClientFormSchema>;
 
-// ===== FILE: src/core/client/types/client.ts =====
+
+// ===== FILE: src/core/client/domain/types/client.ts =====
 
 // src/core/types/client.ts
 
@@ -4752,6 +4653,116 @@ export interface UpdateClientDto {
     userNotes?: string;
 
     addresses?: AddressDto[];
+}
+
+
+// ===== FILE: src/core/client/presentation/registries/ClientRegistry.tsx =====
+
+'use client';
+
+import React from 'react';
+
+// --- Motor CRUD V4 (A Fundação Inabalável) ---
+import { CrudLayout } from '@/core/components/crud/CrudLayout';
+import { CrudHooks } from '@/core/components/crud/types';
+
+// --- Tipos e Contratos de Domínio ---
+import { Client } from '../../domain/types/client';
+import { ClientFormInput } from '../../domain/schemas/clientSchema';
+
+// --- Motores de Dados (Application Layer - CQRS) ---
+import { useClients } from '../../application/hooks/useClients';
+import { useClientMutation } from '../../application/hooks/useClientMutation';
+
+// --- Blueprint de Configuração ---
+import { useClientConfig } from '../../application/useClientConfig';
+
+/**
+ * ============================================================================
+ * 🛡️ CONTRATO DE POLIMORFISMO E ESTADO
+ * @description Define a versatilidade do Registry para atuar como Master Data
+ * (Tela Cheia) ou como Widget Lateral (Detail) no Cockpit de Vendas.
+ * ============================================================================
+ */
+export interface ClientRegistryProps {
+    variant?: 'full' | 'compact';
+    onSelectClient?: (client: Client | null) => void;
+    onFormRequest?: (client?: Client | Partial<Client> | null) => void;
+    selectedItemId?: string;
+}
+
+/**
+ * ============================================================================
+ * 🏭 COMPONENTE: ClientRegistry (Versão Purificada V4)
+ * @description Orquestrador principal da base de Clientes e Prospects.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Level):
+ * 1. Zero-Adapter Architecture: Removemos o intermediário 'useCrudAdapter' para 
+ * ganhar performance e clareza no fluxo de dados (Data Flow).
+ * 2. Visual Soul: O ícone de identidade (FaUser) agora é injetado diretamente 
+ * no Config, garantindo coerência visual no Header do CRUD.
+ * 3. Intentional Routing: Separação estrita entre visualização (Dossiê/IA) e 
+ * edição (Formulário), elevando a saúde da experiência do usuário (UX).
+ * ============================================================================
+ */
+export function ClientRegistry({ 
+    variant = 'full',
+    onSelectClient,
+    onFormRequest,
+    selectedItemId 
+}: ClientRegistryProps) {
+    
+    const isCompact = variant === 'compact';
+
+    // 🔌 1. Injeção de Motores de Leitura (Vitrine de Dados)
+    const { clients, isLoading: loadingRead, error: readError, refreshData } = useClients();
+
+    // 🖋️ 2. Injeção de Motores de Escrita (Mutações de Banco)
+    const { 
+        createClient, 
+        updateClient, 
+        deleteClient, 
+        isLoading: writing, 
+        error: writeError 
+    } = useClientMutation();
+
+    // 📐 3. Recuperação do Blueprint (Manual de Instruções)
+    const config = useClientConfig(isCompact);
+
+    /**
+     * 🔌 4. GANCHOS DE EXECUÇÃO (Data Bindings V4)
+     * @description Conexão direta entre o CrudLayout e os serviços de API.
+     * Implementa a interface CrudHooks sem a necessidade de adaptadores legados.
+     */
+    const crudHooks: CrudHooks<Client, ClientFormInput> = {
+        data: clients || [],
+        isLoading: loadingRead || writing,
+        error: (readError || writeError) ? String(readError || writeError) : null,
+        onCreate: async (data) => await createClient(data),
+        onUpdate: async (id, data) => await updateClient(id, data),
+        onDelete: async (id) => await deleteClient(id),
+        onRefresh: refreshData
+    };
+
+    // =========================================================================
+    // 🖼️ RENDERIZAÇÃO MONUMENTAL
+    // =========================================================================
+    return (
+        <div className="h-full w-full animate-fade-in">
+            <CrudLayout<Client, ClientFormInput>
+                config={config}
+                hooks={crudHooks}
+                listMode={isCompact ? 'cards' : 'table'}
+                selectedItemId={selectedItemId}
+                onFormRequest={onFormRequest}
+                
+                /** 💡 O FIO DE VISUALIZAÇÃO (Saúde da Navegação)
+                 * No clique simples, acionamos o Dashboard de IA/Dossiê.
+                 * A edição fica reservada para o clique duplo ou botões específicos.
+                 */
+                onViewRequest={onSelectClient}
+            />
+        </div>
+    );
 }
 
 
@@ -4894,7 +4905,7 @@ export const TenantGuard: React.FC<TenantGuardProps> = ({ children }) => {
 
 'use client';
 
-import { ClientRegistry } from '@/core/client/registries/ClientRegistry';
+import { ClientRegistry } from '@/core/client/presentation/registries/ClientRegistry';
 import { DealRegistry } from '@/modules/crm/presentation/registries/DealRegistry';
 import { PipelineRegistry } from '@/modules/crm/presentation/registries/PipelineRegistry';
 import { FiscalRegistry } from '@/modules/fiscal/registries/FiscalRegistry';
@@ -5611,11 +5622,8 @@ export interface CrudField<FormData extends FieldValues = any> {
 }
 
 /**
- * ============================================================================
- * 🧠 INTERFACE: CrudConfig
+ * @interface CrudConfig
  * @description O "Manual de Instruções" da entidade. Define a alma do módulo.
- * Refatorado para suportar Middlewares de Hidratação Polimórfica.
- * ============================================================================
  */
 export interface CrudConfig<T, FormData extends FieldValues = any> {
     title: string;
@@ -5639,18 +5647,6 @@ export interface CrudConfig<T, FormData extends FieldValues = any> {
     
     /** 🎴 CARD_CONFIG: Dicionário para visão de Cards (Barra Lateral) */
     cardConfig?: CrudCardConfig<T>;
-
-    /** * 💧 HYDRATE (Middleware de Entrada)
-     * @description Traduz o objeto bruto vindo da API para o formato esperado pela UI.
-     * Útil para promover campos de JSONB ou arrays (variants) para a raiz do formulário.
-     */
-    hydrate?: (data: T) => any;
-
-    /** * 🧪 DEHYDRATE (Middleware de Saída)
-     * @description Traduz o estado do formulário (UI) para o contrato de escrita da API.
-     * Útil para empacotar campos da raiz de volta em objetos JSONB ou estruturas complexas.
-     */
-    dehydrate?: (formData: FormData) => any;
 }
 
 /**
@@ -5825,9 +5821,9 @@ export interface CrudLayoutProps<T, FormData extends FieldValues = any> {
  * e interfaces polimórficas de alta performance.
  * * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Google/Shopify Architecture):
  * 1. Deep Introspection: Varre o objeto identificando containers de metadados.
- * 2. Variant Promotion: Identifica o padrão de Variants e promove dados para a raiz.
- * 3. Null-to-Safe: Sanitiza valores nulos para evitar quebras em schemas estritos (Zod).
- * 4. Zero-State Recovery: Garante que caminhos profundos sempre retornem um valor seguro.
+ * 2. Variant Delta Sync: Preserva IDs originais enquanto prioriza novos dados da UI.
+ * 3. DNA Recognition: Detecta o marcador 'domain' nos atributos para ativação de UI.
+ * 4. Null-to-Safe: Sanitiza valores nulos para evitar quebras em schemas estritos.
  * ============================================================================
  */
 
@@ -5835,7 +5831,7 @@ export class DataEngine {
     /**
      * 💧 INFLATE (API ➔ UI)
      * @description Prepara o dado bruto do backend para o consumo fluído da UI.
-     * Realiza a promoção de variantes e normalização de atributos.
+     * Realiza a promoção de variantes, normalização de atributos e detecção de DNA.
      */
     static inflate<T>(rawItem: T): any {
         if (!rawItem || typeof rawItem !== 'object') return rawItem;
@@ -5863,42 +5859,51 @@ export class DataEngine {
         }
 
         /**
-         * 🧽 REGRA 2: SANITIZAÇÃO DE NULOS E VALORES SEGUROS
-         * Percorre o objeto (incluindo o container de atributos) para garantir 
-         * que o formulário nunca receba 'null', prevenindo erros de validação Zod.
+         * 🧬 REGRA 2: DETECÇÃO DE DNA (Domain Model Auto-Discovery)
+         * @description Detecta o marcador 'domain' nos atributos e promove para a raiz,
+         * garantindo que o ProductOrchestrator ative a aba correta automaticamente.
          */
+        if (uiItem.attributes && typeof uiItem.attributes === 'object') {
+            const domainMarker = uiItem.attributes.domain;
+            if (domainMarker) {
+                uiItem.domainModel = domainMarker;
+            }
+        }
+
         return this.sanitize(uiItem);
     }
 
     /**
      * 🧪 DEFLATE (UI ➔ API)
      * @description O caminho inverso. Pega o estado da tela e remonta a estrutura 
-     * original para persistência, respeitando a hierarquia de Variants.
+     * original para persistência, respeitando a integridade do DTO e o Delta Sync.
      */
     static deflate(formData: any, originalItem: any): any {
         if (!formData) return formData;
 
+        /**
+         * 🛡️ REGRA 1: PRIORIDADE TOTAL AO FORMULÁRIO (Zod Output)
+         * O formData já passou pela transformação do Schema (productSchema.ts), 
+         * portanto já possui o array 'variants' devidamente montado e carimbado com DNA.
+         */
         const apiPayload = { ...formData };
 
         /**
-         * 📦 REGRA 1: RE-EMPACOTAMENTO DE VARIANTE
-         * Se o item original tinha variantes, garantimos que os dados da tela 
-         * voltem para a 'variants[0]' mantendo a integridade do DTO.
+         * 📦 REGRA 2: DELTA SYNC E PRESERVAÇÃO DE IDENTIDADE
+         * Se o item original possuir IDs de variantes, precisamos re-injetar esses IDs
+         * no array gerado pelo formulário para que o Backend não crie novas variantes,
+         * mas sim atualize as existentes.
          */
-        if (originalItem?.variants && Array.isArray(originalItem.variants)) {
-            const masterVariant = { ...originalItem.variants[0] };
-            
-            // Movemos de volta os campos que foram promovidos
-            const promotedFields = ['sku', 'barcode', 'salePrice', 'costPrice', 'attributes', 'promotionalPrice'];
-            
-            promotedFields.forEach(field => {
-                if (formData[field] !== undefined) {
-                    masterVariant[field] = formData[field];
+        if (originalItem?.variants && Array.isArray(originalItem.variants) && apiPayload.variants) {
+            apiPayload.variants = apiPayload.variants.map((v: any, idx: number) => {
+                const originalVariant = originalItem.variants[idx];
+                
+                // Se existe uma variante original na mesma posição, preservamos o ID
+                if (originalVariant?.id) {
+                    return { ...v, id: originalVariant.id };
                 }
+                return v;
             });
-
-            // Re-injetamos a variante mestra atualizada no array
-            apiPayload.variants = [masterVariant, ...originalItem.variants.slice(1)];
         }
 
         return apiPayload;
@@ -5917,7 +5922,6 @@ export class DataEngine {
         for (const key in obj) {
             if (Object.prototype.hasOwnProperty.call(obj, key)) {
                 const value = obj[key];
-                // Caso especial: attributes (JSONB) não pode ser string vazia se for objeto
                 if (key === 'attributes' && value === null) {
                     sanitizedObj[key] = {};
                 } else {
@@ -6373,13 +6377,15 @@ export function CrudFormView<T, FormData extends FieldValues = any>({
 
 // ===== FILE: src/core/components/crud/views/form/components/CrudFieldFactory.tsx =====
 
-import React from 'react';
-import { UseFormReturn, FieldValues, Path, RegisterOptions, Controller } from 'react-hook-form'; // 💡 IMPORT VITAL: Controller adicionado
+'use client';
 
-// --- Tipagens e Componentes UI ---
+import React from 'react';
+import { UseFormReturn, FieldValues, Path, RegisterOptions, Controller } from 'react-hook-form';
+
+// --- Tipagens e Componentes UI do Core ---
 import { CrudField } from '../../../types/engine.types';
 import { SmartDatePicker } from '@/core/components/ui/SmartDatePicker';
-
+import { SmartSwitch } from '@/core/components/ui/SmartSwitch'; // 🆕 Injeção do novo componente
 
 export interface CrudFieldFactoryProps<FormData extends FieldValues> {
     field: CrudField<FormData>;
@@ -6389,13 +6395,14 @@ export interface CrudFieldFactoryProps<FormData extends FieldValues> {
 
 /**
  * ============================================================================
- * 🏭 FÁBRICA DE CAMPOS (CrudFieldFactory)
- * @description Princípio da Responsabilidade Única (SRP) do SOLID. 
- * Este componente não conhece regras de negócio. Sua ÚNICA função é traduzir 
- * um contrato JSON em inputs visuais de alta fidelidade e interceptar erros.
+ * 🏭 FÁBRICA DE CAMPOS (CrudFieldFactory V5 - Smart Edition)
+ * @description Princípio da Responsabilidade Única (SRP). Traduz contratos 
+ * JSON em interfaces de alta performance e fidelidade visual.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Componentes Controlados):
- * - Substitui o <input type="date"> nativo falho por um SmartDatePicker,
- * eliminando problemas de Timezone e garantindo que o Zod receba Strings ISO puras.
+ * 1. Unified Control: Utiliza o padrão Controller para componentes customizados,
+ * garantindo sincronia perfeita com o Zod.
+ * 2. Visual Evolution: Substitui o checkbox nativo pelo SmartSwitch monumental.
+ * 3. Type Resilience: Preserva a integridade de tipos numéricos e de data.
  * ============================================================================
  */
 export function CrudFieldFactory<FormData extends FieldValues>({
@@ -6404,7 +6411,6 @@ export function CrudFieldFactory<FormData extends FieldValues>({
     disabled = false
 }: CrudFieldFactoryProps<FormData>) {
     
-    // 🛡️ Tipagem Forte: Garante que o fieldName é um caminho válido no formulário.
     const fieldName = String(field.name) as Path<FormData>;
     const errorMessage = form.formState.errors[fieldName]?.message as string | undefined;
 
@@ -6413,9 +6419,6 @@ export function CrudFieldFactory<FormData extends FieldValues>({
     // ========================================================================
     let registerOptions: RegisterOptions<FormData, Path<FormData>> = {};
     
-    // 🛡️ FIX ARQUITETURAL: Removemos o `valueAsDate: true`. 
-    // A data agora trafega como String pura (ISO 8601), respeitando o Zod Schema 
-    // e evitando bloqueios silenciosos na submissão.
     if (field.type === 'number') {
         registerOptions = { valueAsNumber: true };
     }
@@ -6444,13 +6447,17 @@ export function CrudFieldFactory<FormData extends FieldValues>({
     }
 
     // ========================================================================
-    // 🎨 2. RENDERIZAÇÃO PADRÃO (Inputs e Componentes UI)
+    // 🎨 2. RENDERIZAÇÃO PADRÃO (Inputs e Componentes UI de Elite)
     // ========================================================================
     return (
         <div className={`flex flex-col space-y-1.5 w-full ${field.type === 'textarea' ? 'col-span-full' : 'col-span-1 md:col-span-1'}`}>
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">
-                {field.label}
-            </label>
+            
+            {/* O label é omitido para o SmartSwitch pois ele já possui label interno opcional */}
+            {field.type !== 'boolean' && (
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">
+                    {field.label}
+                </label>
+            )}
             
             {field.type === 'select' ? (
                 <select
@@ -6475,21 +6482,29 @@ export function CrudFieldFactory<FormData extends FieldValues>({
                 />
                 
             ) : field.type === 'boolean' ? (
-                <label className={`flex items-center space-x-3 cursor-pointer mt-2 bg-gray-900/50 p-3 rounded-xl border border-gray-700/50 transition-opacity ${disabled ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}>
-                    <div className="relative">
-                        <input type="checkbox" {...form.register(fieldName)} disabled={disabled} className="sr-only" />
-                        <div className={`block w-10 h-6 rounded-full transition-colors ${form.watch(fieldName) ? 'bg-accent-primary' : 'bg-gray-600'}`}></div>
-                        <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${form.watch(fieldName) ? 'transform translate-x-4' : ''}`}></div>
-                    </div>
-                    <div className="text-sm font-bold text-gray-300">
-                        {form.watch(fieldName) ? (field.trueLabel || 'Sim') : (field.falseLabel || 'Não')}
-                    </div>
-                </label>
+                /**
+                 * 🔘 EVOLUÇÃO CLASSE OURO: SmartSwitch Integration
+                 * @description Substituímos o checkbox legacy pela experiência cinética.
+                 * Usamos o Controller para mapear as labels customizadas vinda do Config.
+                 */
+                <Controller
+                    control={form.control}
+                    name={fieldName}
+                    render={({ field: { onChange, value } }) => (
+                        <SmartSwitch
+                            label={field.label}
+                            value={value}
+                            onChange={onChange}
+                            disabled={disabled}
+                            options={[
+                                { label: field.trueLabel || 'Sim', value: true, activeColor: 'primary' },
+                                { label: field.falseLabel || 'Não', value: false, activeColor: 'secondary' }
+                            ]}
+                        />
+                    )}
+                />
                 
             ) : field.type === 'date' ? (
-                // 📅 O CALENDÁRIO INTELIGENTE: Padrão "Controlled Input"
-                // O Controller atua como um tradutor perfeito entre o nosso componente
-                // de UI customizado e a engine interna do React Hook Form.
                 <Controller
                     control={form.control}
                     name={fieldName}
@@ -6506,7 +6521,6 @@ export function CrudFieldFactory<FormData extends FieldValues>({
             ) : (
                 <input
                     type={field.type}
-                    // 🛡️ O objeto limpo e seguro é injetado aqui
                     {...form.register(fieldName, registerOptions)}
                     disabled={disabled}
                     placeholder={field.placeholder}
@@ -6514,7 +6528,7 @@ export function CrudFieldFactory<FormData extends FieldValues>({
                 />
             )}
 
-            {/* Exibição de Erros */}
+            {/* Exibição de Erros com Animação */}
             {errorMessage && (
                 <span className="text-red-400 text-[10px] font-bold mt-1 ml-1 block uppercase tracking-wide animate-fade-in">
                     {errorMessage}
@@ -7813,6 +7827,102 @@ export const SmartDatePicker: React.FC<SmartDatePickerProps> = ({
         </div>
     );
 };
+
+
+// ===== FILE: src/core/components/ui/SmartSwitch.tsx =====
+
+'use client';
+
+import React from 'react';
+
+/**
+ * @interface SmartSwitchProps
+ * @description Contrato de alta fidelidade para o seletor binário polimórfico.
+ */
+interface SmartSwitchProps<T extends string | number | boolean> {
+    value: T;
+    onChange: (value: T) => void;
+    options: [
+        { label: string; value: T; activeColor?: 'primary' | 'secondary' },
+        { label: string; value: T; activeColor?: 'primary' | 'secondary' }
+    ];
+    disabled?: boolean;
+    label?: string;
+}
+
+/**
+ * ============================================================================
+ * 💠 COMPONENTE: SmartSwitch (O Seletor de Estado Classe Ouro)
+ * @description Um componente de UI monumental que redefine a alternância de estados.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Aesthetics):
+ * 1. Polymorphic Data: Suporta qualquer tipo primitivo como valor de troca.
+ * 2. Cyber-Metallic Design: Acabamento em gradiente escuro com profundidade (Z-index layering).
+ * 3. Kinetic Feedback: Animação de deslizamento suave via Framer Motion ou Tailwind Transitions.
+ * 4. High-Contrast Focus: Brilho sutil (Bloom effect) na opção selecionada.
+ * ============================================================================
+ */
+export function SmartSwitch<T extends string | number | boolean>({
+    value,
+    onChange,
+    options,
+    disabled = false,
+    label
+}: SmartSwitchProps<T>) {
+    
+    // Identificamos o índice ativo para a orquestração da pílula de fundo
+    const activeIndex = options.findIndex(opt => opt.value === value);
+    const activeOption = options[activeIndex === -1 ? 0 : activeIndex];
+
+    // Mapeamento de cores baseado no seu Design System
+    const getAccentColor = (type?: 'primary' | 'secondary') => {
+        if (type === 'secondary') return 'bg-accent-secondary shadow-[0_0_15px_rgba(139,92,246,0.3)]'; // Violeta
+        return 'bg-accent-primary shadow-[0_0_15px_rgba(255,94,26,0.3)]'; // Laranja
+    };
+
+    return (
+        <div className={`flex flex-col space-y-2 ${disabled ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
+            {label && (
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 ml-1">
+                    {label}
+                </span>
+            )}
+
+            <div className="relative flex items-center p-1 bg-black/40 border border-gray-800 rounded-xl w-full max-w-[300px] h-[48px] overflow-hidden backdrop-blur-md shadow-inner">
+                
+                {/* 🛝 A PÍLULA CINÉTICA (O fundo que desliza) */}
+                <div 
+                    className={`
+                        absolute h-[38px] w-[calc(50%-6px)] rounded-lg transition-all duration-300 ease-out
+                        ${getAccentColor(activeOption.activeColor)}
+                    `}
+                    style={{
+                        transform: `translateX(${activeIndex === 1 ? '100%' : '0%'})`,
+                        left: activeIndex === 1 ? '4px' : '4px'
+                    }}
+                />
+
+                {/* 🔘 BOTÕES DE OPÇÃO */}
+                {options.map((option, idx) => {
+                    const isActive = idx === activeIndex;
+                    
+                    return (
+                        <button
+                            key={String(option.value)}
+                            type="button"
+                            onClick={() => onChange(option.value)}
+                            className={`
+                                relative z-10 flex-1 h-full flex items-center justify-center text-[11px] font-bold uppercase tracking-widest transition-colors duration-300
+                                ${isActive ? 'text-base-dark' : 'text-gray-500 hover:text-gray-300'}
+                            `}
+                        >
+                            {option.label}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
 
 
 // ===== FILE: src/core/constants/sysColors.ts =====
@@ -12114,20 +12224,25 @@ export function usePipelineDetails(pipelineId: string | undefined) {
 
 // ===== FILE: src/modules/crm/application/useDealConfig.tsx =====
 
+'use client';
+
 import React, { useMemo } from 'react';
 import { UseFormReturn } from 'react-hook-form'; 
-import { FaUserTie, FaTrash, FaHandshake } from 'react-icons/fa';
+import { FaUserTie, FaHandshake } from 'react-icons/fa';
 
-// --- Mundo 1: Motor CRUD V4 (Contratos Globais) ---
+/** * --- MOTORES DO CORE CRUD V4 ---
+ * O Config agora é 100% declarativo, delegando a inteligência de dados 
+ * para o processamento automático da DataEngine no CrudLayout.
+ */
 import { CrudConfig } from '@/core/components/crud/types';
 
-// --- Mundo 2: Domínio & Aplicação (CRM) ---
+/** * --- DOMÍNIO & ESPECIFICAÇÕES (CRM) --- */
 import { CRMDeal, DealStatus, DealSource } from '../domain/types';
 import { DealFormSchema, DealFormInput } from '../domain/schemas/dealSchema';
 import { IPipeline } from '../domain/types/pipeline.types';
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 
-// --- Peças de LEGO: Micro-componentes de Elite (Extraídos) ---
+/** * --- PEÇAS DE LEGO: Micro-componentes de Elite (Injetados) --- */
 import { DealItemsTable } from '../presentation/components/shared/DealItemsTable';
 import { DealValueInput } from '../presentation/components/shared/DealValueInput';
 import { PipelineStageSelector } from '../presentation/components/shared/PipelineStageSelector';
@@ -12135,11 +12250,13 @@ import { PipelineStageSelector } from '../presentation/components/shared/Pipelin
 /**
  * ============================================================================
  * 🏭 HOOK PRINCIPAL: useDealConfig (Manual de Instruções de Oportunidades)
- * @description Centraliza todas as regras visuais, mapeamento de colunas da 
- * tabela e inputs do formulário do módulo de Oportunidades.
- * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Injeção de Dependência):
- * Recebe dados externos (clients, pipelines) via parâmetros para manter a
- * pureza e evitar acoplamento com o estado global de loading do Registry.
+ * @description Centraliza todas as regras visuais, mapeamento de colunas e 
+ * orquestração de campos customizados do módulo de Deals.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Level):
+ * 1. Dependency Injection: Recebe estados externos para manter a pureza lógica.
+ * 2. Visual Soul: Injeta o ícone FaHandshake nativamente para coerência no Header.
+ * 3. Atomic Rendering: Gerencia componentes complexos (Sub-tabelas e Seletores 
+ * em Cascata) através do padrão de renderização customizada da Engine V4.
  * ============================================================================
  */
 export function useDealConfig(
@@ -12150,21 +12267,21 @@ export function useDealConfig(
     
     return useMemo(() => {
         
-        // Construtores de Opções para os Selects nativos do Motor V4
+        // Construtores de Opções para os Selects (Normalização de Dicionários)
         const clientOptions = clients.map(c => ({ value: c.id, label: c.name }));
         const statusOptions = Object.values(DealStatus).map(s => ({ value: s, label: s }));
         const sourceOptions = Object.values(DealSource).map(s => ({ value: s, label: s }));
 
         return {
-            // Roteamento visual baseado no polimorfismo do componente pai
-            title: isCompact ? 'Oportunidades' : 'Gestão de Oportunidades',
-            description: isCompact ? '' : 'Auditoria central de todas as negociações da plataforma.',
-            icon: <FaHandshake />,
+            // Identidade e Roteamento Visual
+            title: isCompact ? 'Deals' : 'Gestão de Oportunidades',
+            description: isCompact ? '' : 'Auditoria central e orquestração de todas as negociações comerciais.',
+            icon: <FaHandshake className="text-accent-primary" />,
             schema: DealFormSchema as any, 
 
-            // ========================================================================
-            // 👁️ VISÃO MASTER (A Tabela)
-            // ========================================================================
+            // ====================================================================
+            // 👁️ VISÃO MASTER (A Vitrine Financeira - Tabela)
+            // ====================================================================
             columns: [
                 {
                     header: 'Oportunidade',
@@ -12175,7 +12292,7 @@ export function useDealConfig(
                                 <span className="text-sm font-bold text-white leading-tight">{item.title}</span>
                                 {!isCompact && (
                                     <span className="text-xs text-gray-500 flex items-center gap-1.5 truncate max-w-[250px]">
-                                        <FaUserTie className="opacity-60" /> {clientInfo?.name || 'Cliente Não Encontrado'}
+                                        <FaUserTie className="opacity-60 text-[10px]" /> {clientInfo?.name || 'Cliente Não Encontrado'}
                                     </span>
                                 )}
                             </div>
@@ -12189,117 +12306,108 @@ export function useDealConfig(
                         const stage = pipe?.stages?.find(s => s.id === item.currentStageId);
                         return (
                             <div className="flex flex-col">
-                                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{pipe?.name || 'Sem Funil'}</span>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                    <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: stage?.color || '#555' }} />
-                                    <span className="text-xs text-gray-300 truncate max-w-[150px]">{stage?.name || item.status}</span>
+                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">{pipe?.name || 'Sem Funil'}</span>
+                                <div className="flex items-center gap-1.5 mt-1">
+                                    <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: stage?.color || '#333' }} />
+                                    <span className="text-xs text-gray-300 font-medium truncate max-w-[150px]">{stage?.name || item.status}</span>
                                 </div>
                             </div>
                         );
                     }
                 },
                 {
-                    header: 'Previsão',
+                    header: 'Previsão / Valor',
                     accessor: (item: CRMDeal) => (
                         <div className="flex flex-col items-end gap-1">
                             <span className="text-sm font-black text-green-400 drop-shadow-md">
                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(item.value))}
                             </span>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-tighter ${
                                 item.probability >= 70 ? 'bg-green-500/10 text-green-400 border-green-500/20' : 
                                 item.probability >= 30 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 
                                 'bg-red-500/10 text-red-400 border-red-500/20'
                             }`}>
-                                {item.probability}%
+                                {item.probability}% Probabilidade
                             </span>
                         </div>
                     )
                 }
             ],
 
-            // ========================================================================
-            // 🃏 CONFIGURAÇÃO DE CARDS (Para Barra Lateral e Kanban)
-            // ========================================================================
-            cardConfig: {
-                title: (item: CRMDeal) => item.title,
-                subtitle: (item: CRMDeal) => {
-                    const pipe = pipelines.find(p => p.id === item.pipelineId);
-                    const stage = pipe?.stages?.find(s => s.id === item.currentStageId);
-                    const formattedValue = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(item.value));
-                    
-                    return (
-                        <div className="flex flex-col gap-1 mt-0.5">
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-1.5 h-1.5 rounded-full shadow-[0_0_4px_rgba(255,255,255,0.1)]" style={{ backgroundColor: stage?.color || '#555' }} />
-                                <span className="text-[10px] text-gray-500 truncate font-medium">
-                                    {stage?.name || item.status}
-                                </span>
-                            </div>
-                            <span className="text-xs font-bold text-green-400 drop-shadow-sm">
-                                {formattedValue}
-                            </span>
-                        </div>
-                    );
-                },
-                avatar: () => (
-                    <div className="flex items-center justify-center w-7 h-7 rounded-full bg-accent-primary/10 text-accent-primary flex-shrink-0 shadow-inner">
-                        <FaHandshake className="w-3.5 h-3.5" />
-                    </div>
-                ),
-                badge: (item: CRMDeal) => {
-                    const isHigh = item.probability >= 70;
-                    const isMedium = item.probability >= 30;
-                    return {
-                        text: `${item.probability}%`,
-                        variant: isHigh ? 'success' : isMedium ? 'warning' : 'danger'
-                    };
-                }
-            },
-
-            // ========================================================================
-            // 📝 VISÃO DETAIL (O Formulário de Auditoria)
-            // ========================================================================
+            // ====================================================================
+            // 📝 VISÃO DETAIL (O Formulário de Alta Fidelidade)
+            // ====================================================================
             fields: [
-                { name: 'title', label: 'Título da Oportunidade', type: 'text', placeholder: 'Ex: Consultoria Plena Anual' },
-                { name: 'clientId', label: 'Cliente Vinculado', type: 'select', options: clientOptions },
+                { 
+                    name: 'title', 
+                    label: 'Título da Oportunidade', 
+                    type: 'text', 
+                    placeholder: 'Ex: Contrato de Consultoria Anual' 
+                },
+                { 
+                    name: 'clientId', 
+                    label: 'Cliente Vinculado', 
+                    type: 'select', 
+                    options: clientOptions 
+                },
                 
                 {
-                    /** 🔌 CONEXÃO: Seletor de Etapas (Cascata) */
+                    /** 🔌 CONEXÃO: Seletor de Etapas (Cascata Inteligente) */
                     name: 'currentStageId',
-                    label: 'Roteamento Comercial',
+                    label: 'Roteamento no Funil de Vendas',
                     type: 'custom',
                     customRender: (form: UseFormReturn<any>) => <PipelineStageSelector form={form} pipelines={pipelines} />
                 },
 
-                { name: 'probability', label: 'Probabilidade de Fechamento (%)', type: 'number', placeholder: '0 a 100' },
-                { name: 'expectedCloseDate', label: 'Previsão de Fechamento', type: 'date' },
+                { 
+                    name: 'probability', 
+                    label: 'Probabilidade (%)', 
+                    type: 'number', 
+                    placeholder: '0 a 100' 
+                },
+                { 
+                    name: 'expectedCloseDate', 
+                    label: 'Previsão de Fechamento', 
+                    type: 'date' 
+                },
                 
-                { name: 'status', label: 'Status Lógico', type: 'select', options: statusOptions },
-                { name: 'source', label: 'Origem do Lead', type: 'select', options: sourceOptions },
+                { 
+                    name: 'status', 
+                    label: 'Status do Negócio', 
+                    type: 'select', 
+                    options: statusOptions 
+                },
+                { 
+                    name: 'source', 
+                    label: 'Origem da Oportunidade', 
+                    type: 'select', 
+                    options: sourceOptions 
+                },
                 
                 {
-                    /** ⚙️ CONEXÃO: Tabela de Itens Dinâmica */
+                    /** ⚙️ CONEXÃO: Tabela de Itens (Composição de Valor) */
                     name: 'items',
-                    label: 'Precificação Detalhada',
+                    label: 'Detalhamento de Produtos e Serviços',
                     type: 'custom',
+                    colSpan: 'full',
                     customRender: (form: UseFormReturn<any>) => <DealItemsTable form={form} />
                 },
                 
                 { 
-                    /** 🛡️ CONEXÃO: Input de Valor com trava de integridade */
+                    /** 🛡️ CONEXÃO: Input de Valor Global (Segurança Financeira) */
                     name: 'value', 
-                    label: 'Valor Manual Global (Apenas para vendas simples)', 
+                    label: 'Valor Total do Negócio (Ajuste Manual)', 
                     type: 'custom',
                     customRender: (form: UseFormReturn<any>) => <DealValueInput form={form} />
                 },
             ],
 
-            // ========================================================================
-            // 🗄️ GAVETA DE AUDITORIA
-            // ========================================================================
+            // ====================================================================
+            // 🗄️ AUDITORIA (Gaveta Oculta de Sistema)
+            // ====================================================================
             systemFields: [
                 { name: 'id', label: 'UUID da Oportunidade', type: 'text' },
-                { name: 'lossReason', label: 'Motivo de Perda', type: 'textarea' },
+                { name: 'lossReason', label: 'Motivo de Perda / Declínio', type: 'textarea' },
                 { name: 'createdAt', label: 'Data de Registro', type: 'text' },
                 { name: 'updatedAt', label: 'Última Atualização', type: 'text' }
             ]
@@ -12467,106 +12575,110 @@ import { z } from 'zod';
 import { DealStatus, DealSource, DealItemType } from '../types';
 
 /**
- * @file dealSchema.ts
- * @description SCHEMA DE VALIDAÇÃO DE OPORTUNIDADES (Deals).
- * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
- * 1. Motor de Precificação Automática: Na etapa de `.transform()`, o schema 
- * recalcula o valor total do Deal baseado nos itens, impedindo divergências financeiras.
- * 2. Amortecimento Estrito (Resiliência): Uso de `z.coerce` e `.catch()` para garantir que 
- * números (probabilidade, valores) não quebrem o formulário se a API enviar strings ou nulos.
- * 3. Reconciliação de Estado: Garante o tráfego de UUIDs legítimos para o Backend, 
- * permitindo que o TypeORM execute operações de UPDATE reais (Evita duplicação).
+ * ============================================================================
+ * 🛡️ SCHEMA: DealFormSchema (Versão Auditada V4)
+ * @description O motor de validação e precificação automática de Oportunidades.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Financial Integrity):
+ * 1. Precision Math: Recalcula o 'value' global no transform, atuando como a 
+ * "Fonte da Verdade" para evitar divergências entre UI e Banco.
+ * 2. ID Preservation: Distingue UUIDs reais de IDs temporários da UI (temp-),
+ * garantindo que o Backend execute UPDATES precisos em sub-itens.
+ * 3. Type Coercion: Força a conversão de strings de inputs em números reais,
+ * blindando o cálculo contra falhas de tipagem do JavaScript.
+ * ============================================================================
  */
 
 // ============================================================================
-// 📦 SCHEMA FILHO: ITENS DA OPORTUNIDADE (Produtos / Serviços)
+// 📦 SUB-SCHEMA: DealItemSchema (Produtos / Serviços no Deal)
 // ============================================================================
 const DealItemSchema = z.object({
-    // Obrigatório na UI para manipulação de arrays e preservado no Output para o Backend
+    /** 🔑 UUID da linha (Preservado para Delta Sync) */
     id: z.string().optional(),
+    
+    /** 🔗 Vínculo com o Catálogo (Opcional por enquanto) */
     productId: z.string().optional().nullable(),
     
-    // O '.nativeEnum' acopla perfeitamente o Zod aos Enums do TypeScript
-    type: z.nativeEnum(DealItemType).default(DealItemType.SERVICE),
+    type: z.enum(DealItemType).default(DealItemType.SERVICE),
     description: z.string().min(2, 'A descrição do item é obrigatória.'),
     
-    // 🛡️ AMORTECIMENTO DE UX: 
-    // `coerce.number` força strings vindas de inputs HTML a virarem decimais.
-    // `.catch(1)` impede que um erro de digitação zere a quantidade e quebre o cálculo.
-    quantity: z.coerce.number().min(0.01, 'A quantidade deve ser maior que zero.').catch(1),
-    unitPrice: z.coerce.number().min(0, 'O valor não pode ser negativo.').catch(0),
+    // 🛡️ AMORTECIMENTO DE VALORES: Força conversão e evita NaN
+    quantity: z.coerce.number().min(0.01, 'Quantidade inválida.').catch(1),
+    unitPrice: z.coerce.number().min(0, 'Preço inválido.').catch(0),
 });
 
 // ============================================================================
-// 💼 SCHEMA PAI: A OPORTUNIDADE (Deal)
+// 💼 SCHEMA MESTRE: DealFormSchema
 // ============================================================================
 export const DealFormSchema = z.object({
     id: z.string().optional(),
     
-    // --- Dados Básicos ---
-    title: z.string().min(3, 'O título da oportunidade é obrigatório (Ex: Contrato Anual).'),
-    clientId: z.string().min(1, 'É necessário vincular um cliente a esta oportunidade.'),
+    // --- Identidade da Negociação ---
+    title: z.string().min(3, 'O título é obrigatório para identificação.'),
+    clientId: z.string().min(1, 'Vincule um cliente para prosseguir.'),
     
-    // --- Posicionamento no Funil ---
+    // --- Roteamento Comercial (Funil) ---
     pipelineId: z.string().optional(),
     currentStageId: z.string().optional(),
     
-    // --- Status e Origem ---
-    status: z.nativeEnum(DealStatus).default(DealStatus.NEW),
-    source: z.nativeEnum(DealSource).default(DealSource.MANUAL),
+    // --- Status e Qualificação ---
+    status: z.enum(DealStatus).default(DealStatus.NEW),
+    source: z.enum(DealSource).default(DealSource.MANUAL),
     lossReason: z.string().optional().nullable(),
     
-    // --- Valores e Previsões ---
+    // --- Projeções Financeiras ---
     probability: z.coerce.number().min(0).max(100).default(50).catch(50),
     expectedCloseDate: z.string().optional().nullable(),
     
-    // Campo isolado de valor (usado livremente APENAS se a oportunidade NÃO tiver itens)
+    // Valor base (Usado se não houver itens detalhados)
     value: z.coerce.number().min(0).default(0).catch(0),
     
-    // Array de itens (Opcional, pois pode ser uma venda simples baseada apenas em "value")
+    // Tabela de Itens (Composição Detalhada)
     items: z.array(DealItemSchema).default([]),
 
-    // --- Auditoria Automática ---
+    // --- Auditoria ---
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
 
 }).transform((data) => {
-    // 🪄 A MÁGICA DA TRANSFORMAÇÃO (Sanitização e Precificação)
-    // Esta etapa atua como um Middleware inviolável entre o Frontend e a API.
-
+    /**
+     * 🪄 A MÁGICA DA TRANSFORMAÇÃO (Payload Builder)
+     * @description Realiza a auditoria final de preços antes do envio.
+     */
     const hasItems = data.items && data.items.length > 0;
     
-    // 🧮 Motor Matemático: Se houver itens detalhados na tabela, o valor real da 
-    // oportunidade passa a ser estritamente a soma de (Qtd * Valor Unitário). 
-    // A UI agora reage a isso, mas o backend continua protegido por essa re-checagem.
+    /** 🧮 Cálculo Real: A soma dos itens sempre sobrepõe o valor manual 
+     * se a tabela de precificação estiver preenchida. 
+     */
     const computedValue = hasItems 
         ? data.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
         : data.value;
 
     return {
         ...data,
-        // Sobrescreve o valor do payload com o cálculo auditado
         value: computedValue, 
         
         items: data.items.map(item => ({
             ...item,
-            // Garante que o subtotal da linha também vá calculado corretamente para o BD
+            // Injeta o total calculado da linha para persistência redundante
             total: item.quantity * item.unitPrice, 
             
-            // 🧹 GHOST-BUSTER REFINADO: Limpa strings vazias ou IDs temporários ('temp-169823123').
-            // Preserva rigorosamente os UUIDs legítimos para que o Backend faça UPDATE em vez de INSERT.
+            /** * 🧹 CLEANUP DE IDENTIDADE: 
+             * Remove IDs temporários (gerados na UI) para que o Backend saiba 
+             * que deve criar um novo registro. Preserva UUIDs reais para UPDATE.
+             */
             id: (!item.id || item.id.startsWith('temp-')) ? undefined : item.id,
         }))
     };
 });
 
-/**
- * @type DealFormInput & DealFormOutput
- * Separação das tipagens arquiteturais.
- * Input: O formato que o React Hook Form consome (permite temp-ids).
- * Output: O payload final sanitizado e processado para o Axios/Backend.
+/** * @type DealFormInput 
+ * @description Tipagem de entrada (Estado do Formulário).
  */
 export type DealFormInput = z.input<typeof DealFormSchema>;
+
+/** * @type DealFormOutput 
+ * @description Tipagem de saída (Payload para API).
+ */
 export type DealFormOutput = z.output<typeof DealFormSchema>;
 
 
@@ -12706,7 +12818,7 @@ export interface ICRMSummary {
 
 // ===== FILE: src/modules/crm/domain/types/deal.types.ts =====
 
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 
 // ============================================================================
 // 1. ENUMS DE NEGÓCIO (DEALS) - Mantidos Intactos
@@ -12865,7 +12977,7 @@ export interface IUpdatePipelineDTO {
 import React from 'react';
 
 // --- Tipagens e Contratos ---
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 import { CRMDeal } from '../../../domain/types';
 import { CrudConfig, FormMode } from '@/core/components/crud/types';
 
@@ -12875,7 +12987,7 @@ import { ClientDashboard } from './client-dashboard/ClientDashboard'; // 👑 O 
 
 // --- Mutadores (CQRS - Padrão Command) ---
 import { useDealMutation } from '../../../application/hooks/useDealMutation';
-import { useClientMutation } from '@/core/client/hooks/useClientMutation';
+import { useClientMutation } from '@/core/client/application/hooks/useClientMutation';
 
 export type CockpitFormType = 'NONE' | 'CLIENT' | 'DEAL';
 
@@ -13052,11 +13164,11 @@ import React, { useState } from 'react';
 import { FaRegHandshake, FaBoxOpen, FaInbox } from 'react-icons/fa';
 
 // --- Tipagens ---
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 import { CRMDeal } from '../../../domain/types';
 
 // --- Motores Visuais (V4) ---
-import { ClientRegistry } from '@/core/client/registries/ClientRegistry';
+import { ClientRegistry } from '@/core/client/presentation/registries/ClientRegistry';
 import { DealRegistry } from '../../registries/DealRegistry';
 
 /**
@@ -13207,7 +13319,7 @@ import React, { useState } from 'react';
 import { FaWhatsapp, FaTelegram, FaPaperPlane, FaCalendarAlt, FaTimes } from 'react-icons/fa';
 
 // --- Tipagens e Contratos ---
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 
 // --- Motores Injetáveis (Widgets de Omnichannel) ---
 import { WhatsAppWidget } from '../shared/WhatsAppWidget';
@@ -13401,7 +13513,7 @@ import {
     FaMagic, FaPlusCircle, FaStickyNote, 
     FaChevronDown, FaChevronUp
 } from 'react-icons/fa';
-import { Client, AddressType } from '@/core/client/types/client';
+import { Client, AddressType } from '@/core/client/domain/types/client';
 
 // --- AQUI ESTÁ A MUDANÇA: Importamos o Módulo Soberano ---
 import { TimelineModule } from '@/modules/timeline/TimelineModule';
@@ -13708,9 +13820,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FaMapMarkerAlt, FaExclamationTriangle, FaSave, FaStickyNote } from 'react-icons/fa';
 
-import { useClientMutation } from '@/core/client/hooks/useClientMutation';
-import { Client, AddressType } from '@/core/client/types/client';
-import { ClientFormSchema, ClientFormInput } from '@/core/client/schemas/clientSchema';
+import { useClientMutation } from '@/core/client/application/hooks/useClientMutation';
+import { Client, AddressType } from '@/core/client/domain/types/client';
+import { ClientFormSchema, ClientFormInput } from '@/core/client/domain/schemas/clientSchema';
 
 interface ClientFormProps {
     client?: Client;
@@ -15725,7 +15837,7 @@ import { useFilixAI } from '@/core/ai/context/FilixAIContext';
 
 // --- ICONS & CONTRATOS ---
 import { FaColumns, FaCalendarAlt, FaRocket, FaChartBar } from 'react-icons/fa';
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 import { AIContextMetadata } from '@/core/ai/types/dtos/AIChatRequest.dto';
 import { AppModules, FeatureKeys } from '@/core/ai/types/enums/AIEnums';
 
@@ -15913,9 +16025,9 @@ export const CRMContainer: React.FC = () => {
 'use client';
 
 import React, { useMemo } from 'react';
-import { FaHandshake } from 'react-icons/fa'; // 💡 Identidade visual: O aperto de mão do fechamento
+import { FaHandshake } from 'react-icons/fa';
 
-// --- Motor CRUD V4 & Adaptador ---
+// --- Motor CRUD V4 & Adaptador (RESTAURADO) ---
 import { CrudLayout } from '@/core/components/crud/CrudLayout';
 import { useCrudAdapter } from '@/core/components/crud/hooks/useCrudAdapter';
 
@@ -15926,51 +16038,19 @@ import { DealFormInput } from '../../domain/schemas/dealSchema';
 // --- Motores de Dados (CQRS) ---
 import { useDeals } from '../../application/hooks/useDeals';
 import { usePipelines } from '../../application/hooks/usePipelines';
-import { useClients } from '@/core/client/hooks/useClients';
+import { useClients } from '@/core/client/application/hooks/useClients';
 import { useDealMutation } from '../../application/hooks/useDealMutation';
 
-// --- Configuração Injetável (O Manual de Instruções) ---
+// --- Configuração Injetável ---
 import { useDealConfig } from '../../application/useDealConfig';
 
-/**
- * ============================================================================
- * 🛡️ CONTRATO DE POLIMORFISMO E ESTADO
- * @description Ensina o TypeScript que o DealRegistry pode atuar como Tela 
- * Cheia (Master) ou como Widget Lateral Compacto (Detail) no Cockpit.
- * ============================================================================
- */
 export interface DealRegistryProps {
     variant?: 'full' | 'compact';
     clientId?: string;
-    
-    /** 🛡️ FIX CLASSE OURO: Alinhamento de tipagem com o Motor V4.
-     * Agora aceita rascunhos (Partial) para suportar a injeção de clientId.
-     */
     onFormRequest?: (deal?: CRMDeal | Partial<CRMDeal> | null) => void;
-    
-    /**
-     * @property selectedItemId
-     * @description O ID da oportunidade (Deal) atualmente em foco no Palco Central.
-     * Injetado pelo Maestro para roteamento visual do card ativo.
-     */
     selectedItemId?: string;
 }
 
-/**
- * ============================================================================
- * 🏭 COMPONENTE PRINCIPAL: DEAL REGISTRY (Orquestrador Puro)
- * @description A Visão "Master Data" das oportunidades.
- * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (SOLID & Clean Architecture):
- * 1. Identidade de Módulo: Renomeia a entidade para "Deals" e injeta o ícone 
- * FaHandshake, garantindo semântica e vida ao cabeçalho.
- * 2. Injeção de Dependências: Todo o layout reativo e colunas foram delegados 
- * ao hook `useDealConfig`.
- * 3. Roteamento Dinâmico: Comunica ao CrudLayout qual a "roupa" correta 
- * (listMode) baseando-se na variante solicitada pelo componente pai.
- * 4. Segurança de Tipagem: Resolve o conflito de assinaturas entre o domínio
- * e o motor genérico (Partial consistency).
- * ============================================================================
- */
 export function DealRegistry({ 
     variant = 'full', 
     clientId, 
@@ -15978,34 +16058,30 @@ export function DealRegistry({
     selectedItemId 
 }: DealRegistryProps) {
     
-    // =========================================================================
-    // 📡 CONEXÃO DE DADOS (Cross-Domain Fetching)
-    // =========================================================================
+    // 📡 1. Conexão de Dados Original
     const { deals, isLoading: loadingDeals, error: errorDeals, refreshDeals } = useDeals();
     const { createDeal, updateDeal } = useDealMutation();
     const { clients, isLoading: loadingClients } = useClients();
-    const { pipelines, isLoadingPipelines } = usePipelines();
+    const { pipelines, isLoadingPipelines } = usePipelines(); // Mantido nome original
 
     const isGlobalLoading = loadingDeals || loadingClients || isLoadingPipelines;
     const isCompact = variant === 'compact';
 
-    // 🔍 FILTRO DE DOMÍNIO: Isola a lista de deals apenas para o cliente ativo
+    // 🔍 2. Filtro de Domínio Original
     const filteredDeals = useMemo(() => {
         if (clientId) return deals.filter(d => d.clientId === clientId);
         return deals;
     }, [deals, clientId]);
 
-    // =========================================================================
-    // ⚙️ CONFIGURAÇÃO CLASSE OURO (Injeção Visual)
-    // =========================================================================
+    // 📐 3. Configuração
     const config = useDealConfig(clients, pipelines, isCompact);
     
-    // 👑 AJUSTES DE IDENTIDADE (Setas 1 e 3 da sua análise)
-    config.title = "Deals"; // Nome curto, forte e executivo
-    config.icon = <FaHandshake />; // Ícone dinâmico injetado no cabeçalho
+    /** 👑 Identidade Visual V4 (Mantendo apenas o ganho estético) */
+    config.title = "Deals"; 
+    config.icon = <FaHandshake className="text-accent-primary" />;
 
     // =========================================================================
-    // 🔌 ROTEAMENTO DE AÇÕES (O Adaptador Universal)
+    // 🔌 ROTEAMENTO DE AÇÕES (RESTAURADO: O Adaptador que funciona)
     // =========================================================================
     const crudHooks = useCrudAdapter<CRMDeal, DealFormInput>({
         query: {
@@ -16033,10 +16109,7 @@ export function DealRegistry({
                 config={config}
                 hooks={crudHooks}
                 listMode={isCompact ? 'cards' : 'table'}
-                
-                // 💡 INVERSÃO DE CONTROLE: Injeta o clientId automaticamente em novas Deals
                 baseInjectData={clientId ? { clientId } : undefined}
-                
                 selectedItemId={selectedItemId}
                 onFormRequest={onFormRequest}
             />
@@ -16153,15 +16226,15 @@ import React, { useState } from 'react';
 import { FaBrain } from 'react-icons/fa';
 
 // --- Contratos e Tipos ---
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 import { CRMDeal } from '../../domain/types';
 
 // --- Motores Injetáveis (Os Manuais de Instrução V4) ---
-import { useClientConfig } from '@/core/client/hooks/useClientConfig';
+import { useClientConfig } from '@/core/client/application/useClientConfig';
 import { useDealConfig } from '../../application/useDealConfig';
 
 // --- Motores de Dados (CQRS) ---
-import { useClients } from '@/core/client/hooks/useClients';
+import { useClients } from '@/core/client/application/hooks/useClients';
 import { usePipelines } from '../../application/hooks/usePipelines';
 
 // --- Os 3 Pilares da Arquitetura V4 (Inversão de Controle) ---
@@ -16529,7 +16602,7 @@ import React, { useState, useMemo } from 'react';
 import { usePipelines, usePipelineDetails } from '../../application/hooks/usePipelines';
 import { useDeals } from '../../application/hooks/useDeals';
 import { useDealMutation } from '../../application/hooks/useDealMutation';
-import { useClients } from '@/core/client/hooks/useClients';
+import { useClients } from '@/core/client/application/hooks/useClients';
 
 import { CRMDeal, DealStatus } from '../../domain/types';
 
@@ -18789,10 +18862,9 @@ interface UseProductConfigProps {
  * 🧠 HOOK: useProductConfig
  * @description Centraliza a definição técnica (Blueprint) do catálogo de itens.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Level):
- * 1. Zero-Logic Policy: Removida toda e qualquer função de tradução manual.
- * 2. Attribute Symmetry: Alinhamento semântico com o campo 'attributes' do Backend.
- * 3. Autonomous Flow: O motor CRUD agora detecta e popula os campos automaticamente
- * baseando-se apenas na existência dos nomes definidos aqui e no Schema.
+ * 1. Declarative UI: Define labels semânticas para componentes polimórficos.
+ * 2. Visual Consistency: Integra o SmartSwitch para controle de status comercial.
+ * 3. Zero-Logic Policy: Mantém a pureza do mapeamento delegando a execução ao Core.
  * ============================================================================
  */
 export const useProductConfig = ({ 
@@ -18810,8 +18882,6 @@ export const useProductConfig = ({
 
         /**
          * 📊 A VITRINE: Configuração de Colunas
-         * Graças ao 'inflate' da DataEngine, campos como 'sku' e 'salePrice' 
-         * chegam na raiz do objeto de forma automática para a tabela.
          */
         columns: [
             { header: 'Nome / Item', accessor: 'name' },
@@ -18841,9 +18911,6 @@ export const useProductConfig = ({
 
         // 📝 O FORMULÁRIO: Estrutura Genética do Produto
         fields: [
-            /**
-             * --- SEÇÃO 1: IDENTIDADE E CLASSIFICAÇÃO ---
-             */
             { 
                 name: 'name', 
                 label: 'Nome Comercial', 
@@ -18900,11 +18967,6 @@ export const useProductConfig = ({
                 options: Object.values(BaseUOM).map(v => ({ label: v, value: v })) 
             },
 
-            /**
-             * --- SEÇÃO 2 & 3: O PONTO DE SINGULARIDADE (INJEÇÃO) ---
-             * @description Inversão de Controle (IoC). Delega para o ProductOrchestrator
-             * a renderização dos sub-formulários polimórficos.
-             */
             {
                 name: '_orchestrator_bridge',
                 label: 'Detalhes Técnicos e Comerciais',
@@ -18913,7 +18975,18 @@ export const useProductConfig = ({
                 customRender: (form) => <ProductOrchestrator form={form} />
             },
 
-            { name: 'isActive', label: 'Item disponível para operações comerciais', type: 'boolean' }
+            /**
+             * 🔘 CAMPO EVOLUÍDO: isActive
+             * @description Agora utilizando labels semânticas que o SmartSwitch 
+             * interpretará para exibir "Ativo" (Laranja) e "Inativo" (Violeta).
+             */
+            { 
+                name: 'isActive', 
+                label: 'Status de Disponibilidade', 
+                type: 'boolean',
+                trueLabel: 'Ativo',
+                falseLabel: 'Inativo'
+            }
         ],
 
         // 🛡️ AUDITORIA (Rastreabilidade)
@@ -18981,6 +19054,11 @@ export const BaseProductSchema = z.object({
 
     /** ⚙️ Peso bruto para cálculos logísticos */
     weight: z.coerce.number().min(0, 'O peso não pode ser negativo').optional(),
+
+    /** 🧠 Metadados Polimórficos: Onde o JSONB de nicho reside */
+    attributes: z.object({
+        domain: z.string().optional(), // 🛡️ Permite que o 'domain' exista aqui
+    }).catchall(z.any()).default({}), // 🚀 Catchall garante que qualquer outro campo (year, color, etc) seja aceito
 });
 
 /**
@@ -19080,6 +19158,7 @@ import { KitProductSchema } from './kitProductSchema';
  * 1. Polymorphic Routing: Ativa schemas específicos em tempo real (Runtime).
  * 2. Type Inference: Exporta o contrato 'ProductFormInput' para o Registry.
  * 3. Payload Normalizer: Transforma a entrada da UI no DTO de variantes do Backend.
+ * 4. DNA Injection: Centraliza a gravação do marcador 'domain' nos atributos.
  * ============================================================================
  */
 export const ProductFormSchema = z.discriminatedUnion('type', [
@@ -19087,7 +19166,7 @@ export const ProductFormSchema = z.discriminatedUnion('type', [
     VariableProductSchema,
     ServiceProductSchema,
     KitProductSchema
-]).transform((data) => {
+]).transform((data: any) => {
     /**
      * 🪄 A MÁGICA DA TRANSFORMAÇÃO (Payload Builder)
      * Converte os diferentes formatos de entrada em um array padronizado 
@@ -19095,25 +19174,34 @@ export const ProductFormSchema = z.discriminatedUnion('type', [
      */
     let finalVariants: any[] = [];
 
+    /**
+     * 🧬 DNA INJECTION: Captura de Identidade
+     * @description Capturamos o domainModel selecionado na UI para injetá-lo 
+     * como 'domain' dentro do objeto de atributos. Isso garante que o dado 
+     * seja autodescritivo para o brilho automático na leitura.
+     */
+    const activeDomain = data.domainModel;
+
     switch (data.type) {
         case ProductType.VARIABLE:
             // Modo Grade: Mapeia as variantes vindas da lista interna do schema
-            finalVariants = data.variantsList.map(v => ({
+            finalVariants = data.variantsList.map((v: any) => ({
                 ...v,
                 name: v.name || `${data.name} - ${v.sku}`,
-                attributes: v.attributes
+                // Sincroniza o DNA em cada item da grade
+                attributes: { ...v.attributes, domain: activeDomain }
             }));
             break;
 
         case ProductType.KIT:
             // Modo Kit: Criamos uma variante única que representa o combo
-            // Nota: Os 'componentsList' são enviados na raiz para o backend processar o vínculo
             finalVariants = [{
                 sku: data.sku,
                 name: data.name,
                 salePrice: data.salePrice,
                 costPrice: data.costPrice,
-                attributes: data.attributes
+                // Injeta o DNA no container de atributos do Kit
+                attributes: { ...data.attributes, domain: activeDomain }
             }];
             break;
 
@@ -19123,7 +19211,8 @@ export const ProductFormSchema = z.discriminatedUnion('type', [
                 sku: data.sku,
                 name: data.name,
                 salePrice: data.salePrice,
-                attributes: data.attributes // Contém duration_minutes, recurrence, etc.
+                // Injeta o DNA no container de atributos do Serviço
+                attributes: { ...data.attributes, domain: activeDomain }
             }];
             break;
 
@@ -19136,7 +19225,8 @@ export const ProductFormSchema = z.discriminatedUnion('type', [
                 barcode: data.barcode,
                 salePrice: data.salePrice,
                 costPrice: data.costPrice,
-                attributes: data.attributes
+                // Injeta o DNA no container de atributos do Produto Simples
+                attributes: { ...data.attributes, domain: activeDomain }
             }];
             break;
     }
@@ -19145,7 +19235,8 @@ export const ProductFormSchema = z.discriminatedUnion('type', [
     return {
         ...data,
         variants: finalVariants,
-        // Removemos as listas temporárias de UI para não sujar o payload do backend
+        // Removemos as listas e estados temporários de UI para não sujar o payload do backend
+        // attributes: undefined,
         variantsList: undefined,
         componentsList: undefined
     };
@@ -19261,7 +19352,7 @@ export const SimpleProductSchema = BaseProductSchema.extend({
     }).min(0).default(0),
 
     /** 🧠 Metadados Polimórficos: Onde o JSONB de nicho (Veículo, Food, etc) reside */
-    attributes: z.record(z.string(), z.any()).default({}),
+    attributes: z.record(z.string(), z.any()).default({ }),
 });
 
 /**
@@ -19357,6 +19448,12 @@ export const VariableProductSchema = BaseProductSchema.extend({
  */
 
 export interface DigitalAttributes {
+    /** * 🧬 DNA: domain
+     * @description Identificador de ativação do modelo de nicho. 
+     * Essencial para o brilho automático e introspecção do Motor CRUD.
+     */
+    domain: string;
+    
     /** 📦 Tamanho total do arquivo para download em Megabytes (MB) */
     file_size_mb?: number;
 
@@ -19398,6 +19495,12 @@ export interface DigitalAttributes {
  */
 
 export interface FoodAttributes {
+    /** * 🧬 DNA: domain
+     * @description Identificador de ativação do modelo de nicho. 
+     * Essencial para o brilho automático e introspecção do Motor CRUD.
+     */
+    domain: string;
+    
     /** 🥗 Lista de ingredientes que compõem o produto */
     ingredients: string[];
 
@@ -19445,6 +19548,35 @@ export interface FoodAttributes {
 }
 
 
+// ===== FILE: src/modules/products/domain/types/attributes/physical.types.ts =====
+
+/**
+ * @interface PhysicalAttributes
+ * @description Metadados para bens de consumo físicos gerais.
+ */
+export interface PhysicalAttributes {
+    /** * 🧬 DNA: domain
+     * @description Identificador de ativação do modelo de nicho. 
+     * Essencial para o brilho automático e introspecção do Motor CRUD.
+     */
+    domain: string;
+    
+    weight_kg?: number;
+    dimensions?: {
+        height_cm: number;
+        width_cm: number;
+        depth_cm: number;
+    };
+    color?: string;
+    material?: string;
+    size?: string;
+    model_code?: string;
+    gender?: string;
+    age_group?: string;
+
+}
+
+
 // ===== FILE: src/modules/products/domain/types/attributes/real-estate.types.ts =====
 
 /**
@@ -19463,6 +19595,12 @@ export interface FoodAttributes {
  */
 
 export interface RealEstateAttributes {
+    /** * 🧬 DNA: domain
+     * @description Identificador de ativação do modelo de nicho. 
+     * Essencial para o brilho automático e introspecção do Motor CRUD.
+     */
+    domain: string;
+    
     /** 🏘️ Classificação do tipo de propriedade */
     property_type: 'HOUSE' | 'APARTMENT' | 'LAND' | 'COMMERCIAL' | 'FARM';
 
@@ -19511,6 +19649,12 @@ export interface RealEstateAttributes {
  */
 
 export interface ServiceAttributes {
+    /** * 🧬 DNA: domain
+     * @description Identificador de ativação do modelo de nicho. 
+     * Essencial para o brilho automático e introspecção do Motor CRUD.
+     */
+    domain: string;
+    
     /** ⏱️ Duração estimada da execução do serviço em minutos */
     duration_minutes: number;
 
@@ -19549,6 +19693,12 @@ export interface ServiceAttributes {
  */
 
 export interface VehicleAttributes {
+    /** * 🧬 DNA: domain
+     * @description Identificador de ativação do modelo de nicho. 
+     * Essencial para o brilho automático e introspecção do Motor CRUD.
+     */
+    domain: string;
+    
     /** 📅 Ano do modelo ou fabricação do veículo */
     year: number;
 
@@ -19586,26 +19736,9 @@ import { VehicleAttributes } from './attributes/vehicle.types';
 import { RealEstateAttributes } from './attributes/real-estate.types';
 import { DigitalAttributes } from './attributes/digital.types';
 import { ProductDomainModel } from './enums';
+import { PhysicalAttributes } from './attributes/physical.types';
 
-/**
- * @interface PhysicalAttributes
- * @description Metadados para bens de consumo físicos gerais.
- */
-export interface PhysicalAttributes {
-    weight_kg?: number;
-    dimensions?: {
-        height_cm: number;
-        width_cm: number;
-        depth_cm: number;
-    };
-    color?: string;
-    material?: string;
-    size?: string;
-    model_code?: string;
-    gender?: string;
-    age_group?: string;
 
-}
 
 /**
  * ============================================================================

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FaWhatsapp, FaTelegram, FaPaperPlane, FaCalendarAlt, FaTimes } from 'react-icons/fa';
 
 // --- Tipagens e Contratos ---
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 
 // --- Motores Injetáveis (Widgets de Omnichannel) ---
 import { WhatsAppWidget } from '../shared/WhatsAppWidget';

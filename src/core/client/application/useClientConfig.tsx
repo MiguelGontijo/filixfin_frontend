@@ -1,48 +1,48 @@
+'use client';
+
 import React, { useMemo } from 'react';
-import { FaUserTie, FaRobot } from 'react-icons/fa';
+import { FaUserTie, FaRobot, FaUser } from 'react-icons/fa';
 
 // --- Tipagens do Motor V4 ---
 import { CrudConfig } from '@/core/components/crud/types';
 
 // --- Tipos e Schemas do Domínio de Cliente ---
-import { Client } from '../types/client';
-import { ClientFormSchema, ClientFormInput } from '../schemas/clientSchema';
+import { Client } from '../domain/types/client';
+import { ClientFormSchema, ClientFormInput } from '../domain/schemas/clientSchema';
 
 /**
  * ============================================================================
- * 📐 HOOK: useClientConfig (O Manual de Instruções do Cliente)
+ * 📐 HOOK: useClientConfig (O Manual de Instruções do Cliente - V4 Ready)
  * @description Centraliza o dicionário de dados (Data-Driven UI) da entidade Cliente.
- * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (SOLID e DRY):
- * - Ao isolar o Config em um Hook, permitimos que a mesma estrutura visual seja
- * consumida pela Tela de Listagem (ClientRegistry) e pelo Cockpit V4 Avançado,
- * sem duplicar uma única linha de código.
- * - Capacidade Polimórfica: Agora ciente do contexto espacial (isCompact),
- * adaptando títulos e injetando o cardConfig para renderização em barras laterais.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Level):
+ * 1. SmartSwitch Integration: Define labels semânticas para ativação da UI cinética.
+ * 2. Visual Identity: Injeta o ícone FaUser nativamente para coerência no Master Data.
+ * 3. Polymorphic Efficiency: Otimizado via useMemo para sustentar o motor de 
+ * busca profunda sem degradação de performance.
  * ============================================================================
  */
 export function useClientConfig(isCompact: boolean = false): CrudConfig<Client, ClientFormInput> {
     
-    // O useMemo previne que o objeto de configuração seja recriado a cada renderização,
-    // garantindo performance máxima de 60FPS no motor CrudForm.
     return useMemo(() => ({
-        // Adaptação de título baseada no espaço disponível
+        // Identidade Visual e Títulos
         title: isCompact ? 'Clientes' : 'Carteira de Clientes',
-        description: isCompact ? '' : 'Gerencie a sua base de contatos, histórico e percepções de inteligência artificial.',
+        description: isCompact ? '' : 'Gerencie sua base de contatos, histórico e percepções de inteligência artificial.',
+        icon: <FaUser className="text-accent-primary" />,
         
-        // Zod atuando como o Guardião do Payload
+        // Guardião do Contrato de Dados
         schema: ClientFormSchema as any, 
 
         // ====================================================================
-        // 👁️ VISÃO MASTER (Colunas para Tabelas e Grids)
+        // 👁️ VISÃO MASTER (A Vitrine de Clientes)
         // ====================================================================
         columns: [
             {
                 header: 'Cliente / Contato Principal',
                 accessor: (item) => (
                     <div className="flex items-center gap-3">
-                        <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-accent-primary/10 text-accent-primary flex-shrink-0">
+                        {/* <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-accent-primary/10 text-accent-primary flex-shrink-0">
                             <FaUserTie className="w-4 h-4" />
-                        </div>
+                        </div> */}
                         <div className="flex flex-col">
                             <span className="text-sm font-bold text-white tracking-tight">
                                 {item.name}
@@ -89,8 +89,7 @@ export function useClientConfig(isCompact: boolean = false): CrudConfig<Client, 
         ],
 
         // ====================================================================
-        // 🃏 VISÃO COMPACTA (Cards para Barra Lateral / Mobile)
-        // @description Mapeamento visual estrito para o CrudCardList.
+        // 🃏 VISÃO COMPACTA (Cards para Barra Lateral)
         // ====================================================================
         cardConfig: {
             title: (item) => item.name,
@@ -116,15 +115,10 @@ export function useClientConfig(isCompact: boolean = false): CrudConfig<Client, 
         // 📝 VISÃO DETAIL (O Mapa do Formulário CrudForm V4)
         // ====================================================================
         fields: [
-            // Agrupamento: Dados Principais
             { name: 'name', label: 'Nome Completo / Razão Social', type: 'text', placeholder: 'Ex: Stark Industries' },
             { name: 'document', label: 'CPF / CNPJ', type: 'text', placeholder: 'Apenas números' },
-            
-            // Agrupamento: Contato
             { name: 'email', label: 'E-mail Principal', type: 'text', placeholder: 'contato@empresa.com' },
             { name: 'phone', label: 'Telefone / WhatsApp', type: 'text', placeholder: '(11) 90000-0000' },
-            
-            // Agrupamento: Observações Humanas (HITL)
             { 
                 name: 'userNotes', 
                 label: 'Anotações Privadas (Opcional)', 
@@ -132,20 +126,28 @@ export function useClientConfig(isCompact: boolean = false): CrudConfig<Client, 
                 placeholder: 'Registre detalhes de negociação, preferências ou contexto do cliente...' 
             },
 
-            // Controle de Acesso
-            { name: 'isActive', label: 'Cliente Ativo (Permite Vendas)', type: 'boolean', trueLabel: 'Ativo', falseLabel: 'Inativo' }
+            /** 🔘 EVOLUÇÃO: Ativação do SmartSwitch 
+             * Ao definir trueLabel e falseLabel, a CrudFieldFactory injetará 
+             * automaticamente o componente cinético com as cores do sistema.
+             */
+            { 
+                name: 'isActive', 
+                label: 'Status do Cliente', 
+                type: 'boolean', 
+                trueLabel: 'Ativo', 
+                falseLabel: 'Inativo' 
+            }
         ],
 
         // ====================================================================
-        // 🗄️ VISÃO DE AUDITORIA (Gaveta Oculta de Sistema)
+        // 🗄️ VISÃO DE AUDITORIA (Gaveta de Sistema)
         // ====================================================================
         systemFields: [
             { name: 'id', label: 'UUID do Cliente', type: 'text' },
-            // O Resumo da IA é readonly visualmente via Motor V4
             { name: 'aiSummary', label: 'Resumo da Inteligência Artificial', type: 'textarea' },
             { name: 'createdAt', label: 'Data de Cadastro', type: 'text' },
             { name: 'updatedAt', label: 'Última Atualização', type: 'text' }
         ]
 
-    }), [isCompact]); // Reconstroi o manual caso o contexto espacial mude (variant)
+    }), [isCompact]);
 }

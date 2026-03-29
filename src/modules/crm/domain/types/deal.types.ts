@@ -1,4 +1,4 @@
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 
 // ============================================================================
 // 1. ENUMS DE NEGÓCIO (DEALS) - Mantidos Intactos

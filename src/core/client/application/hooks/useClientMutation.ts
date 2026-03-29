@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { api } from '@/core/services/api';
-import { Client, CreateClientDto, UpdateClientDto } from '@/core/client/types/client';
+import { Client, CreateClientDto, UpdateClientDto } from '@/core/client/domain/types/client';
 
 /**
  * @function useClientMutation

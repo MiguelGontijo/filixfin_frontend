@@ -4,15 +4,15 @@ import React, { useState } from 'react';
 import { FaBrain } from 'react-icons/fa';
 
 // --- Contratos e Tipos ---
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 import { CRMDeal } from '../../domain/types';
 
 // --- Motores Injetáveis (Os Manuais de Instrução V4) ---
-import { useClientConfig } from '@/core/client/hooks/useClientConfig';
+import { useClientConfig } from '@/core/client/application/useClientConfig';
 import { useDealConfig } from '../../application/useDealConfig';
 
 // --- Motores de Dados (CQRS) ---
-import { useClients } from '@/core/client/hooks/useClients';
+import { useClients } from '@/core/client/application/hooks/useClients';
 import { usePipelines } from '../../application/hooks/usePipelines';
 
 // --- Os 3 Pilares da Arquitetura V4 (Inversão de Controle) ---

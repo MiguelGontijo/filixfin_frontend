@@ -6,7 +6,7 @@ import React, { useState, useMemo } from 'react';
 import { usePipelines, usePipelineDetails } from '../../application/hooks/usePipelines';
 import { useDeals } from '../../application/hooks/useDeals';
 import { useDealMutation } from '../../application/hooks/useDealMutation';
-import { useClients } from '@/core/client/hooks/useClients';
+import { useClients } from '@/core/client/application/hooks/useClients';
 
 import { CRMDeal, DealStatus } from '../../domain/types';
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/core/services/api';
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 
 /**
  * @function useClients

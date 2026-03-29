@@ -111,5 +111,6 @@ export interface UseCrudAdapterParams<T, FormData extends FieldValues> {
         entityName: string;
         allowDelete?: boolean;
         omitKeysOnUpdate?: string[];
+        collectionKeys?: string[];
     };
 }

@@ -32,10 +32,9 @@ interface UseProductConfigProps {
  * 🧠 HOOK: useProductConfig
  * @description Centraliza a definição técnica (Blueprint) do catálogo de itens.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Netflix/Shopify Level):
- * 1. Zero-Logic Policy: Removida toda e qualquer função de tradução manual.
- * 2. Attribute Symmetry: Alinhamento semântico com o campo 'attributes' do Backend.
- * 3. Autonomous Flow: O motor CRUD agora detecta e popula os campos automaticamente
- * baseando-se apenas na existência dos nomes definidos aqui e no Schema.
+ * 1. Declarative UI: Define labels semânticas para componentes polimórficos.
+ * 2. Visual Consistency: Integra o SmartSwitch para controle de status comercial.
+ * 3. Zero-Logic Policy: Mantém a pureza do mapeamento delegando a execução ao Core.
  * ============================================================================
  */
 export const useProductConfig = ({ 
@@ -53,8 +52,6 @@ export const useProductConfig = ({
 
         /**
          * 📊 A VITRINE: Configuração de Colunas
-         * Graças ao 'inflate' da DataEngine, campos como 'sku' e 'salePrice' 
-         * chegam na raiz do objeto de forma automática para a tabela.
          */
         columns: [
             { header: 'Nome / Item', accessor: 'name' },
@@ -84,9 +81,6 @@ export const useProductConfig = ({
 
         // 📝 O FORMULÁRIO: Estrutura Genética do Produto
         fields: [
-            /**
-             * --- SEÇÃO 1: IDENTIDADE E CLASSIFICAÇÃO ---
-             */
             { 
                 name: 'name', 
                 label: 'Nome Comercial', 
@@ -143,11 +137,6 @@ export const useProductConfig = ({
                 options: Object.values(BaseUOM).map(v => ({ label: v, value: v })) 
             },
 
-            /**
-             * --- SEÇÃO 2 & 3: O PONTO DE SINGULARIDADE (INJEÇÃO) ---
-             * @description Inversão de Controle (IoC). Delega para o ProductOrchestrator
-             * a renderização dos sub-formulários polimórficos.
-             */
             {
                 name: '_orchestrator_bridge',
                 label: 'Detalhes Técnicos e Comerciais',
@@ -156,7 +145,18 @@ export const useProductConfig = ({
                 customRender: (form) => <ProductOrchestrator form={form} />
             },
 
-            { name: 'isActive', label: 'Item disponível para operações comerciais', type: 'boolean' }
+            /**
+             * 🔘 CAMPO EVOLUÍDO: isActive
+             * @description Agora utilizando labels semânticas que o SmartSwitch 
+             * interpretará para exibir "Ativo" (Laranja) e "Inativo" (Violeta).
+             */
+            { 
+                name: 'isActive', 
+                label: 'Status de Disponibilidade', 
+                type: 'boolean',
+                trueLabel: 'Ativo',
+                falseLabel: 'Inativo'
+            }
         ],
 
         // 🛡️ AUDITORIA (Rastreabilidade)

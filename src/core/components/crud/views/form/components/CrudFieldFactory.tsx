@@ -1,10 +1,12 @@
-import React from 'react';
-import { UseFormReturn, FieldValues, Path, RegisterOptions, Controller } from 'react-hook-form'; // 💡 IMPORT VITAL: Controller adicionado
+'use client';
 
-// --- Tipagens e Componentes UI ---
+import React from 'react';
+import { UseFormReturn, FieldValues, Path, RegisterOptions, Controller } from 'react-hook-form';
+
+// --- Tipagens e Componentes UI do Core ---
 import { CrudField } from '../../../types/engine.types';
 import { SmartDatePicker } from '@/core/components/ui/SmartDatePicker';
-
+import { SmartSwitch } from '@/core/components/ui/SmartSwitch'; // 🆕 Injeção do novo componente
 
 export interface CrudFieldFactoryProps<FormData extends FieldValues> {
     field: CrudField<FormData>;
@@ -14,13 +16,14 @@ export interface CrudFieldFactoryProps<FormData extends FieldValues> {
 
 /**
  * ============================================================================
- * 🏭 FÁBRICA DE CAMPOS (CrudFieldFactory)
- * @description Princípio da Responsabilidade Única (SRP) do SOLID. 
- * Este componente não conhece regras de negócio. Sua ÚNICA função é traduzir 
- * um contrato JSON em inputs visuais de alta fidelidade e interceptar erros.
+ * 🏭 FÁBRICA DE CAMPOS (CrudFieldFactory V5 - Smart Edition)
+ * @description Princípio da Responsabilidade Única (SRP). Traduz contratos 
+ * JSON em interfaces de alta performance e fidelidade visual.
  * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Componentes Controlados):
- * - Substitui o <input type="date"> nativo falho por um SmartDatePicker,
- * eliminando problemas de Timezone e garantindo que o Zod receba Strings ISO puras.
+ * 1. Unified Control: Utiliza o padrão Controller para componentes customizados,
+ * garantindo sincronia perfeita com o Zod.
+ * 2. Visual Evolution: Substitui o checkbox nativo pelo SmartSwitch monumental.
+ * 3. Type Resilience: Preserva a integridade de tipos numéricos e de data.
  * ============================================================================
  */
 export function CrudFieldFactory<FormData extends FieldValues>({
@@ -29,7 +32,6 @@ export function CrudFieldFactory<FormData extends FieldValues>({
     disabled = false
 }: CrudFieldFactoryProps<FormData>) {
     
-    // 🛡️ Tipagem Forte: Garante que o fieldName é um caminho válido no formulário.
     const fieldName = String(field.name) as Path<FormData>;
     const errorMessage = form.formState.errors[fieldName]?.message as string | undefined;
 
@@ -38,9 +40,6 @@ export function CrudFieldFactory<FormData extends FieldValues>({
     // ========================================================================
     let registerOptions: RegisterOptions<FormData, Path<FormData>> = {};
     
-    // 🛡️ FIX ARQUITETURAL: Removemos o `valueAsDate: true`. 
-    // A data agora trafega como String pura (ISO 8601), respeitando o Zod Schema 
-    // e evitando bloqueios silenciosos na submissão.
     if (field.type === 'number') {
         registerOptions = { valueAsNumber: true };
     }
@@ -69,13 +68,17 @@ export function CrudFieldFactory<FormData extends FieldValues>({
     }
 
     // ========================================================================
-    // 🎨 2. RENDERIZAÇÃO PADRÃO (Inputs e Componentes UI)
+    // 🎨 2. RENDERIZAÇÃO PADRÃO (Inputs e Componentes UI de Elite)
     // ========================================================================
     return (
         <div className={`flex flex-col space-y-1.5 w-full ${field.type === 'textarea' ? 'col-span-full' : 'col-span-1 md:col-span-1'}`}>
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">
-                {field.label}
-            </label>
+            
+            {/* O label é omitido para o SmartSwitch pois ele já possui label interno opcional */}
+            {field.type !== 'boolean' && (
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">
+                    {field.label}
+                </label>
+            )}
             
             {field.type === 'select' ? (
                 <select
@@ -100,21 +103,29 @@ export function CrudFieldFactory<FormData extends FieldValues>({
                 />
                 
             ) : field.type === 'boolean' ? (
-                <label className={`flex items-center space-x-3 cursor-pointer mt-2 bg-gray-900/50 p-3 rounded-xl border border-gray-700/50 transition-opacity ${disabled ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}>
-                    <div className="relative">
-                        <input type="checkbox" {...form.register(fieldName)} disabled={disabled} className="sr-only" />
-                        <div className={`block w-10 h-6 rounded-full transition-colors ${form.watch(fieldName) ? 'bg-accent-primary' : 'bg-gray-600'}`}></div>
-                        <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${form.watch(fieldName) ? 'transform translate-x-4' : ''}`}></div>
-                    </div>
-                    <div className="text-sm font-bold text-gray-300">
-                        {form.watch(fieldName) ? (field.trueLabel || 'Sim') : (field.falseLabel || 'Não')}
-                    </div>
-                </label>
+                /**
+                 * 🔘 EVOLUÇÃO CLASSE OURO: SmartSwitch Integration
+                 * @description Substituímos o checkbox legacy pela experiência cinética.
+                 * Usamos o Controller para mapear as labels customizadas vinda do Config.
+                 */
+                <Controller
+                    control={form.control}
+                    name={fieldName}
+                    render={({ field: { onChange, value } }) => (
+                        <SmartSwitch
+                            label={field.label}
+                            value={value}
+                            onChange={onChange}
+                            disabled={disabled}
+                            options={[
+                                { label: field.trueLabel || 'Sim', value: true, activeColor: 'primary' },
+                                { label: field.falseLabel || 'Não', value: false, activeColor: 'secondary' }
+                            ]}
+                        />
+                    )}
+                />
                 
             ) : field.type === 'date' ? (
-                // 📅 O CALENDÁRIO INTELIGENTE: Padrão "Controlled Input"
-                // O Controller atua como um tradutor perfeito entre o nosso componente
-                // de UI customizado e a engine interna do React Hook Form.
                 <Controller
                     control={form.control}
                     name={fieldName}
@@ -131,7 +142,6 @@ export function CrudFieldFactory<FormData extends FieldValues>({
             ) : (
                 <input
                     type={field.type}
-                    // 🛡️ O objeto limpo e seguro é injetado aqui
                     {...form.register(fieldName, registerOptions)}
                     disabled={disabled}
                     placeholder={field.placeholder}
@@ -139,7 +149,7 @@ export function CrudFieldFactory<FormData extends FieldValues>({
                 />
             )}
 
-            {/* Exibição de Erros */}
+            {/* Exibição de Erros com Animação */}
             {errorMessage && (
                 <span className="text-red-400 text-[10px] font-bold mt-1 ml-1 block uppercase tracking-wide animate-fade-in">
                     {errorMessage}

@@ -1,7 +1,7 @@
 import React from 'react';
 
 // --- Tipagens e Contratos ---
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 import { CRMDeal } from '../../../domain/types';
 import { CrudConfig, FormMode } from '@/core/components/crud/types';
 
@@ -11,7 +11,7 @@ import { ClientDashboard } from './client-dashboard/ClientDashboard'; // 👑 O 
 
 // --- Mutadores (CQRS - Padrão Command) ---
 import { useDealMutation } from '../../../application/hooks/useDealMutation';
-import { useClientMutation } from '@/core/client/hooks/useClientMutation';
+import { useClientMutation } from '@/core/client/application/hooks/useClientMutation';
 
 export type CockpitFormType = 'NONE' | 'CLIENT' | 'DEAL';
 

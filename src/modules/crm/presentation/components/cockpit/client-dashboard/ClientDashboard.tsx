@@ -5,7 +5,7 @@ import {
     FaMagic, FaPlusCircle, FaStickyNote, 
     FaChevronDown, FaChevronUp
 } from 'react-icons/fa';
-import { Client, AddressType } from '@/core/client/types/client';
+import { Client, AddressType } from '@/core/client/domain/types/client';
 
 // --- AQUI ESTÁ A MUDANÇA: Importamos o Módulo Soberano ---
 import { TimelineModule } from '@/modules/timeline/TimelineModule';

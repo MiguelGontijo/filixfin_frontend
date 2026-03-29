@@ -1,6 +1,6 @@
 'use client';
 
-import { ClientRegistry } from '@/core/client/registries/ClientRegistry';
+import { ClientRegistry } from '@/core/client/presentation/registries/ClientRegistry';
 import { DealRegistry } from '@/modules/crm/presentation/registries/DealRegistry';
 import { PipelineRegistry } from '@/modules/crm/presentation/registries/PipelineRegistry';
 import { FiscalRegistry } from '@/modules/fiscal/registries/FiscalRegistry';

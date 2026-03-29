@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { FaHandshake } from 'react-icons/fa'; // 💡 Identidade visual: O aperto de mão do fechamento
+import { FaHandshake } from 'react-icons/fa';
 
-// --- Motor CRUD V4 & Adaptador ---
+// --- Motor CRUD V4 & Adaptador (RESTAURADO) ---
 import { CrudLayout } from '@/core/components/crud/CrudLayout';
 import { useCrudAdapter } from '@/core/components/crud/hooks/useCrudAdapter';
 
@@ -14,51 +14,19 @@ import { DealFormInput } from '../../domain/schemas/dealSchema';
 // --- Motores de Dados (CQRS) ---
 import { useDeals } from '../../application/hooks/useDeals';
 import { usePipelines } from '../../application/hooks/usePipelines';
-import { useClients } from '@/core/client/hooks/useClients';
+import { useClients } from '@/core/client/application/hooks/useClients';
 import { useDealMutation } from '../../application/hooks/useDealMutation';
 
-// --- Configuração Injetável (O Manual de Instruções) ---
+// --- Configuração Injetável ---
 import { useDealConfig } from '../../application/useDealConfig';
 
-/**
- * ============================================================================
- * 🛡️ CONTRATO DE POLIMORFISMO E ESTADO
- * @description Ensina o TypeScript que o DealRegistry pode atuar como Tela 
- * Cheia (Master) ou como Widget Lateral Compacto (Detail) no Cockpit.
- * ============================================================================
- */
 export interface DealRegistryProps {
     variant?: 'full' | 'compact';
     clientId?: string;
-    
-    /** 🛡️ FIX CLASSE OURO: Alinhamento de tipagem com o Motor V4.
-     * Agora aceita rascunhos (Partial) para suportar a injeção de clientId.
-     */
     onFormRequest?: (deal?: CRMDeal | Partial<CRMDeal> | null) => void;
-    
-    /**
-     * @property selectedItemId
-     * @description O ID da oportunidade (Deal) atualmente em foco no Palco Central.
-     * Injetado pelo Maestro para roteamento visual do card ativo.
-     */
     selectedItemId?: string;
 }
 
-/**
- * ============================================================================
- * 🏭 COMPONENTE PRINCIPAL: DEAL REGISTRY (Orquestrador Puro)
- * @description A Visão "Master Data" das oportunidades.
- * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (SOLID & Clean Architecture):
- * 1. Identidade de Módulo: Renomeia a entidade para "Deals" e injeta o ícone 
- * FaHandshake, garantindo semântica e vida ao cabeçalho.
- * 2. Injeção de Dependências: Todo o layout reativo e colunas foram delegados 
- * ao hook `useDealConfig`.
- * 3. Roteamento Dinâmico: Comunica ao CrudLayout qual a "roupa" correta 
- * (listMode) baseando-se na variante solicitada pelo componente pai.
- * 4. Segurança de Tipagem: Resolve o conflito de assinaturas entre o domínio
- * e o motor genérico (Partial consistency).
- * ============================================================================
- */
 export function DealRegistry({ 
     variant = 'full', 
     clientId, 
@@ -66,34 +34,30 @@ export function DealRegistry({
     selectedItemId 
 }: DealRegistryProps) {
     
-    // =========================================================================
-    // 📡 CONEXÃO DE DADOS (Cross-Domain Fetching)
-    // =========================================================================
+    // 📡 1. Conexão de Dados Original
     const { deals, isLoading: loadingDeals, error: errorDeals, refreshDeals } = useDeals();
     const { createDeal, updateDeal } = useDealMutation();
     const { clients, isLoading: loadingClients } = useClients();
-    const { pipelines, isLoadingPipelines } = usePipelines();
+    const { pipelines, isLoadingPipelines } = usePipelines(); // Mantido nome original
 
     const isGlobalLoading = loadingDeals || loadingClients || isLoadingPipelines;
     const isCompact = variant === 'compact';
 
-    // 🔍 FILTRO DE DOMÍNIO: Isola a lista de deals apenas para o cliente ativo
+    // 🔍 2. Filtro de Domínio Original
     const filteredDeals = useMemo(() => {
         if (clientId) return deals.filter(d => d.clientId === clientId);
         return deals;
     }, [deals, clientId]);
 
-    // =========================================================================
-    // ⚙️ CONFIGURAÇÃO CLASSE OURO (Injeção Visual)
-    // =========================================================================
+    // 📐 3. Configuração
     const config = useDealConfig(clients, pipelines, isCompact);
     
-    // 👑 AJUSTES DE IDENTIDADE (Setas 1 e 3 da sua análise)
-    config.title = "Deals"; // Nome curto, forte e executivo
-    config.icon = <FaHandshake />; // Ícone dinâmico injetado no cabeçalho
+    /** 👑 Identidade Visual V4 (Mantendo apenas o ganho estético) */
+    config.title = "Deals"; 
+    config.icon = <FaHandshake className="text-accent-primary" />;
 
     // =========================================================================
-    // 🔌 ROTEAMENTO DE AÇÕES (O Adaptador Universal)
+    // 🔌 ROTEAMENTO DE AÇÕES (RESTAURADO: O Adaptador que funciona)
     // =========================================================================
     const crudHooks = useCrudAdapter<CRMDeal, DealFormInput>({
         query: {
@@ -121,10 +85,7 @@ export function DealRegistry({
                 config={config}
                 hooks={crudHooks}
                 listMode={isCompact ? 'cards' : 'table'}
-                
-                // 💡 INVERSÃO DE CONTROLE: Injeta o clientId automaticamente em novas Deals
                 baseInjectData={clientId ? { clientId } : undefined}
-                
                 selectedItemId={selectedItemId}
                 onFormRequest={onFormRequest}
             />

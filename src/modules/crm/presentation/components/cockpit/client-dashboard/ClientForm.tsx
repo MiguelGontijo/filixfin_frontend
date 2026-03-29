@@ -5,9 +5,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FaMapMarkerAlt, FaExclamationTriangle, FaSave, FaStickyNote } from 'react-icons/fa';
 
-import { useClientMutation } from '@/core/client/hooks/useClientMutation';
-import { Client, AddressType } from '@/core/client/types/client';
-import { ClientFormSchema, ClientFormInput } from '@/core/client/schemas/clientSchema';
+import { useClientMutation } from '@/core/client/application/hooks/useClientMutation';
+import { Client, AddressType } from '@/core/client/domain/types/client';
+import { ClientFormSchema, ClientFormInput } from '@/core/client/domain/schemas/clientSchema';
 
 interface ClientFormProps {
     client?: Client;

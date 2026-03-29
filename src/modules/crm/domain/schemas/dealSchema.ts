@@ -2,104 +2,108 @@ import { z } from 'zod';
 import { DealStatus, DealSource, DealItemType } from '../types';
 
 /**
- * @file dealSchema.ts
- * @description SCHEMA DE VALIDAÇÃO DE OPORTUNIDADES (Deals).
- * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Enterprise Grade):
- * 1. Motor de Precificação Automática: Na etapa de `.transform()`, o schema 
- * recalcula o valor total do Deal baseado nos itens, impedindo divergências financeiras.
- * 2. Amortecimento Estrito (Resiliência): Uso de `z.coerce` e `.catch()` para garantir que 
- * números (probabilidade, valores) não quebrem o formulário se a API enviar strings ou nulos.
- * 3. Reconciliação de Estado: Garante o tráfego de UUIDs legítimos para o Backend, 
- * permitindo que o TypeORM execute operações de UPDATE reais (Evita duplicação).
+ * ============================================================================
+ * 🛡️ SCHEMA: DealFormSchema (Versão Auditada V4)
+ * @description O motor de validação e precificação automática de Oportunidades.
+ * * 🏆 PADRÃO DE QUALIDADE CLASSE OURO (Financial Integrity):
+ * 1. Precision Math: Recalcula o 'value' global no transform, atuando como a 
+ * "Fonte da Verdade" para evitar divergências entre UI e Banco.
+ * 2. ID Preservation: Distingue UUIDs reais de IDs temporários da UI (temp-),
+ * garantindo que o Backend execute UPDATES precisos em sub-itens.
+ * 3. Type Coercion: Força a conversão de strings de inputs em números reais,
+ * blindando o cálculo contra falhas de tipagem do JavaScript.
+ * ============================================================================
  */
 
 // ============================================================================
-// 📦 SCHEMA FILHO: ITENS DA OPORTUNIDADE (Produtos / Serviços)
+// 📦 SUB-SCHEMA: DealItemSchema (Produtos / Serviços no Deal)
 // ============================================================================
 const DealItemSchema = z.object({
-    // Obrigatório na UI para manipulação de arrays e preservado no Output para o Backend
+    /** 🔑 UUID da linha (Preservado para Delta Sync) */
     id: z.string().optional(),
+    
+    /** 🔗 Vínculo com o Catálogo (Opcional por enquanto) */
     productId: z.string().optional().nullable(),
     
-    // O '.nativeEnum' acopla perfeitamente o Zod aos Enums do TypeScript
-    type: z.nativeEnum(DealItemType).default(DealItemType.SERVICE),
+    type: z.enum(DealItemType).default(DealItemType.SERVICE),
     description: z.string().min(2, 'A descrição do item é obrigatória.'),
     
-    // 🛡️ AMORTECIMENTO DE UX: 
-    // `coerce.number` força strings vindas de inputs HTML a virarem decimais.
-    // `.catch(1)` impede que um erro de digitação zere a quantidade e quebre o cálculo.
-    quantity: z.coerce.number().min(0.01, 'A quantidade deve ser maior que zero.').catch(1),
-    unitPrice: z.coerce.number().min(0, 'O valor não pode ser negativo.').catch(0),
+    // 🛡️ AMORTECIMENTO DE VALORES: Força conversão e evita NaN
+    quantity: z.coerce.number().min(0.01, 'Quantidade inválida.').catch(1),
+    unitPrice: z.coerce.number().min(0, 'Preço inválido.').catch(0),
 });
 
 // ============================================================================
-// 💼 SCHEMA PAI: A OPORTUNIDADE (Deal)
+// 💼 SCHEMA MESTRE: DealFormSchema
 // ============================================================================
 export const DealFormSchema = z.object({
     id: z.string().optional(),
     
-    // --- Dados Básicos ---
-    title: z.string().min(3, 'O título da oportunidade é obrigatório (Ex: Contrato Anual).'),
-    clientId: z.string().min(1, 'É necessário vincular um cliente a esta oportunidade.'),
+    // --- Identidade da Negociação ---
+    title: z.string().min(3, 'O título é obrigatório para identificação.'),
+    clientId: z.string().min(1, 'Vincule um cliente para prosseguir.'),
     
-    // --- Posicionamento no Funil ---
+    // --- Roteamento Comercial (Funil) ---
     pipelineId: z.string().optional(),
     currentStageId: z.string().optional(),
     
-    // --- Status e Origem ---
-    status: z.nativeEnum(DealStatus).default(DealStatus.NEW),
-    source: z.nativeEnum(DealSource).default(DealSource.MANUAL),
+    // --- Status e Qualificação ---
+    status: z.enum(DealStatus).default(DealStatus.NEW),
+    source: z.enum(DealSource).default(DealSource.MANUAL),
     lossReason: z.string().optional().nullable(),
     
-    // --- Valores e Previsões ---
+    // --- Projeções Financeiras ---
     probability: z.coerce.number().min(0).max(100).default(50).catch(50),
     expectedCloseDate: z.string().optional().nullable(),
     
-    // Campo isolado de valor (usado livremente APENAS se a oportunidade NÃO tiver itens)
+    // Valor base (Usado se não houver itens detalhados)
     value: z.coerce.number().min(0).default(0).catch(0),
     
-    // Array de itens (Opcional, pois pode ser uma venda simples baseada apenas em "value")
+    // Tabela de Itens (Composição Detalhada)
     items: z.array(DealItemSchema).default([]),
 
-    // --- Auditoria Automática ---
+    // --- Auditoria ---
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
 
 }).transform((data) => {
-    // 🪄 A MÁGICA DA TRANSFORMAÇÃO (Sanitização e Precificação)
-    // Esta etapa atua como um Middleware inviolável entre o Frontend e a API.
-
+    /**
+     * 🪄 A MÁGICA DA TRANSFORMAÇÃO (Payload Builder)
+     * @description Realiza a auditoria final de preços antes do envio.
+     */
     const hasItems = data.items && data.items.length > 0;
     
-    // 🧮 Motor Matemático: Se houver itens detalhados na tabela, o valor real da 
-    // oportunidade passa a ser estritamente a soma de (Qtd * Valor Unitário). 
-    // A UI agora reage a isso, mas o backend continua protegido por essa re-checagem.
+    /** 🧮 Cálculo Real: A soma dos itens sempre sobrepõe o valor manual 
+     * se a tabela de precificação estiver preenchida. 
+     */
     const computedValue = hasItems 
         ? data.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
         : data.value;
 
     return {
         ...data,
-        // Sobrescreve o valor do payload com o cálculo auditado
         value: computedValue, 
         
         items: data.items.map(item => ({
             ...item,
-            // Garante que o subtotal da linha também vá calculado corretamente para o BD
+            // Injeta o total calculado da linha para persistência redundante
             total: item.quantity * item.unitPrice, 
             
-            // 🧹 GHOST-BUSTER REFINADO: Limpa strings vazias ou IDs temporários ('temp-169823123').
-            // Preserva rigorosamente os UUIDs legítimos para que o Backend faça UPDATE em vez de INSERT.
+            /** * 🧹 CLEANUP DE IDENTIDADE: 
+             * Remove IDs temporários (gerados na UI) para que o Backend saiba 
+             * que deve criar um novo registro. Preserva UUIDs reais para UPDATE.
+             */
             id: (!item.id || item.id.startsWith('temp-')) ? undefined : item.id,
         }))
     };
 });
 
-/**
- * @type DealFormInput & DealFormOutput
- * Separação das tipagens arquiteturais.
- * Input: O formato que o React Hook Form consome (permite temp-ids).
- * Output: O payload final sanitizado e processado para o Axios/Backend.
+/** * @type DealFormInput 
+ * @description Tipagem de entrada (Estado do Formulário).
  */
 export type DealFormInput = z.input<typeof DealFormSchema>;
+
+/** * @type DealFormOutput 
+ * @description Tipagem de saída (Payload para API).
+ */
 export type DealFormOutput = z.output<typeof DealFormSchema>;

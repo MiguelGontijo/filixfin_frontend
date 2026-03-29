@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { FaRegHandshake, FaBoxOpen, FaInbox } from 'react-icons/fa';
 
 // --- Tipagens ---
-import { Client } from '@/core/client/types/client';
+import { Client } from '@/core/client/domain/types/client';
 import { CRMDeal } from '../../../domain/types';
 
 // --- Motores Visuais (V4) ---
-import { ClientRegistry } from '@/core/client/registries/ClientRegistry';
+import { ClientRegistry } from '@/core/client/presentation/registries/ClientRegistry';
 import { DealRegistry } from '../../registries/DealRegistry';
 
 /**
